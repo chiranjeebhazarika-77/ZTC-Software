@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 import urllib.parse
 import os
+import pytz  # এইটো নতুনকৈ যোগ কৰা
 
 # Page Configuration
 st.set_page_config(page_title="Soft Tech Computers", page_icon="💻", layout="wide")
@@ -167,8 +168,11 @@ elif menu == "📝 Student Admission & Attendance":
                 
                 if st.form_submit_button("Submit Attendance"):
                     if roll_no and stud_name:
-                        today_date = datetime.now().strftime("%Y-%m-%d")
-                        current_time = datetime.now().strftime("%I:%M %p")
+                        IST = pytz.timezone('Asia/Kolkata')
+                        now_ist = datetime.now(IST)
+                        
+                        today_date = now_ist.strftime("%Y-%m-%d")
+                        current_time = now_ist.strftime("%I:%M %p")
                         
                         new_log = pd.DataFrame([[today_date, roll_no, stud_name, action, current_time]], columns=attendance_cols)
                         attendance_df = pd.concat([attendance_df, new_log], ignore_index=True)
