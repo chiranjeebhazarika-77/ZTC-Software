@@ -95,7 +95,7 @@ if menu == "🏠 Home & Enquiry":
         st.table(pd.DataFrame(fees_list))
         
         st.markdown("### 📱 Scan from Phone to Open Portal")
-        qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://ztc-software-rq4fwvfbncqe4wpnixzccs.streamlit.app"
+        qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://stcztc.streamlit.app"
         st.image(qr_url, caption="Scan this using Mobile Camera")
 
     with col2:
