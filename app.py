@@ -119,7 +119,7 @@ if menu == "🏠 Home & Enquiry":
                     # --- WhatsApp Notification Link ---
                     msg_text = f"Hello Soft Tech Computers!\nNew Enquiry Received:\nName: {enq_name}\nPhone: {enq_mobile}\nCourse: {enq_course}"
                     encoded_msg = urllib.parse.quote(msg_text)
-                    whatsapp_number = "919854341170"
+                    whatsapp_number = "919101026718"
                     whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}"
 
                     st.markdown(f'''
