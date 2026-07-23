@@ -3,8 +3,7 @@ import pandas as pd
 from datetime import datetime
 import urllib.parse
 import os
-import pytz  # এইটো নতুনকৈ যোগ কৰা
-
+import pytz
 # Page Configuration
 st.set_page_config(page_title="Soft Tech Computers", page_icon="💻", layout="wide")
 
@@ -84,53 +83,54 @@ menu = st.sidebar.radio("Navigation", ["🏠 Home & Enquiry", "📝 Student Admi
 if menu == "🏠 Home & Enquiry":
     st.title("Welcome to Soft Tech Computers")
     st.subheader("Kamarchuburi, Thelamara, Sonitpur, Assam")
-    
+
     col1, col2 = st.columns([2, 1])
+
     with col1:
-        st.markdown("### 📅 Active Class Time Table / Routine")
-        st.table(routine_db) 
-        
-        st.markdown("### 📚 Courses & Course Packages")
+        st.markdown("### 🗓️ Active Class Time Table / Routine")
+        st.table(routine_db)
+
+        st.markdown("### 🪙 Courses & Course Packages")
         fees_list = [{"Course/Class": k, "Total Course Fee": f"₹ {v}/-"} for k, v in st.session_state.fee_settings.items()]
         st.table(pd.DataFrame(fees_list))
-        
+
         st.markdown("### 📱 Scan from Phone to Open Portal")
         qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://stcztc.streamlit.app"
         st.image(qr_url, caption="Scan this using Mobile Camera")
 
-   with col2:
-    st.markdown("### ✉️ Quick Course Enquiry")
-    with st.form("enquiry_form", clear_on_submit=True):
-        enq_name = st.text_input("Student Name")
-        enq_mobile = st.text_input("Mobile Number")
-        enq_course = st.selectbox("Select Course/Class", list(st.session_state.fee_settings.keys()), index=0)
-        
-        selected_fee = st.session_state.fee_settings.get(enq_course, 5000)
-        st.info(f"Total Course Fee: ₹ {selected_fee}/-")
-        
-        submitted = st.form_submit_button("Submit Enquiry")
-        if submitted:
-            if enq_name and enq_mobile:
-                new_enq = pd.DataFrame([[enq_name, enq_mobile, enq_course, datetime.now().strftime("%Y-%m-%d %H:%M")]], columns=enquiry_db.columns)
-                enquiry_db = pd.concat([enquiry_db, new_enq], ignore_index=True)
-                save_data(enquiry_db, ENQUIRY_FILE)
-                st.success("Enquiry registered successfully!")
+    with col2:
+        st.markdown("### ✉️ Quick Course Enquiry")
+        with st.form("enquiry_form", clear_on_submit=True):
+            enq_name = st.text_input("Student Name")
+            enq_mobile = st.text_input("Mobile Number")
+            enq_course = st.selectbox("Select Course/Class", list(st.session_state.fee_settings.keys()), index=0)
 
-                # --- WhatsApp Notification Link ---
-                msg_text = f"Hello Soft Tech Computers!\nNew Enquiry Received:\nName: {enq_name}\nPhone: {enq_mobile}\nCourse: {enq_course}"
-                encoded_msg = urllib.parse.quote(msg_text)
-                whatsapp_number = "919101026718"
-                whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}"
+            selected_fee = st.session_state.fee_settings.get(enq_course, 5000)
+            st.info(f"Total Course Fee: ₹ {selected_fee}/-")
 
-                st.markdown(f'''
-                    <a href="{whatsapp_url}" target="_blank">
-                        <button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer; width:100%; margin-top:10px;">
-                            📲 Send Details directly on WhatsApp
-                        </button>
-                    </a>
-                ''', unsafe_allow_html=True)
-            else:
-                st.warning("Please fill in both Name and Mobile Number.")
+            submitted = st.form_submit_button("Submit Enquiry")
+            if submitted:
+                if enq_name and enq_mobile:
+                    new_enq = pd.DataFrame([[enq_name, enq_mobile, enq_course, datetime.now().strftime("%Y-%m-%d %H:%M")]], columns=enquiry_db.columns)
+                    enquiry_db = pd.concat([enquiry_db, new_enq], ignore_index=True)
+                    save_data(enquiry_db, ENQUIRY_FILE)
+                    st.success("Enquiry registered successfully!")
+
+                    # --- WhatsApp Notification Link ---
+                    msg_text = f"Hello Soft Tech Computers!\nNew Enquiry Received:\nName: {enq_name}\nPhone: {enq_mobile}\nCourse: {enq_course}"
+                    encoded_msg = urllib.parse.quote(msg_text)
+                    whatsapp_number = "919854341170"
+                    whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}"
+
+                    st.markdown(f'''
+                        <a href="{whatsapp_url}" target="_blank">
+                            <button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer; width:100%; margin-top:10px;">
+                                📲 Send Details directly on WhatsApp
+                            </button>
+                        </a>
+                    ''', unsafe_allow_html=True)
+                else:
+                    st.warning("Please fill in both Name and Mobile Number.")
 
 # 2. STUDENT PORTAL
 elif menu == "📝 Student Admission & Attendance":
