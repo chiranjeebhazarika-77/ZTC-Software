@@ -108,7 +108,7 @@ if menu == "🏠 Home & Enquiry":
             selected_fee = st.session_state.fee_settings.get(enq_course, 5000)
             st.info(f"Total Course Fee: ₹ {selected_fee}/-")
             
-           with st.form("enquiry_form"):
+            with st.form("enquiry_form"):
             enq_name = st.text_input("Full Name")
             enq_mobile = st.text_input("Mobile Number")
             enq_course = st.selectbox("Course Interested", ["ADCA", "DCA", "DTP", "Tally", "Other"])
