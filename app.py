@@ -202,7 +202,7 @@ elif menu == "🎓 Student Admission & Attendance":
                     
                     # 1. Attendance Calculation (Min 75%)
                     st_att_count = len(attendance_df[attendance_df['Student ID'] == st_id]) if not attendance_df.empty else 0
-                    total_classes = 20  # Total classes conduct base (approx)
+                    total_classes = 20  
                     att_pct = round((st_att_count / total_classes) * 100, 1) if total_classes > 0 else 0
                     
                     # 2. Dynamic Monthly Fee & 50% Rule Calculation
@@ -210,7 +210,6 @@ elif menu == "🎓 Student Admission & Attendance":
                     paid = float(s_info['Paid']) if 'Paid' in s_info and pd.notnull(s_info['Paid']) and str(s_info['Paid']) != "" else 0.0
                     breakdown = str(s_info['Payment Breakdown']) if 'Payment Breakdown' in s_info and pd.notnull(s_info['Payment Breakdown']) and str(s_info['Payment Breakdown']) != "" else str(int(paid))
                     
-                    # 3 Months Logic Example (৩ মাহৰ হিচাপত ১৬৫০/- ৰ ৫০% = ৮২৫/-)
                     months_enrolled = 3  
                     monthly_rate = 550
                     total_monthly_due_till_now = months_enrolled * monthly_rate
@@ -237,7 +236,6 @@ elif menu == "🎓 Student Admission & Attendance":
                     st.write(f"* **Attendance Status:** {st_att_count} Days attended (**{att_pct}%**) [Min Required: 75%]")
                     st.write(f"* **Calculated Fee Status:** Total Paid ₹{paid} / Minimum Required ₹{min_required_fee_total}")
 
-                    # SFPC Eligibility Condition
                     if att_pct >= 75 and fee_cleared:
                         st.success("🎉 **STATUS: ELIGIBLE FOR SUNDAY FREE PRACTICE CLASS (SFPC)!**\nAttendance ≥ 75% and 50% monthly installment is clear.")
                     else:
@@ -295,10 +293,42 @@ elif menu == "🔐 Admin Panel":
                     st.success(f"Added ₹{add_amt} for {f_sid}! Updated Breakdown: {new_bd}")
                     st.rerun()
 
+            # --- EDIT STUDENT PROFILE SECTION ---
+            st.markdown("---")
+            st.markdown("### ✏️ Edit Student Profile Details")
+            if not student_df.empty:
+                edit_sid = st.selectbox("Select Student ID to Edit", student_df['Student ID'].unique(), key="edit_sid_select")
+                e_row = student_df[student_df['Student ID'] == edit_sid].iloc[0]
+
+                with st.form("edit_student_form"):
+                    e_name = st.text_input("Name", value=str(e_row['Name']))
+                    e_father = st.text_input("Father Name", value=str(e_row['Father Name']))
+                    e_mother = st.text_input("Mother Name", value=str(e_row['Mother Name']))
+                    e_mobile = st.text_input("Mobile No", value=str(e_row['Mobile No']))
+                    e_address = st.text_input("Address", value=str(e_row['Address']))
+                    e_course = st.selectbox("Course", list(st.session_state.fee_settings.keys()), index=0)
+                    e_batch = st.text_input("Batch", value=str(e_row['Batch']))
+                    e_mode = st.selectbox("Admission Mode", ["Full Onetime", "Monthly Installments"])
+
+                    if st.form_submit_button("Update Student Profile"):
+                        e_idx = student_df[student_df['Student ID'] == edit_sid].index[0]
+                        student_df.at[e_idx, 'Name'] = e_name
+                        student_df.at[e_idx, 'Father Name'] = e_father
+                        student_df.at[e_idx, 'Mother Name'] = e_mother
+                        student_df.at[e_idx, 'Mobile No'] = e_mobile
+                        student_df.at[e_idx, 'Address'] = e_address
+                        student_df.at[e_idx, 'Course'] = e_course
+                        student_df.at[e_idx, 'Batch'] = e_batch
+                        student_df.at[e_idx, 'Admission Mode'] = e_mode
+
+                        save_data(student_df, STUDENT_MASTER_FILE)
+                        st.success(f"Updated Profile for {edit_sid} successfully!")
+                        st.rerun()
+
             st.markdown("---")
             st.markdown("### 🗑️ Permanent Delete Student")
             if not student_df.empty:
-                del_roll = st.selectbox("Select Student ID to Remove", student_df['Student ID'].unique())
+                del_roll = st.selectbox("Select Student ID to Remove", student_df['Student ID'].unique(), key="del_sid_select")
                 if st.button("Delete Selected Student"):
                     student_df = student_df[student_df['Student ID'] != del_roll]
                     save_data(student_df, STUDENT_MASTER_FILE)
