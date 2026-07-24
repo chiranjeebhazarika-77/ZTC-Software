@@ -17,24 +17,32 @@ TEACHER_LOG_FILE = "teacher_attendance.csv"
 ROUTINE_FILE = "routine_settings.csv"
 PASSWORD_FILE = "passwords.csv"
 
-# Load Data Safely & Fix Column/Double Entry Pollution Automatically
+# Load Data Safely & Fix Missing Columns
 def load_clean_data(file_path, default_cols, is_student_file=False):
     if os.path.exists(file_path):
         try:
             df = pd.read_csv(file_path)
             if df.empty:
                 return pd.DataFrame(columns=default_cols)
-            existing_cols = [c for c in default_cols if c in df.columns]
-            if existing_cols:
-                df = df[existing_cols]
+            
+            # Remove duplicate student IDs
             if is_student_file and 'Student ID' in df.columns:
                 df = df.drop_duplicates(subset=['Student ID'], keep='first')
             
-            # Ensure new columns exist even in old data
+            # Ensure every single default column exists
             for col in default_cols:
                 if col not in df.columns:
-                    df[col] = ""
-            return df
+                    if col == 'Total Fee':
+                        df[col] = 8500.0
+                    elif col == 'Paid':
+                        df[col] = 0.0
+                    elif col == 'Payment Breakdown':
+                        df[col] = "0"
+                    elif col == 'Admission Date':
+                        df[col] = datetime.now().strftime("%Y-%m-%d")
+                    else:
+                        df[col] = ""
+            return df[default_cols]
         except:
             return pd.DataFrame(columns=default_cols)
     return pd.DataFrame(columns=default_cols)
@@ -58,7 +66,7 @@ def set_admin_password(new_pass):
     pdf.to_csv(PASSWORD_FILE, index=False)
 
 # Master Column Definition
-student_cols = ['Student ID', 'Name', 'Father Name', 'Mother Name', 'Mobile No', 'Address', 'Course', 'Batch', 'Admission Mode', 'Total Fee', 'Paid', 'Payment Breakdown']
+student_cols = ['Student ID', 'Name', 'Father Name', 'Mother Name', 'Mobile No', 'Address', 'Course', 'Batch', 'Admission Mode', 'Total Fee', 'Paid', 'Payment Breakdown', 'Admission Date']
 attendance_cols = ['Date', 'Student ID', 'Name', 'Action', 'Time']
 
 # Load Clean Databases
@@ -79,6 +87,11 @@ if routine_db.empty:
 # Session States
 if 'fee_settings' not in st.session_state:
     st.session_state.fee_settings = {"ADCA": 8500, "DCA": 5500, "DTP": 4000, "Tally": 4500}
+
+# Helper to map Roll No -> Roll No + Name
+student_options = []
+if not student_df.empty:
+    student_options = [f"{row['Student ID']} - {row['Name']}" for _, row in student_df.iterrows()]
 
 # Navigation Menu
 menu = st.sidebar.radio("Navigation", ["🏠 Home & Enquiry", "🎓 Student Admission & Attendance", "👨‍🏫 Teacher Portal & Fee Entry", "🔐 Admin Panel"])
@@ -167,19 +180,22 @@ elif menu == "🎓 Student Admission & Attendance":
                         new_id = f"STC26-00{len(student_df)+1}"
                         tot_f = st.session_state.fee_settings.get(s_course, 5000)
                         breakdown = f"{int(s_initial_pay)}"
-                        new_row = pd.DataFrame([[new_id, s_name, s_father, s_mother, s_mobile, s_address, s_course, s_batch, s_mode, tot_f, s_initial_pay, breakdown]], columns=student_df.columns)
+                        today_date_str = datetime.now().strftime("%Y-%m-%d")
+                        
+                        new_row = pd.DataFrame([[new_id, s_name, s_father, s_mother, s_mobile, s_address, s_course, s_batch, s_mode, tot_f, s_initial_pay, breakdown, today_date_str]], columns=student_df.columns)
                         student_df = pd.concat([student_df, new_row], ignore_index=True)
                         save_data(student_df, STUDENT_MASTER_FILE)
                         st.success(f"Registered Successfully! Generated Student ID: {new_id}")
 
         with tab2:
             st.subheader("Mark Daily Attendance")
-            sid = st.selectbox("Select Your Student ID", student_df['Student ID'].tolist() if not student_df.empty else [])
+            selected_st_opt = st.selectbox("Select Your Student ID", student_options if student_options else [])
             action = st.radio("Action", ["Check-In (In-Time)", "Check-Out (Out-Time)"])
             
             if st.button("Submit Attendance"):
-                if sid:
-                    st_name = student_df[student_df['Student ID'] == sid]['Name'].values[0] if sid in student_df['Student ID'].values else "Unknown"
+                if selected_st_opt:
+                    sid = selected_st_opt.split(" - ")[0]
+                    st_name = selected_st_opt.split(" - ")[1] if " - " in selected_st_opt else "Unknown"
                     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     today_str = datetime.now().strftime("%Y-%m-%d")
                     
@@ -205,12 +221,30 @@ elif menu == "🎓 Student Admission & Attendance":
                     total_classes = 20  
                     att_pct = round((st_att_count / total_classes) * 100, 1) if total_classes > 0 else 0
                     
-                    # 2. Dynamic Monthly Fee & 50% Rule Calculation
-                    tot = float(s_info['Total Fee']) if 'Total Fee' in s_info and pd.notnull(s_info['Total Fee']) and str(s_info['Total Fee']) != "" else 8500.0
-                    paid = float(s_info['Paid']) if 'Paid' in s_info and pd.notnull(s_info['Paid']) and str(s_info['Paid']) != "" else 0.0
-                    breakdown = str(s_info['Payment Breakdown']) if 'Payment Breakdown' in s_info and pd.notnull(s_info['Payment Breakdown']) and str(s_info['Payment Breakdown']) != "" else str(int(paid))
+                    # 2. Dynamic Monthly Calculation based on Enrollment Date
+                    try:
+                        adm_date_str = str(s_info['Admission Date']) if pd.notnull(s_info['Admission Date']) and str(s_info['Admission Date']) != "" else "2026-01-01"
+                        adm_dt = datetime.strptime(adm_date_str, "%Y-%m-%d")
+                    except:
+                        adm_dt = datetime(2026, 1, 1)
+
+                    today_dt = datetime.now()
+                    days_passed = (today_dt - adm_dt).days
+                    months_enrolled = max(1, round(days_passed / 30.0, 1))  # Auto calculate months (Min 1 month)
+
+                    # Fee Values
+                    try:
+                        tot = float(s_info['Total Fee'])
+                    except:
+                        tot = 8500.0
                     
-                    months_enrolled = 3  
+                    try:
+                        paid = float(s_info['Paid'])
+                    except:
+                        paid = 0.0
+
+                    breakdown = str(s_info['Payment Breakdown']) if pd.notnull(s_info['Payment Breakdown']) and str(s_info['Payment Breakdown']) != "" else str(int(paid))
+                    
                     monthly_rate = 550
                     total_monthly_due_till_now = months_enrolled * monthly_rate
                     required_50_pct_monthly = total_monthly_due_till_now * 0.5
@@ -226,15 +260,18 @@ elif menu == "🎓 Student Admission & Attendance":
                     c2.write(f"**Father:** {s_info['Father Name']}")
                     c2.write(f"**Mobile:** {s_info['Mobile No']}")
                     c3.write(f"**Address:** {s_info['Address']}")
+                    c3.write(f"**Admission Date:** {s_info['Admission Date']}")
 
-                    st.markdown("### 💳 Fee Status & Installments Breakdown")
+                    st.markdown("### 💳 Fee Status & Auto Monthly Breakdown")
                     st.info(f"**Total Course Fee:** ₹{tot} | **Total Paid:** ₹{paid} | **Due Balance:** ₹{tot - paid}")
                     st.success(f"📊 **Payment History:** `{breakdown}` = **₹{paid}**")
-                    st.write(f"* **Admission Fee Status:** {'✅ Paid (₹999)' if paid >= 999 else '❌ Admission Fee Pending'}")
+                    st.write(f"* **Months Passed Since Admission:** **{months_enrolled} Month(s)** (Auto-calculated)")
+                    st.write(f"* **Monthly Rate:** ₹550/month | **Calculated Due Till Today:** ₹{total_monthly_due_till_now}")
+                    st.write(f"* **Required 50% Clear Amount:** ₹{required_50_pct_monthly} (Monthly 50%) + ₹999 (Admission) = **₹{min_required_fee_total}**")
 
                     st.markdown("### 🎯 Sunday Free Practice Class (SFPC) Criteria")
                     st.write(f"* **Attendance Status:** {st_att_count} Days attended (**{att_pct}%**) [Min Required: 75%]")
-                    st.write(f"* **Calculated Fee Status:** Total Paid ₹{paid} / Minimum Required ₹{min_required_fee_total}")
+                    st.write(f"* **Calculated Fee Status:** Paid ₹{paid} / Required ₹{min_required_fee_total}")
 
                     if att_pct >= 75 and fee_cleared:
                         st.success("🎉 **STATUS: ELIGIBLE FOR SUNDAY FREE PRACTICE CLASS (SFPC)!**\nAttendance ≥ 75% and 50% monthly installment is clear.")
@@ -278,13 +315,18 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
     with ttab2:
         st.subheader("💵 Deposit Student Fee (Teacher Counter)")
         if not student_df.empty:
-            t_f_sid = st.selectbox("Select Student ID", student_df['Student ID'].unique(), key="t_fee_sid")
+            t_selected_opt = st.selectbox("Select Student (Roll No - Name)", student_options, key="t_fee_sid")
             t_add_amt = st.number_input("Payment Amount Received (₹)", min_value=100.0, step=100.0, key="t_amt")
 
             if st.button("Collect & Save Fee"):
+                t_f_sid = t_selected_opt.split(" - ")[0]
                 idx = student_df[student_df['Student ID'] == t_f_sid].index[0]
 
-                old_paid = float(student_df.at[idx, 'Paid']) if pd.notnull(student_df.at[idx, 'Paid']) and str(student_df.at[idx, 'Paid']) != "" else 0.0
+                try:
+                    old_paid = float(student_df.at[idx, 'Paid'])
+                except:
+                    old_paid = 0.0
+
                 new_paid = old_paid + t_add_amt
                 student_df.at[idx, 'Paid'] = new_paid
 
@@ -293,7 +335,7 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
                 student_df.at[idx, 'Payment Breakdown'] = new_bd
 
                 save_data(student_df, STUDENT_MASTER_FILE)
-                st.success(f"Successfully collected ₹{t_add_amt} for {t_f_sid}! Updated Breakdown: {new_bd}")
+                st.success(f"Successfully collected ₹{t_add_amt} for {t_selected_opt}! Updated Breakdown: {new_bd}")
                 st.rerun()
 
     with ttab3:
@@ -321,13 +363,18 @@ elif menu == "🔐 Admin Panel":
             st.markdown("---")
             st.markdown("### 💵 Deposit Fee / Add Installment")
             if not student_df.empty:
-                f_sid = st.selectbox("Select Student ID to Collect Fee", student_df['Student ID'].unique())
+                selected_admin_st = st.selectbox("Select Student ID to Collect Fee", student_options, key="admin_fee_select")
                 add_amt = st.number_input("Enter New Payment Amount (₹)", min_value=100.0, step=100.0)
                 
                 if st.button("Add Fee Installment"):
+                    f_sid = selected_admin_st.split(" - ")[0]
                     idx = student_df[student_df['Student ID'] == f_sid].index[0]
                     
-                    old_paid = float(student_df.at[idx, 'Paid']) if pd.notnull(student_df.at[idx, 'Paid']) and str(student_df.at[idx, 'Paid']) != "" else 0.0
+                    try:
+                        old_paid = float(student_df.at[idx, 'Paid'])
+                    except:
+                        old_paid = 0.0
+
                     new_paid = old_paid + add_amt
                     student_df.at[idx, 'Paid'] = new_paid
                     
@@ -336,14 +383,15 @@ elif menu == "🔐 Admin Panel":
                     student_df.at[idx, 'Payment Breakdown'] = new_bd
                     
                     save_data(student_df, STUDENT_MASTER_FILE)
-                    st.success(f"Added ₹{add_amt} for {f_sid}! Updated Breakdown: {new_bd}")
+                    st.success(f"Added ₹{add_amt} for {selected_admin_st}! Updated Breakdown: {new_bd}")
                     st.rerun()
 
             # --- EDIT STUDENT PROFILE SECTION ---
             st.markdown("---")
             st.markdown("### ✏️ Edit Student Profile Details")
             if not student_df.empty:
-                edit_sid = st.selectbox("Select Student ID to Edit", student_df['Student ID'].unique(), key="edit_sid_select")
+                edit_selected_st = st.selectbox("Select Student to Edit", student_options, key="edit_sid_select")
+                edit_sid = edit_selected_st.split(" - ")[0]
                 e_row = student_df[student_df['Student ID'] == edit_sid].iloc[0]
 
                 with st.form("edit_student_form"):
@@ -368,17 +416,18 @@ elif menu == "🔐 Admin Panel":
                         student_df.at[e_idx, 'Admission Mode'] = e_mode
 
                         save_data(student_df, STUDENT_MASTER_FILE)
-                        st.success(f"Updated Profile for {edit_sid} successfully!")
+                        st.success(f"Updated Profile for {edit_selected_st} successfully!")
                         st.rerun()
 
             st.markdown("---")
             st.markdown("### 🗑️ Permanent Delete Student")
             if not student_df.empty:
-                del_roll = st.selectbox("Select Student ID to Remove", student_df['Student ID'].unique(), key="del_sid_select")
+                del_selected_st = st.selectbox("Select Student to Remove", student_options, key="del_sid_select")
+                del_roll = del_selected_st.split(" - ")[0]
                 if st.button("Delete Selected Student"):
                     student_df = student_df[student_df['Student ID'] != del_roll]
                     save_data(student_df, STUDENT_MASTER_FILE)
-                    st.success(f"Removed {del_roll} permanently!")
+                    st.success(f"Removed {del_selected_st} permanently!")
                     st.rerun()
 
         with tab2:
