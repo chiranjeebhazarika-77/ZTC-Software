@@ -14,6 +14,7 @@ ATTENDANCE_LOG_FILE = "attendance_log.csv"
 ENQUIRY_FILE = "enquiry_data.csv"
 FEE_FILE = "course_fees_db.csv"
 TEACHER_LOG_FILE = "teacher_attendance.csv"
+FEE_COLLECTION_LOG_FILE = "fee_collection_log.csv" # Teacher collection log
 ROUTINE_FILE = "routine_settings.csv"
 PASSWORD_FILE = "passwords.csv"
 
@@ -25,11 +26,9 @@ def load_clean_data(file_path, default_cols, is_student_file=False):
             if df.empty:
                 return pd.DataFrame(columns=default_cols)
             
-            # Remove duplicate student IDs
             if is_student_file and 'Student ID' in df.columns:
                 df = df.drop_duplicates(subset=['Student ID'], keep='first')
             
-            # Ensure every single default column exists
             for col in default_cols:
                 if col not in df.columns:
                     if col == 'Total Fee':
@@ -65,13 +64,15 @@ def set_admin_password(new_pass):
     pdf = pd.DataFrame([{"password": str(new_pass)}])
     pdf.to_csv(PASSWORD_FILE, index=False)
 
-# Master Column Definition
+# Master Column Definitions
 student_cols = ['Student ID', 'Name', 'Father Name', 'Mother Name', 'Mobile No', 'Address', 'Course', 'Batch', 'Admission Mode', 'Total Fee', 'Paid', 'Payment Breakdown', 'Admission Date']
 attendance_cols = ['Date', 'Student ID', 'Name', 'Action', 'Time']
+fee_collect_cols = ['Date', 'Collected By', 'Student ID', 'Student Name', 'Amount (₹)']
 
 # Load Clean Databases
 student_df = load_clean_data(STUDENT_MASTER_FILE, student_cols, is_student_file=True)
 attendance_df = load_clean_data(ATTENDANCE_LOG_FILE, attendance_cols)
+fee_log_df = load_clean_data(FEE_COLLECTION_LOG_FILE, fee_collect_cols)
 enquiry_db = load_clean_data(ENQUIRY_FILE, ['Name', 'Mobile', 'Course Selected', 'Timestamp'])
 teacher_db = load_clean_data(TEACHER_LOG_FILE, ['Date', 'Shift', 'In-Time', 'Out-Time', 'Subject Taught', 'Status', 'Salary (₹)'])
 routine_db = load_clean_data(ROUTINE_FILE, ['Shift', 'Timing', 'Days', 'Assigned Class'])
@@ -88,7 +89,7 @@ if routine_db.empty:
 if 'fee_settings' not in st.session_state:
     st.session_state.fee_settings = {"ADCA": 8500, "DCA": 5500, "DTP": 4000, "Tally": 4500}
 
-# Helper to map Roll No -> Roll No + Name
+# Helper Options
 student_options = []
 if not student_df.empty:
     student_options = [f"{row['Student ID']} - {row['Name']}" for _, row in student_df.iterrows()]
@@ -185,6 +186,12 @@ elif menu == "🎓 Student Admission & Attendance":
                         new_row = pd.DataFrame([[new_id, s_name, s_father, s_mother, s_mobile, s_address, s_course, s_batch, s_mode, tot_f, s_initial_pay, breakdown, today_date_str]], columns=student_df.columns)
                         student_df = pd.concat([student_df, new_row], ignore_index=True)
                         save_data(student_df, STUDENT_MASTER_FILE)
+
+                        # Auto Log Initial Payment in Collection File
+                        new_log = pd.DataFrame([[today_date_str, "Self Registration / Admin", new_id, s_name, s_initial_pay]], columns=fee_log_df.columns)
+                        fee_log_df = pd.concat([fee_log_df, new_log], ignore_index=True)
+                        save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
+
                         st.success(f"Registered Successfully! Generated Student ID: {new_id}")
 
         with tab2:
@@ -216,12 +223,10 @@ elif menu == "🎓 Student Admission & Attendance":
                     s_info = matched.iloc[0]
                     st_id = s_info['Student ID']
                     
-                    # 1. Attendance Calculation (Min 75%)
                     st_att_count = len(attendance_df[attendance_df['Student ID'] == st_id]) if not attendance_df.empty else 0
                     total_classes = 20  
                     att_pct = round((st_att_count / total_classes) * 100, 1) if total_classes > 0 else 0
                     
-                    # 2. Dynamic Monthly Calculation
                     try:
                         adm_date_str = str(s_info['Admission Date']) if pd.notnull(s_info['Admission Date']) and str(s_info['Admission Date']) != "" else "2026-01-01"
                         adm_dt = datetime.strptime(adm_date_str, "%Y-%m-%d")
@@ -263,7 +268,7 @@ elif menu == "🎓 Student Admission & Attendance":
 
                     st.markdown("### 💳 Fee Status & Payment History Ledger")
                     st.info(f"**Total Course Fee:** ₹{tot} | **Total Paid:** ₹{paid} | **Due Balance:** ₹{tot - paid}")
-                    st.success(f"📊 **Detailed Installments History:** `{breakdown}`")
+                    st.success(f"📊 **Installment Breakdown:** `{breakdown}`")
 
                     st.markdown("### 🎯 Sunday Free Practice Class (SFPC) Criteria")
                     st.write(f"* **Attendance Status:** {st_att_count} Days attended (**{att_pct}%**) [Min Required: 75%]")
@@ -281,12 +286,12 @@ elif menu == "🎓 Student Admission & Attendance":
                     st.error("No Student found with this Roll Number or Mobile Number!")
 
 # ==========================================
-# 3. TEACHER PORTAL
+# 3. TEACHER PORTAL (CLEAN & RESTRICTED VIEW)
 # ==========================================
 elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
     st.title("👨‍🏫 Teacher & Staff Desk")
     
-    ttab1, ttab2, ttab3 = st.tabs(["⏱️ Teacher Log & Attendance", "💵 Collect Student Fee", "📋 Fee History & Daily Class Overview"])
+    ttab1, ttab2 = st.tabs(["⏱️ Teacher Attendance & Class Log", "💵 Collect Fee Counter"])
 
     with ttab1:
         st.subheader("Teacher Shift & Daily Class Logging")
@@ -310,52 +315,47 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
 
     with ttab2:
         st.subheader("💵 Deposit Student Fee (Teacher Counter)")
+        st.info("⚠️ Enter Teacher Name and collect payment amount. Full Ledger details are hidden for privacy.")
+        
         if not student_df.empty:
-            t_selected_opt = st.selectbox("Select Student (Roll No - Name)", student_options, key="t_fee_sid")
-            t_add_amt = st.number_input("Payment Amount Received (₹)", min_value=100.0, step=100.0, key="t_amt")
+            teacher_name_input = st.text_input("Teacher / Staff Name (Who is collecting)", value="")
+            t_selected_opt = st.selectbox("Select Student", student_options, key="t_fee_sid")
+            t_add_amt = st.number_input("Amount Collected (₹)", min_value=100.0, step=100.0, key="t_amt")
 
-            if st.button("Collect & Save Fee"):
-                t_f_sid = t_selected_opt.split(" - ")[0]
-                idx = student_df[student_df['Student ID'] == t_f_sid].index[0]
+            if st.button("📥 Save Fee Collection Entry"):
+                if teacher_name_input.strip() == "":
+                    st.warning("Please enter Teacher Name before saving!")
+                else:
+                    t_f_sid = t_selected_opt.split(" - ")[0]
+                    st_name_val = t_selected_opt.split(" - ")[1] if " - " in t_selected_opt else "Student"
+                    idx = student_df[student_df['Student ID'] == t_f_sid].index[0]
 
-                try:
-                    old_paid = float(student_df.at[idx, 'Paid'])
-                except:
-                    old_paid = 0.0
+                    try:
+                        old_paid = float(student_df.at[idx, 'Paid'])
+                    except:
+                        old_paid = 0.0
 
-                new_paid = old_paid + t_add_amt
-                student_df.at[idx, 'Paid'] = new_paid
+                    new_paid = old_paid + t_add_amt
+                    student_df.at[idx, 'Paid'] = new_paid
 
-                today_date_str = datetime.now().strftime("%Y-%m-%d")
-                old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else f"₹{int(old_paid)}"
-                new_bd = f"{old_bd} | [{today_date_str}] ₹{int(t_add_amt)}"
-                student_df.at[idx, 'Payment Breakdown'] = new_bd
+                    today_date_str = datetime.now().strftime("%Y-%m-%d")
+                    old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else f"₹{int(old_paid)}"
+                    new_bd = f"{old_bd} | [{today_date_str}] ₹{int(t_add_amt)}"
+                    student_df.at[idx, 'Payment Breakdown'] = new_bd
 
-                save_data(student_df, STUDENT_MASTER_FILE)
-                st.success(f"Successfully collected ₹{t_add_amt} for {t_selected_opt}!")
-                st.info(f"Updated History: {new_bd}")
-                st.rerun()
+                    # 1. Save Master Student File
+                    save_data(student_df, STUDENT_MASTER_FILE)
 
-    with ttab3:
-        st.subheader("💳 Student Payment History Ledger")
-        if not student_df.empty:
-            view_st_opt = st.selectbox("Select Student to View Fee History", student_options, key="t_view_fee")
-            v_sid = view_st_opt.split(" - ")[0]
-            v_row = student_df[student_df['Student ID'] == v_sid].iloc[0]
-            
-            v_tot = float(v_row['Total Fee']) if pd.notnull(v_row['Total Fee']) else 8500.0
-            v_paid = float(v_row['Paid']) if pd.notnull(v_row['Paid']) else 0.0
-            v_bd = str(v_row['Payment Breakdown']) if pd.notnull(v_row['Payment Breakdown']) else str(int(v_paid))
-            
-            st.info(f"**Student:** {v_row['Name']} ({v_sid}) | **Total Fee:** ₹{v_tot} | **Total Paid:** ₹{v_paid} | **Due:** ₹{v_tot - v_paid}")
-            st.success(f"📋 **Installment Breakdown:** `{v_bd}`")
+                    # 2. Save Teacher Collection Audit Log File
+                    new_fee_entry = pd.DataFrame([[today_date_str, teacher_name_input, t_f_sid, st_name_val, t_add_amt]], columns=fee_log_df.columns)
+                    fee_log_df = pd.concat([fee_log_df, new_fee_entry], ignore_index=True)
+                    save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
 
-        st.markdown("---")
-        st.subheader("📋 Recent Teacher Entries & Logs")
-        st.dataframe(teacher_db, use_container_width=True)
+                    st.success(f"✅ Successfully collected ₹{t_add_amt} from {st_name_val} ({t_f_sid}) by {teacher_name_input}!")
+                    st.rerun()
 
 # ==========================================
-# 4. ADMIN PANEL
+# 4. ADMIN PANEL (FULL ADVANCED CONTROL)
 # ==========================================
 elif menu == "🔐 Admin Panel":
     st.title("🔐 Director / Admin Control Panel")
@@ -366,57 +366,38 @@ elif menu == "🔐 Admin Panel":
     if pwd == current_admin_pass:
         st.success("Access Granted. Welcome Sir!")
 
-        tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Student Registry & Fee Entry", "⏱️ Attendance History", "📩 Enquiries", "👨‍🏫 Teacher Operations", "🔑 Admin Password"])
+        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+            "📊 Student Registry & Fee", 
+            "🧾 Fee Collection Log (Who Collected)", 
+            "⏱️ Attendance History", 
+            "📩 Enquiries", 
+            "👨‍🏫 Teacher Operations", 
+            "🔑 Admin Password"
+        ])
 
         with tab1:
             st.markdown("### Master Student Records Manager")
             st.dataframe(student_df, use_container_width=True)
 
-            st.markdown("---")
-            st.markdown("### 💵 Deposit Fee / Add Installment")
-            if not student_df.empty:
-                selected_admin_st = st.selectbox("Select Student ID to Collect Fee", student_options, key="admin_fee_select")
-                add_amt = st.number_input("Enter New Payment Amount (₹)", min_value=100.0, step=100.0)
-                
-                if st.button("Add Fee Installment"):
-                    f_sid = selected_admin_st.split(" - ")[0]
-                    idx = student_df[student_df['Student ID'] == f_sid].index[0]
-                    
-                    try:
-                        old_paid = float(student_df.at[idx, 'Paid'])
-                    except:
-                        old_paid = 0.0
-
-                    new_paid = old_paid + add_amt
-                    student_df.at[idx, 'Paid'] = new_paid
-                    
-                    today_date_str = datetime.now().strftime("%Y-%m-%d")
-                    old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else f"₹{int(old_paid)}"
-                    new_bd = f"{old_bd} | [{today_date_str}] ₹{int(add_amt)}"
-                    student_df.at[idx, 'Payment Breakdown'] = new_bd
-                    
-                    save_data(student_df, STUDENT_MASTER_FILE)
-                    st.success(f"Added ₹{add_amt} for {selected_admin_st}!")
-                    st.info(f"Updated Payment Breakdown: {new_bd}")
-                    st.rerun()
-
             # --- SEARCH & VIEW SPECIFIC STUDENT FEE LEDGER ---
             st.markdown("---")
-            st.markdown("### 💳 Search & Check Individual Fee Ledger")
+            st.markdown("### 💳 Student Installment Ledger & Remaining Balance")
             if not student_df.empty:
-                chk_st_opt = st.selectbox("Select Student to Check Fee History", student_options, key="admin_chk_fee")
+                chk_st_opt = st.selectbox("Select Student to Check Fee Ledger", student_options, key="admin_chk_fee")
                 chk_sid = chk_st_opt.split(" - ")[0]
                 chk_row = student_df[student_df['Student ID'] == chk_sid].iloc[0]
                 
                 c_tot = float(chk_row['Total Fee']) if pd.notnull(chk_row['Total Fee']) else 8500.0
                 c_paid = float(chk_row['Paid']) if pd.notnull(chk_row['Paid']) else 0.0
+                c_due = c_tot - c_paid
                 c_bd = str(chk_row['Payment Breakdown']) if pd.notnull(chk_row['Payment Breakdown']) else str(int(c_paid))
                 
                 col1, col2, col3 = st.columns(3)
                 col1.metric("Total Course Fee", f"₹{c_tot}")
                 col2.metric("Total Fee Paid", f"₹{c_paid}")
-                col3.metric("Pending Balance (Due)", f"₹{c_tot - c_paid}")
-                st.success(f"📋 **Complete Payment History Log:** `{c_bd}`")
+                col3.metric("Pending Due Balance", f"₹{c_due}", delta=f"-₹{c_due}" if c_due > 0 else "Cleared")
+                
+                st.success(f"📋 **Installments Paid History:** `{c_bd}`")
 
             # --- EDIT STUDENT PROFILE SECTION ---
             st.markdown("---")
@@ -463,18 +444,23 @@ elif menu == "🔐 Admin Panel":
                     st.rerun()
 
         with tab2:
+            st.markdown("### 🧾 Teacher / Staff Fee Collection Audit Log")
+            st.info("Here you can trace exactly WHICH teacher collected HOW MUCH money, from WHOM, and on WHICH DATE.")
+            st.dataframe(fee_log_df, use_container_width=True)
+
+        with tab3:
             st.markdown("### Daily Attendance Logs")
             st.dataframe(attendance_df, use_container_width=True)
 
-        with tab3:
+        with tab4:
             st.markdown("### Received Enquiries")
             st.dataframe(enquiry_db, use_container_width=True)
 
-        with tab4:
+        with tab5:
             st.markdown("### 🔒 Teacher Private Ledger & Wage Tracking")
             st.dataframe(teacher_db, use_container_width=True)
 
-        with tab5:
+        with tab6:
             st.markdown("### 🔑 Change Admin Password")
             with st.form("change_pass_form"):
                 new_p1 = st.text_input("New Password", type="password")
