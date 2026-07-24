@@ -252,7 +252,53 @@ elif menu == "🎓 Student Admission & Attendance":
 # ==========================================
 elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
     st.title("👨‍🏫 Teacher & Staff Desk")
-    st.info("Log Daily Classes and Access Teacher Resources")
+    
+    ttab1, ttab2, ttab3 = st.tabs(["⏱️ Teacher Log & Attendance", "💵 Collect Student Fee", "📋 Today's Class Overview"])
+
+    with ttab1:
+        st.subheader("Teacher Shift & Daily Class Logging")
+        with st.form("teacher_log_form"):
+            t_shift = st.selectbox("Shift", ["Morning Shift", "Afternoon Shift", "Evening Shift"])
+            t_in = st.time_input("In-Time", datetime.now().time())
+            t_out = st.time_input("Out-Time", datetime.now().time())
+            t_subject = st.text_input("Subject / Topic Taught Today")
+            t_status = st.selectbox("Status", ["Present", "Half Day", "Leave"])
+            t_salary = st.number_input("Allowance/Wage (₹)", min_value=0.0, value=0.0)
+
+            if st.form_submit_button("Submit Teacher Log"):
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                t_in_str = t_in.strftime("%I:%M %p")
+                t_out_str = t_out.strftime("%I:%M %p")
+
+                new_t_log = pd.DataFrame([[today_str, t_shift, t_in_str, t_out_str, t_subject, t_status, t_salary]], columns=teacher_db.columns)
+                teacher_db = pd.concat([teacher_db, new_t_log], ignore_index=True)
+                save_data(teacher_db, TEACHER_LOG_FILE)
+                st.success(f"Teacher Log recorded for {today_str} ({t_shift})!")
+
+    with ttab2:
+        st.subheader("💵 Deposit Student Fee (Teacher Counter)")
+        if not student_df.empty:
+            t_f_sid = st.selectbox("Select Student ID", student_df['Student ID'].unique(), key="t_fee_sid")
+            t_add_amt = st.number_input("Payment Amount Received (₹)", min_value=100.0, step=100.0, key="t_amt")
+
+            if st.button("Collect & Save Fee"):
+                idx = student_df[student_df['Student ID'] == t_f_sid].index[0]
+
+                old_paid = float(student_df.at[idx, 'Paid']) if pd.notnull(student_df.at[idx, 'Paid']) and str(student_df.at[idx, 'Paid']) != "" else 0.0
+                new_paid = old_paid + t_add_amt
+                student_df.at[idx, 'Paid'] = new_paid
+
+                old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else str(int(old_paid))
+                new_bd = f"{old_bd} + {int(t_add_amt)}"
+                student_df.at[idx, 'Payment Breakdown'] = new_bd
+
+                save_data(student_df, STUDENT_MASTER_FILE)
+                st.success(f"Successfully collected ₹{t_add_amt} for {t_f_sid}! Updated Breakdown: {new_bd}")
+                st.rerun()
+
+    with ttab3:
+        st.subheader("📋 Recent Teacher Entries & Logs")
+        st.dataframe(teacher_db, use_container_width=True)
 
 # ==========================================
 # 4. ADMIN PANEL
