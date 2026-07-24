@@ -179,8 +179,8 @@ elif menu == "🎓 Student Admission & Attendance":
                     if s_name and s_mobile:
                         new_id = f"STC26-00{len(student_df)+1}"
                         tot_f = st.session_state.fee_settings.get(s_course, 5000)
-                        breakdown = f"{int(s_initial_pay)}"
                         today_date_str = datetime.now().strftime("%Y-%m-%d")
+                        breakdown = f"[{today_date_str}] ₹{int(s_initial_pay)}"
                         
                         new_row = pd.DataFrame([[new_id, s_name, s_father, s_mother, s_mobile, s_address, s_course, s_batch, s_mode, tot_f, s_initial_pay, breakdown, today_date_str]], columns=student_df.columns)
                         student_df = pd.concat([student_df, new_row], ignore_index=True)
@@ -221,7 +221,7 @@ elif menu == "🎓 Student Admission & Attendance":
                     total_classes = 20  
                     att_pct = round((st_att_count / total_classes) * 100, 1) if total_classes > 0 else 0
                     
-                    # 2. Dynamic Monthly Calculation based on Enrollment Date
+                    # 2. Dynamic Monthly Calculation
                     try:
                         adm_date_str = str(s_info['Admission Date']) if pd.notnull(s_info['Admission Date']) and str(s_info['Admission Date']) != "" else "2026-01-01"
                         adm_dt = datetime.strptime(adm_date_str, "%Y-%m-%d")
@@ -230,9 +230,8 @@ elif menu == "🎓 Student Admission & Attendance":
 
                     today_dt = datetime.now()
                     days_passed = (today_dt - adm_dt).days
-                    months_enrolled = max(1, round(days_passed / 30.0, 1))  # Auto calculate months (Min 1 month)
+                    months_enrolled = max(1, round(days_passed / 30.0, 1))
 
-                    # Fee Values
                     try:
                         tot = float(s_info['Total Fee'])
                     except:
@@ -243,7 +242,7 @@ elif menu == "🎓 Student Admission & Attendance":
                     except:
                         paid = 0.0
 
-                    breakdown = str(s_info['Payment Breakdown']) if pd.notnull(s_info['Payment Breakdown']) and str(s_info['Payment Breakdown']) != "" else str(int(paid))
+                    breakdown = str(s_info['Payment Breakdown']) if pd.notnull(s_info['Payment Breakdown']) and str(s_info['Payment Breakdown']) != "" else f"₹{int(paid)}"
                     
                     monthly_rate = 550
                     total_monthly_due_till_now = months_enrolled * monthly_rate
@@ -262,25 +261,22 @@ elif menu == "🎓 Student Admission & Attendance":
                     c3.write(f"**Address:** {s_info['Address']}")
                     c3.write(f"**Admission Date:** {s_info['Admission Date']}")
 
-                    st.markdown("### 💳 Fee Status & Auto Monthly Breakdown")
+                    st.markdown("### 💳 Fee Status & Payment History Ledger")
                     st.info(f"**Total Course Fee:** ₹{tot} | **Total Paid:** ₹{paid} | **Due Balance:** ₹{tot - paid}")
-                    st.success(f"📊 **Payment History:** `{breakdown}` = **₹{paid}**")
-                    st.write(f"* **Months Passed Since Admission:** **{months_enrolled} Month(s)** (Auto-calculated)")
-                    st.write(f"* **Monthly Rate:** ₹550/month | **Calculated Due Till Today:** ₹{total_monthly_due_till_now}")
-                    st.write(f"* **Required 50% Clear Amount:** ₹{required_50_pct_monthly} (Monthly 50%) + ₹999 (Admission) = **₹{min_required_fee_total}**")
+                    st.success(f"📊 **Detailed Installments History:** `{breakdown}`")
 
                     st.markdown("### 🎯 Sunday Free Practice Class (SFPC) Criteria")
                     st.write(f"* **Attendance Status:** {st_att_count} Days attended (**{att_pct}%**) [Min Required: 75%]")
                     st.write(f"* **Calculated Fee Status:** Paid ₹{paid} / Required ₹{min_required_fee_total}")
 
                     if att_pct >= 75 and fee_cleared:
-                        st.success("🎉 **STATUS: ELIGIBLE FOR SUNDAY FREE PRACTICE CLASS (SFPC)!**\nAttendance ≥ 75% and 50% monthly installment is clear.")
+                        st.success("🎉 **STATUS: ELIGIBLE FOR SUNDAY FREE PRACTICE CLASS (SFPC)!**")
                     else:
                         st.error("⚠️ **STATUS: NOT ELIGIBLE FOR SFPC YET.**")
                         if att_pct < 75:
                             st.warning(f"❌ Attendance Low: Currently {att_pct}%. Needs minimum 75%.")
                         if not fee_cleared:
-                            st.warning(f"❌ Fee Due: Need to pay at least ₹{min_required_fee_total} to unlock SFPC (Admission + 50% of monthly dues).")
+                            st.warning(f"❌ Fee Due: Need to pay at least ₹{min_required_fee_total} (Admission + 50% monthly dues).")
                 else:
                     st.error("No Student found with this Roll Number or Mobile Number!")
 
@@ -290,7 +286,7 @@ elif menu == "🎓 Student Admission & Attendance":
 elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
     st.title("👨‍🏫 Teacher & Staff Desk")
     
-    ttab1, ttab2, ttab3 = st.tabs(["⏱️ Teacher Log & Attendance", "💵 Collect Student Fee", "📋 Today's Class Overview"])
+    ttab1, ttab2, ttab3 = st.tabs(["⏱️ Teacher Log & Attendance", "💵 Collect Student Fee", "📋 Fee History & Daily Class Overview"])
 
     with ttab1:
         st.subheader("Teacher Shift & Daily Class Logging")
@@ -330,15 +326,31 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
                 new_paid = old_paid + t_add_amt
                 student_df.at[idx, 'Paid'] = new_paid
 
-                old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else str(int(old_paid))
-                new_bd = f"{old_bd} + {int(t_add_amt)}"
+                today_date_str = datetime.now().strftime("%Y-%m-%d")
+                old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else f"₹{int(old_paid)}"
+                new_bd = f"{old_bd} | [{today_date_str}] ₹{int(t_add_amt)}"
                 student_df.at[idx, 'Payment Breakdown'] = new_bd
 
                 save_data(student_df, STUDENT_MASTER_FILE)
-                st.success(f"Successfully collected ₹{t_add_amt} for {t_selected_opt}! Updated Breakdown: {new_bd}")
+                st.success(f"Successfully collected ₹{t_add_amt} for {t_selected_opt}!")
+                st.info(f"Updated History: {new_bd}")
                 st.rerun()
 
     with ttab3:
+        st.subheader("💳 Student Payment History Ledger")
+        if not student_df.empty:
+            view_st_opt = st.selectbox("Select Student to View Fee History", student_options, key="t_view_fee")
+            v_sid = view_st_opt.split(" - ")[0]
+            v_row = student_df[student_df['Student ID'] == v_sid].iloc[0]
+            
+            v_tot = float(v_row['Total Fee']) if pd.notnull(v_row['Total Fee']) else 8500.0
+            v_paid = float(v_row['Paid']) if pd.notnull(v_row['Paid']) else 0.0
+            v_bd = str(v_row['Payment Breakdown']) if pd.notnull(v_row['Payment Breakdown']) else str(int(v_paid))
+            
+            st.info(f"**Student:** {v_row['Name']} ({v_sid}) | **Total Fee:** ₹{v_tot} | **Total Paid:** ₹{v_paid} | **Due:** ₹{v_tot - v_paid}")
+            st.success(f"📋 **Installment Breakdown:** `{v_bd}`")
+
+        st.markdown("---")
         st.subheader("📋 Recent Teacher Entries & Logs")
         st.dataframe(teacher_db, use_container_width=True)
 
@@ -378,13 +390,33 @@ elif menu == "🔐 Admin Panel":
                     new_paid = old_paid + add_amt
                     student_df.at[idx, 'Paid'] = new_paid
                     
-                    old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else str(int(old_paid))
-                    new_bd = f"{old_bd} + {int(add_amt)}"
+                    today_date_str = datetime.now().strftime("%Y-%m-%d")
+                    old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else f"₹{int(old_paid)}"
+                    new_bd = f"{old_bd} | [{today_date_str}] ₹{int(add_amt)}"
                     student_df.at[idx, 'Payment Breakdown'] = new_bd
                     
                     save_data(student_df, STUDENT_MASTER_FILE)
-                    st.success(f"Added ₹{add_amt} for {selected_admin_st}! Updated Breakdown: {new_bd}")
+                    st.success(f"Added ₹{add_amt} for {selected_admin_st}!")
+                    st.info(f"Updated Payment Breakdown: {new_bd}")
                     st.rerun()
+
+            # --- SEARCH & VIEW SPECIFIC STUDENT FEE LEDGER ---
+            st.markdown("---")
+            st.markdown("### 💳 Search & Check Individual Fee Ledger")
+            if not student_df.empty:
+                chk_st_opt = st.selectbox("Select Student to Check Fee History", student_options, key="admin_chk_fee")
+                chk_sid = chk_st_opt.split(" - ")[0]
+                chk_row = student_df[student_df['Student ID'] == chk_sid].iloc[0]
+                
+                c_tot = float(chk_row['Total Fee']) if pd.notnull(chk_row['Total Fee']) else 8500.0
+                c_paid = float(chk_row['Paid']) if pd.notnull(chk_row['Paid']) else 0.0
+                c_bd = str(chk_row['Payment Breakdown']) if pd.notnull(chk_row['Payment Breakdown']) else str(int(c_paid))
+                
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Total Course Fee", f"₹{c_tot}")
+                col2.metric("Total Fee Paid", f"₹{c_paid}")
+                col3.metric("Pending Balance (Due)", f"₹{c_tot - c_paid}")
+                st.success(f"📋 **Complete Payment History Log:** `{c_bd}`")
 
             # --- EDIT STUDENT PROFILE SECTION ---
             st.markdown("---")
