@@ -21,6 +21,11 @@ ROUTINE_FILE = "routine_settings.csv"
 PASSWORD_FILE = "passwords.csv"
 TEACHER_PIN_FILE = "teacher_pin.csv"
 LOGO_FILE = "logo.jpg"
+PHOTOS_DIR = "student_photos"
+
+# Ensure Photos Directory Exists
+if not os.path.exists(PHOTOS_DIR):
+    os.makedirs(PHOTOS_DIR)
 
 # Load Data Safely & Fix Missing Columns
 def load_clean_data(file_path, default_cols, is_student_file=False):
@@ -139,7 +144,7 @@ if not teachers_master_df.empty:
 menu = st.sidebar.radio("Navigation", ["🏠 Home & Enquiry", "🎓 Student Admission & Attendance", "👨‍🏫 Teacher Portal & Fee Entry", "🔐 Admin Panel"])
 
 # ==========================================
-# 1. PUBLIC DASHBOARD
+# 1. PUBLIC DASHBOARD (MOVING NAME & PHOTO)
 # ==========================================
 if menu == "🏠 Home & Enquiry":
     header_col1, header_col2 = st.columns([1, 4])
@@ -156,8 +161,14 @@ if menu == "🏠 Home & Enquiry":
 
     st.markdown("---")
 
-    # --- TOP HIGHLIGHT: STUDENT OF THE MONTH ---
+    # --- TOP HIGHLIGHT: MOVING STUDENT OF THE MONTH WITH PHOTO ---
     st.markdown("### 🏆 Student of the Month")
+    
+    top_name = "To Be Announced"
+    top_st_id = ""
+    top_count = 0
+    photo_path = ""
+
     if not attendance_df.empty:
         top_att = attendance_df['Student ID'].value_counts()
         if not top_att.empty:
@@ -166,9 +177,29 @@ if menu == "🏠 Home & Enquiry":
             matched_top = student_df[student_df['Student ID'] == top_st_id]
             top_name = matched_top.iloc[0]['Name'] if not matched_top.empty else top_st_id
             
-            st.success(f"🌟 **Congratulations!** **{top_name}** ({top_st_id}) is our **Student of the Month** with **{top_count}** class attendances! 🎉")
-    else:
-        st.info("🌟 **Student of the Month:** Will be announced based on attendance performance!")
+            potential_photo = os.path.join(PHOTOS_DIR, f"{top_st_id}.jpg")
+            if os.path.exists(potential_photo):
+                photo_path = potential_photo
+
+    card_col1, card_col2 = st.columns([1, 4])
+    with card_col1:
+        if photo_path and os.path.exists(photo_path):
+            st.image(photo_path, caption=f"Winner: {top_name}", width=140)
+        else:
+            st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", caption="Student Avatar", width=120)
+
+    with card_col2:
+        # Moving Animated Marquee Text
+        marquee_html = f'''
+        <div style="background-color: #fff3cd; border: 2px solid #ffeba2; padding: 15px; border-radius: 10px;">
+            <marquee behavior="scroll" direction="left" scrollamount="7" style="font-size: 20px; font-weight: bold; color: #856404;">
+                🌟 Congratulations! 🎉 <b>{top_name}</b> ({top_st_id}) is named STUDENT OF THE MONTH with an outstanding <b>{top_count}</b> Class Attendances! Keep up the brilliant work! 🌟
+            </marquee>
+        </div>
+        '''
+        st.markdown(marquee_html, unsafe_allow_html=True)
+
+    st.markdown("---")
 
     col1, col2 = st.columns([2, 1])
 
@@ -212,17 +243,15 @@ if menu == "🏠 Home & Enquiry":
                 if enq_name and enq_mobile:
                     selected_fee = st.session_state.fee_settings.get(enq_course, 5000)
                     
-                    # Save Enquiry Data
                     new_enq = pd.DataFrame([[enq_name, enq_mobile, enq_course, datetime.now().strftime("%Y-%m-%d %H:%M")]], columns=enquiry_db.columns)
                     enquiry_db = pd.concat([enquiry_db, new_enq], ignore_index=True)
                     save_data(enquiry_db, ENQUIRY_FILE)
 
                     st.success(f"✅ **Enquiry Registered!** Total Course Fee for **{enq_course}** is **₹{selected_fee}/-**")
 
-                    # WhatsApp Link
                     msg_text = f"Hello Soft Tech Computers!\nI submitted an enquiry:\nName: {enq_name}\nPhone: {enq_mobile}\nCourse: {enq_course}"
                     encoded_msg = urllib.parse.quote(msg_text)
-                    whatsapp_number = "919101026718"
+                    whatsapp_number = "919854341170"
                     whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}"
 
                     st.markdown(f'''
@@ -236,7 +265,7 @@ if menu == "🏠 Home & Enquiry":
                     st.error("⚠️ Please fill in both Name and Mobile Number to view fee!")
 
 # ==========================================
-# 2. STUDENT PORTAL
+# 2. STUDENT PORTAL (WITH PHOTO UPLOAD)
 # ==========================================
 elif menu == "🎓 Student Admission & Attendance":
     st.title("🎓 Student Self-Service Portal")
@@ -255,6 +284,8 @@ elif menu == "🎓 Student Admission & Attendance":
                 s_mobile = col_b.text_input("Mobile Number *")
                 s_father = col_a.text_input("Father's Name *")
                 s_mother = col_b.text_input("Mother's Name *")
+                
+                s_photo = st.file_uploader("Upload Student Photo (JPG/PNG)", type=['jpg', 'jpeg', 'png'])
 
                 st.markdown("---")
                 st.markdown("#### 🏡 Mandatory Address Breakup")
@@ -286,6 +317,12 @@ elif menu == "🎓 Student Admission & Attendance":
                         tot_f = st.session_state.fee_settings.get(s_course, 5000)
                         today_date_str = datetime.now().strftime("%Y-%m-%d")
                         
+                        # Save Photo
+                        if s_photo is not None:
+                            photo_save_path = os.path.join(PHOTOS_DIR, f"{new_id}.jpg")
+                            with open(photo_save_path, "wb") as f:
+                                f.write(s_photo.getbuffer())
+
                         formatted_address = f"Vill- {addr_vill}, P.O.- {addr_po}, P.S.- {addr_ps}, PIN- {addr_pin}, Dist- {addr_dist}"
                         breakdown = f"[{today_date_str}] ₹{int(s_initial_pay)} ({s_pay_mode})"
                         
@@ -377,6 +414,11 @@ elif menu == "🎓 Student Admission & Attendance":
                     
                     st.markdown("---")
                     st.markdown(f"### 👤 Profile Details: **{s_info['Name']}** ({st_id})")
+                    
+                    p_path = os.path.join(PHOTOS_DIR, f"{st_id}.jpg")
+                    if os.path.exists(p_path):
+                        st.image(p_path, width=120)
+
                     c1, c2, c3 = st.columns(3)
                     c1.write(f"**Course:** {s_info['Course']}")
                     c1.write(f"**Batch:** {s_info['Batch']}")
