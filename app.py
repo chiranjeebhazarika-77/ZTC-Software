@@ -139,7 +139,7 @@ if not teachers_master_df.empty:
 menu = st.sidebar.radio("Navigation", ["🏠 Home & Enquiry", "🎓 Student Admission & Attendance", "👨‍🏫 Teacher Portal & Fee Entry", "🔐 Admin Panel"])
 
 # ==========================================
-# 1. PUBLIC DASHBOARD (COLORFUL, ISO CERTIFIED & LOGO)
+# 1. PUBLIC DASHBOARD
 # ==========================================
 if menu == "🏠 Home & Enquiry":
     header_col1, header_col2 = st.columns([1, 4])
@@ -156,7 +156,7 @@ if menu == "🏠 Home & Enquiry":
 
     st.markdown("---")
 
-    # --- TOP HIGHLIGHT: STUDENT OF THE MONTH (AUTO CALCULATED) ---
+    # --- TOP HIGHLIGHT: STUDENT OF THE MONTH ---
     st.markdown("### 🏆 Student of the Month")
     if not attendance_df.empty:
         top_att = attendance_df['Student ID'].value_counts()
@@ -184,7 +184,6 @@ if menu == "🏠 Home & Enquiry":
         st.markdown("### 🤖 Smart AI Course Recommendation Assistant")
         with st.expander("✨ Find the Best Course for You"):
             user_interest = st.selectbox("What is your primary goal?", ["Basic Computer Knowledge", "Office Work & Jobs", "Graphic Design & Publishing", "Accounting & Finance"])
-            time_pref = st.radio("Preferred Time Slot", ["1 to 3 Months", "6 Months", "1 Year Advanced"])
             
             if user_interest == "Basic Computer Knowledge":
                 st.write("👉 **Recommended:** **DCA (Diploma in Computer Applications)** — Fee: ₹5,500/-")
@@ -201,25 +200,27 @@ if menu == "🏠 Home & Enquiry":
 
     with col2:
         st.markdown("### ✉️ Quick Course Enquiry")
-        enq_course = st.selectbox("Select Course/Class", list(st.session_state.fee_settings.keys()), index=0, key="quick_enq_c")
-        
-        # Real-time Fee Display upon Selection
-        selected_fee = st.session_state.fee_settings.get(enq_course, 5000)
-        st.success(f"💰 **Selected Course Fee:** ₹ {selected_fee}/-")
+        st.info("💡 **Enter Name & Mobile No below and submit to view Course Fee.**")
 
-        with st.form("enquiry_form", clear_on_submit=True):
-            enq_name = st.text_input("Student Name")
-            enq_mobile = st.text_input("Mobile Number")
+        with st.form("enquiry_form"):
+            enq_name = st.text_input("Student Name *")
+            enq_mobile = st.text_input("Mobile Number *")
+            enq_course = st.selectbox("Select Course/Class *", list(st.session_state.fee_settings.keys()), index=0)
 
-            submitted = st.form_submit_button("Submit Enquiry")
+            submitted = st.form_submit_button("Submit Enquiry to View Fee")
             if submitted:
                 if enq_name and enq_mobile:
+                    selected_fee = st.session_state.fee_settings.get(enq_course, 5000)
+                    
+                    # Save Enquiry Data
                     new_enq = pd.DataFrame([[enq_name, enq_mobile, enq_course, datetime.now().strftime("%Y-%m-%d %H:%M")]], columns=enquiry_db.columns)
                     enquiry_db = pd.concat([enquiry_db, new_enq], ignore_index=True)
                     save_data(enquiry_db, ENQUIRY_FILE)
-                    st.success("✅ **Enquiry registered successfully!**")
 
-                    msg_text = f"Hello Soft Tech Computers!\nNew Enquiry Received:\nName: {enq_name}\nPhone: {enq_mobile}\nCourse: {enq_course}"
+                    st.success(f"✅ **Enquiry Registered!** Total Course Fee for **{enq_course}** is **₹{selected_fee}/-**")
+
+                    # WhatsApp Link
+                    msg_text = f"Hello Soft Tech Computers!\nI submitted an enquiry:\nName: {enq_name}\nPhone: {enq_mobile}\nCourse: {enq_course}"
                     encoded_msg = urllib.parse.quote(msg_text)
                     whatsapp_number = "919854341170"
                     whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}"
@@ -232,10 +233,10 @@ if menu == "🏠 Home & Enquiry":
                         </a>
                     ''', unsafe_allow_html=True)
                 else:
-                    st.warning("Please fill in both Name and Mobile Number.")
+                    st.error("⚠️ Please fill in both Name and Mobile Number to view fee!")
 
 # ==========================================
-# 2. STUDENT PORTAL (DUPLICATE MOBILE BLOCK & FEEDBACK)
+# 2. STUDENT PORTAL
 # ==========================================
 elif menu == "🎓 Student Admission & Attendance":
     st.title("🎓 Student Self-Service Portal")
@@ -276,7 +277,6 @@ elif menu == "🎓 Student Admission & Attendance":
                 s_pay_mode = p_col2.selectbox("Payment Mode *", PAYMENT_MODES)
 
                 if st.form_submit_button("🎓 Confirm Registration"):
-                    # Check Duplicate Mobile Number
                     existing_mobiles = student_df['Mobile No'].astype(str).tolist() if not student_df.empty else []
                     
                     if str(s_mobile).strip() in existing_mobiles:
@@ -304,7 +304,7 @@ elif menu == "🎓 Student Admission & Attendance":
 
         with tab2:
             st.subheader("Mark Daily Attendance (Private Search)")
-            st.info("🔎 Search student by Roll No or Mobile No to mark attendance (Dropdown disabled for privacy).")
+            st.info("🔎 Search student by Roll No or Mobile No to mark attendance.")
             
             att_search = st.text_input("Enter Student Roll Number or Mobile Number", key="att_s_q")
             if att_search:
@@ -508,7 +508,7 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
         st.error("Incorrect Teacher Passcode/PIN!")
 
 # ==========================================
-# 4. ADMIN PANEL (FEEDBACK VIEW & FULL CONTROL)
+# 4. ADMIN PANEL
 # ==========================================
 elif menu == "🔐 Admin Panel":
     st.title("🔐 Director / Admin Control Panel")
