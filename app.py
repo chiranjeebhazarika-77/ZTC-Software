@@ -16,9 +16,11 @@ FEE_FILE = "course_fees_db.csv"
 TEACHER_LOG_FILE = "teacher_attendance.csv"
 TEACHERS_MASTER_FILE = "teachers_db.csv"
 FEE_COLLECTION_LOG_FILE = "fee_collection_log.csv"
+FEEDBACK_FILE = "student_feedback.csv"
 ROUTINE_FILE = "routine_settings.csv"
 PASSWORD_FILE = "passwords.csv"
 TEACHER_PIN_FILE = "teacher_pin.csv"
+LOGO_FILE = "logo.jpg"
 
 # Load Data Safely & Fix Missing Columns
 def load_clean_data(file_path, default_cols, is_student_file=False):
@@ -86,6 +88,7 @@ attendance_cols = ['Date', 'Student ID', 'Name', 'Action', 'Time']
 fee_collect_cols = ['Date', 'Collected By', 'Student ID', 'Student Name', 'Amount (₹)', 'Payment Mode']
 teacher_cols = ['Date', 'Teacher Name', 'Shift', 'In-Time', 'Out-Time', 'Class Type', 'Topics Taught', 'Status', 'Shift Wage (₹)']
 teacher_master_cols = ['Teacher ID', 'Teacher Name', 'Mobile No', 'Designation']
+feedback_cols = ['Timestamp', 'Student Name / ID', 'Rating', 'Teaching Quality', 'Lab Infrastructure', 'Comments']
 
 # Load Clean Databases
 student_df = load_clean_data(STUDENT_MASTER_FILE, student_cols, is_student_file=True)
@@ -94,6 +97,7 @@ fee_log_df = load_clean_data(FEE_COLLECTION_LOG_FILE, fee_collect_cols)
 enquiry_db = load_clean_data(ENQUIRY_FILE, ['Name', 'Mobile', 'Course Selected', 'Timestamp'])
 teacher_db = load_clean_data(TEACHER_LOG_FILE, teacher_cols)
 teachers_master_df = load_clean_data(TEACHERS_MASTER_FILE, teacher_master_cols)
+feedback_db = load_clean_data(FEEDBACK_FILE, feedback_cols)
 routine_db = load_clean_data(ROUTINE_FILE, ['Shift', 'Timing', 'Days', 'Assigned Class'])
 
 # Default Teachers if master is empty
@@ -115,7 +119,6 @@ if routine_db.empty:
 if 'fee_settings' not in st.session_state:
     st.session_state.fee_settings = {"ADCA": 8500, "DCA": 5500, "DTP": 4000, "Tally": 4500}
 
-# Available Constants
 AVAILABLE_TOPICS = [
     "Basic", "Word", "Excel", "PPT", "Access", "HTML", "DHTML", 
     "Tally", "Python", "PageMaker", "Photoshop", "Internet", "Paint", "WordPad", "Notepad"
@@ -136,11 +139,36 @@ if not teachers_master_df.empty:
 menu = st.sidebar.radio("Navigation", ["🏠 Home & Enquiry", "🎓 Student Admission & Attendance", "👨‍🏫 Teacher Portal & Fee Entry", "🔐 Admin Panel"])
 
 # ==========================================
-# 1. PUBLIC DASHBOARD
+# 1. PUBLIC DASHBOARD (COLORFUL, ISO CERTIFIED & LOGO)
 # ==========================================
 if menu == "🏠 Home & Enquiry":
-    st.title("Welcome to Soft Tech Computers")
-    st.subheader("Kamarchuburi, Thelamara, Sonitpur, Assam")
+    header_col1, header_col2 = st.columns([1, 4])
+    with header_col1:
+        if os.path.exists(LOGO_FILE):
+            st.image(LOGO_FILE, width=130)
+        else:
+            st.title("💻 STC")
+            
+    with header_col2:
+        st.markdown("<h1 style='color: #004085; margin-bottom: 0px;'>Soft Tech Computers</h1>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #28a745; margin-top: 0px;'>An ISO 9001:2015 Certified Computer Training Institute | Since 2020</h4>", unsafe_allow_html=True)
+        st.write("📍 **Location:** Kamarchuburi, Thelamara, Sonitpur, Assam - 784149 (Associate Center Code: 4159)")
+
+    st.markdown("---")
+
+    # --- TOP HIGHLIGHT: STUDENT OF THE MONTH (AUTO CALCULATED) ---
+    st.markdown("### 🏆 Student of the Month")
+    if not attendance_df.empty:
+        top_att = attendance_df['Student ID'].value_counts()
+        if not top_att.empty:
+            top_st_id = top_att.index[0]
+            top_count = top_att.iloc[0]
+            matched_top = student_df[student_df['Student ID'] == top_st_id]
+            top_name = matched_top.iloc[0]['Name'] if not matched_top.empty else top_st_id
+            
+            st.success(f"🌟 **Congratulations!** **{top_name}** ({top_st_id}) is our **Student of the Month** with **{top_count}** class attendances! 🎉")
+    else:
+        st.info("🌟 **Student of the Month:** Will be announced based on attendance performance!")
 
     col1, col2 = st.columns([2, 1])
 
@@ -152,19 +180,36 @@ if menu == "🏠 Home & Enquiry":
         fees_list = [{"Course/Class": k, "Total Course Fee": f"₹ {v}/-"} for k, v in st.session_state.fee_settings.items()]
         st.table(pd.DataFrame(fees_list))
 
+        # --- AI COURSE ADVISOR FEATURE ---
+        st.markdown("### 🤖 Smart AI Course Recommendation Assistant")
+        with st.expander("✨ Find the Best Course for You"):
+            user_interest = st.selectbox("What is your primary goal?", ["Basic Computer Knowledge", "Office Work & Jobs", "Graphic Design & Publishing", "Accounting & Finance"])
+            time_pref = st.radio("Preferred Time Slot", ["1 to 3 Months", "6 Months", "1 Year Advanced"])
+            
+            if user_interest == "Basic Computer Knowledge":
+                st.write("👉 **Recommended:** **DCA (Diploma in Computer Applications)** — Fee: ₹5,500/-")
+            elif user_interest == "Office Work & Jobs":
+                st.write("👉 **Recommended:** **ADCA (Advance Diploma in Computer Applications)** — Fee: ₹8,500/-")
+            elif user_interest == "Graphic Design & Publishing":
+                st.write("👉 **Recommended:** **DTP (Desktop Publishing)** — Fee: ₹4,000/-")
+            elif user_interest == "Accounting & Finance":
+                st.write("👉 **Recommended:** **Tally ERP 9 / Prime** — Fee: ₹4,500/-")
+
         st.markdown("### 📱 Scan from Phone to Open Portal")
         qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://stcztc.streamlit.app"
         st.image(qr_url, caption="Scan this using Mobile Camera")
 
     with col2:
         st.markdown("### ✉️ Quick Course Enquiry")
+        enq_course = st.selectbox("Select Course/Class", list(st.session_state.fee_settings.keys()), index=0, key="quick_enq_c")
+        
+        # Real-time Fee Display upon Selection
+        selected_fee = st.session_state.fee_settings.get(enq_course, 5000)
+        st.success(f"💰 **Selected Course Fee:** ₹ {selected_fee}/-")
+
         with st.form("enquiry_form", clear_on_submit=True):
             enq_name = st.text_input("Student Name")
             enq_mobile = st.text_input("Mobile Number")
-            enq_course = st.selectbox("Select Course/Class", list(st.session_state.fee_settings.keys()), index=0)
-
-            selected_fee = st.session_state.fee_settings.get(enq_course, 5000)
-            st.info(f"Total Course Fee: ₹ {selected_fee}/-")
 
             submitted = st.form_submit_button("Submit Enquiry")
             if submitted:
@@ -172,9 +217,8 @@ if menu == "🏠 Home & Enquiry":
                     new_enq = pd.DataFrame([[enq_name, enq_mobile, enq_course, datetime.now().strftime("%Y-%m-%d %H:%M")]], columns=enquiry_db.columns)
                     enquiry_db = pd.concat([enquiry_db, new_enq], ignore_index=True)
                     save_data(enquiry_db, ENQUIRY_FILE)
-                    st.success("✅ Enquiry registered successfully!")
+                    st.success("✅ **Enquiry registered successfully!**")
 
-                    # --- WhatsApp Notification Link ---
                     msg_text = f"Hello Soft Tech Computers!\nNew Enquiry Received:\nName: {enq_name}\nPhone: {enq_mobile}\nCourse: {enq_course}"
                     encoded_msg = urllib.parse.quote(msg_text)
                     whatsapp_number = "919854341170"
@@ -191,7 +235,7 @@ if menu == "🏠 Home & Enquiry":
                     st.warning("Please fill in both Name and Mobile Number.")
 
 # ==========================================
-# 2. STUDENT PORTAL (PROFESSIONAL ADMISSION FORM)
+# 2. STUDENT PORTAL (DUPLICATE MOBILE BLOCK & FEEDBACK)
 # ==========================================
 elif menu == "🎓 Student Admission & Attendance":
     st.title("🎓 Student Self-Service Portal")
@@ -199,7 +243,7 @@ elif menu == "🎓 Student Admission & Attendance":
 
     if loc_check:
         st.success("📍 GPS Location Verified Inside Center Boundary")
-        tab1, tab2, tab3 = st.tabs(["📝 Official Admission Form", "⏱️ Mark Attendance", "🎯 Search Profile & SFPC Status"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📝 Official Admission Form", "⏱️ Mark Attendance", "🎯 Search Profile & SFPC", "⭐ Feedback & Review"])
 
         with tab1:
             st.subheader("📋 New Student Formal Admission Form")
@@ -232,12 +276,16 @@ elif menu == "🎓 Student Admission & Attendance":
                 s_pay_mode = p_col2.selectbox("Payment Mode *", PAYMENT_MODES)
 
                 if st.form_submit_button("🎓 Confirm Registration"):
-                    if s_name and s_mobile and addr_vill and addr_po and addr_ps and addr_pin and addr_dist:
+                    # Check Duplicate Mobile Number
+                    existing_mobiles = student_df['Mobile No'].astype(str).tolist() if not student_df.empty else []
+                    
+                    if str(s_mobile).strip() in existing_mobiles:
+                        st.error("❌ **Duplicate Registration Blocked:** This Mobile Number is already registered for another student!")
+                    elif s_name and s_mobile and addr_vill and addr_po and addr_ps and addr_pin and addr_dist:
                         new_id = f"STC26-00{len(student_df)+1}"
                         tot_f = st.session_state.fee_settings.get(s_course, 5000)
                         today_date_str = datetime.now().strftime("%Y-%m-%d")
                         
-                        # Structured Professional Address
                         formatted_address = f"Vill- {addr_vill}, P.O.- {addr_po}, P.S.- {addr_ps}, PIN- {addr_pin}, Dist- {addr_dist}"
                         breakdown = f"[{today_date_str}] ₹{int(s_initial_pay)} ({s_pay_mode})"
                         
@@ -245,31 +293,42 @@ elif menu == "🎓 Student Admission & Attendance":
                         student_df = pd.concat([student_df, new_row], ignore_index=True)
                         save_data(student_df, STUDENT_MASTER_FILE)
 
-                        # Auto Log Initial Payment
+                        # Auto Log Payment
                         new_log = pd.DataFrame([[today_date_str, "Self Registration / Admin", new_id, s_name, s_initial_pay, s_pay_mode]], columns=fee_log_df.columns)
                         fee_log_df = pd.concat([fee_log_df, new_log], ignore_index=True)
                         save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
 
                         st.success(f"🎉 **Registration Successful!** Generated Student ID: **{new_id}**")
                     else:
-                        st.error("⚠️ Please fill in all mandatory fields (Name, Mobile, and Complete Address fields)!")
+                        st.error("⚠️ Please fill in all mandatory fields!")
 
         with tab2:
-            st.subheader("Mark Daily Attendance")
-            selected_st_opt = st.selectbox("Select Your Student ID", student_options if student_options else [])
-            action = st.radio("Action", ["Check-In (In-Time)", "Check-Out (Out-Time)"])
+            st.subheader("Mark Daily Attendance (Private Search)")
+            st.info("🔎 Search student by Roll No or Mobile No to mark attendance (Dropdown disabled for privacy).")
             
-            if st.button("Submit Attendance"):
-                if selected_st_opt:
-                    sid = selected_st_opt.split(" - ")[0]
-                    st_name = selected_st_opt.split(" - ")[1] if " - " in selected_st_opt else "Unknown"
-                    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    today_str = datetime.now().strftime("%Y-%m-%d")
+            att_search = st.text_input("Enter Student Roll Number or Mobile Number", key="att_s_q")
+            if att_search:
+                matched_att = student_df[(student_df['Student ID'].astype(str).str.contains(att_search, case=False, na=False)) | 
+                                         (student_df['Mobile No'].astype(str).str.contains(att_search, case=False, na=False))]
+                
+                if not matched_att.empty:
+                    st_row = matched_att.iloc[0]
+                    sid = st_row['Student ID']
+                    st_name = st_row['Name']
                     
-                    att_row = pd.DataFrame([[today_str, sid, st_name, action, now_str]], columns=attendance_df.columns)
-                    attendance_df = pd.concat([attendance_df, att_row], ignore_index=True)
-                    save_data(attendance_df, ATTENDANCE_LOG_FILE)
-                    st.success(f"✅ **Attendance Recorded Successfully** for **{st_name}** ({action}) at {now_str}")
+                    st.success(f"👤 **Student Found:** {st_name} ({sid})")
+                    action = st.radio("Action", ["Check-In (In-Time)", "Check-Out (Out-Time)"])
+                    
+                    if st.button("Submit Attendance Now"):
+                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        today_str = datetime.now().strftime("%Y-%m-%d")
+                        
+                        att_row = pd.DataFrame([[today_str, sid, st_name, action, now_str]], columns=attendance_df.columns)
+                        attendance_df = pd.concat([attendance_df, att_row], ignore_index=True)
+                        save_data(attendance_df, ATTENDANCE_LOG_FILE)
+                        st.success(f"✅ **Attendance Recorded Successfully** for **{st_name}** ({action}) at {now_str}")
+                else:
+                    st.error("No student found with this Roll Number or Mobile Number!")
 
         with tab3:
             st.subheader("🔎 Search Student Profile & SFPC Eligibility")
@@ -344,11 +403,30 @@ elif menu == "🎓 Student Admission & Attendance":
                             st.warning(f"❌ Fee Due: Need to pay at least ₹{min_required_fee_total} (Admission + 50% monthly dues).")
                 else:
                     st.error("No Student found with this Roll Number or Mobile Number!")
+
+        with tab4:
+            st.subheader("⭐ Submit Student Feedback & Institute Review")
+            with st.form("feedback_form", clear_on_submit=True):
+                fb_st_name = st.text_input("Your Name / Student ID")
+                fb_rating = st.slider("Overall Rating for Center", 1, 5, 5)
+                fb_teach_q = st.selectbox("Teaching Quality", ["Excellent", "Good", "Average", "Needs Improvement"])
+                fb_lab_q = st.selectbox("Computer Lab & PC Maintenance", ["Excellent", "Good", "Average", "Needs Improvement"])
+                fb_comments = st.text_area("Your Suggestions / Feedback")
+
+                if st.form_submit_button("Submit Feedback"):
+                    if fb_st_name:
+                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+                        new_fb = pd.DataFrame([[now_str, fb_st_name, fb_rating, fb_teach_q, fb_lab_q, fb_comments]], columns=feedback_db.columns)
+                        feedback_db = pd.concat([feedback_db, new_fb], ignore_index=True)
+                        save_data(feedback_db, FEEDBACK_FILE)
+                        st.success("✅ **Thank you for your valuable feedback!**")
+                    else:
+                        st.warning("Please enter your Name or Student ID.")
     else:
         st.warning("⚠️ Please verify GPS Location checkbox above to access Student Portal.")
 
 # ==========================================
-# 3. TEACHER PORTAL (PAYMENT MODE & SUBMIT)
+# 3. TEACHER PORTAL
 # ==========================================
 elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
     st.title("👨‍🏫 Teacher & Staff Desk")
@@ -430,7 +508,7 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
         st.error("Incorrect Teacher Passcode/PIN!")
 
 # ==========================================
-# 4. ADMIN PANEL (FULL CONTROL & SUCCESS ALERTS)
+# 4. ADMIN PANEL (FEEDBACK VIEW & FULL CONTROL)
 # ==========================================
 elif menu == "🔐 Admin Panel":
     st.title("🔐 Director / Admin Control Panel")
@@ -441,12 +519,13 @@ elif menu == "🔐 Admin Panel":
     if pwd == current_admin_pass:
         st.success("Access Granted. Welcome Sir!")
 
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
             "📊 Student Registry & Balance", 
             "🧾 Fee Collection Audit Log", 
-            "⏱️ Student Attendance & Duration", 
+            "⏱️ Student Attendance Logs", 
             "👨‍🏫 Teacher Master & Salary Logs", 
             "📩 Enquiries", 
+            "⭐ Student Feedbacks",
             "🔑 Security Settings"
         ])
 
@@ -534,9 +613,7 @@ elif menu == "🔐 Admin Panel":
             st.dataframe(fee_log_df, use_container_width=True)
 
         with tab3:
-            st.markdown("### ⏱️ Student Attendance & Duration Spent in Class")
-            st.info("Calculates class duration spent by comparing Check-In and Check-Out times.")
-            
+            st.markdown("### ⏱️ Student Attendance Logs")
             if not attendance_df.empty:
                 st.dataframe(attendance_df, use_container_width=True)
             else:
@@ -544,8 +621,6 @@ elif menu == "🔐 Admin Panel":
 
         with tab4:
             st.markdown("### 👨‍🏫 Teacher Master & Daily Logs")
-            
-            # --- Add New Teacher Section ---
             st.subheader("➕ Register New Teacher / Faculty")
             with st.form("add_teacher_form"):
                 new_t_code = f"TC-0{len(teachers_master_df)+1}"
@@ -567,8 +642,6 @@ elif menu == "🔐 Admin Panel":
 
             st.markdown("---")
             st.subheader("🔒 Teacher Shift Logs & Correct Calculated Salary")
-            st.info("Formula: ₹230 Per Day for 3 Shifts (₹76.67 per Present Shift). Leave/Absent = ₹0")
-            
             if not teacher_db.empty:
                 t_wages_df = teacher_db.copy()
                 t_wages_df['Shift Wage (₹)'] = pd.to_numeric(t_wages_df['Shift Wage (₹)'], errors='coerce').fillna(0.0)
@@ -584,6 +657,10 @@ elif menu == "🔐 Admin Panel":
             st.dataframe(enquiry_db, use_container_width=True)
 
         with tab6:
+            st.markdown("### ⭐ Received Student Feedbacks & Reviews")
+            st.dataframe(feedback_db, use_container_width=True)
+
+        with tab7:
             st.markdown("### 🔑 Admin Password & Teacher PIN Security Control")
             
             curr_pin_val = get_teacher_pin()
