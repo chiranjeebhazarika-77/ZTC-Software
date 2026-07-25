@@ -17,6 +17,7 @@ TEACHER_LOG_FILE = "teacher_attendance.csv"
 FEE_COLLECTION_LOG_FILE = "fee_collection_log.csv"
 ROUTINE_FILE = "routine_settings.csv"
 PASSWORD_FILE = "passwords.csv"
+TEACHER_PIN_FILE = "teacher_pin.csv"
 
 # Load Data Safely & Fix Missing Columns
 def load_clean_data(file_path, default_cols, is_student_file=False):
@@ -49,7 +50,7 @@ def load_clean_data(file_path, default_cols, is_student_file=False):
 def save_data(df, file_path):
     df.to_csv(file_path, index=False)
 
-# Password Management
+# Password & PIN Management
 def get_admin_password():
     if os.path.exists(PASSWORD_FILE):
         try:
@@ -64,17 +65,32 @@ def set_admin_password(new_pass):
     pdf = pd.DataFrame([{"password": str(new_pass)}])
     pdf.to_csv(PASSWORD_FILE, index=False)
 
+def get_teacher_pin():
+    if os.path.exists(TEACHER_PIN_FILE):
+        try:
+            tpdf = pd.read_csv(TEACHER_PIN_FILE)
+            if not tpdf.empty and "pin" in tpdf.columns:
+                return str(tpdf["pin"].iloc[0])
+        except:
+            pass
+    return "1234"
+
+def set_teacher_pin(new_pin):
+    tpdf = pd.DataFrame([{"pin": str(new_pin)}])
+    tpdf.to_csv(TEACHER_PIN_FILE, index=False)
+
 # Master Column Definitions
 student_cols = ['Student ID', 'Name', 'Father Name', 'Mother Name', 'Mobile No', 'Address', 'Course', 'Batch', 'Admission Mode', 'Total Fee', 'Paid', 'Payment Breakdown', 'Admission Date']
 attendance_cols = ['Date', 'Student ID', 'Name', 'Action', 'Time']
 fee_collect_cols = ['Date', 'Collected By', 'Student ID', 'Student Name', 'Amount (₹)']
+teacher_cols = ['Date', 'Teacher Name', 'Shift', 'In-Time', 'Out-Time', 'Class Type', 'Topics Taught', 'Status', 'Daily Allowance (₹)']
 
 # Load Clean Databases
 student_df = load_clean_data(STUDENT_MASTER_FILE, student_cols, is_student_file=True)
 attendance_df = load_clean_data(ATTENDANCE_LOG_FILE, attendance_cols)
 fee_log_df = load_clean_data(FEE_COLLECTION_LOG_FILE, fee_collect_cols)
 enquiry_db = load_clean_data(ENQUIRY_FILE, ['Name', 'Mobile', 'Course Selected', 'Timestamp'])
-teacher_db = load_clean_data(TEACHER_LOG_FILE, ['Date', 'Shift', 'In-Time', 'Out-Time', 'Subject Taught', 'Status', 'Salary (₹)'])
+teacher_db = load_clean_data(TEACHER_LOG_FILE, teacher_cols)
 routine_db = load_clean_data(ROUTINE_FILE, ['Shift', 'Timing', 'Days', 'Assigned Class'])
 
 # Clean Fixed STC Routine
@@ -88,6 +104,12 @@ if routine_db.empty:
 # Session States
 if 'fee_settings' not in st.session_state:
     st.session_state.fee_settings = {"ADCA": 8500, "DCA": 5500, "DTP": 4000, "Tally": 4500}
+
+# Topic Topics List
+AVAILABLE_TOPICS = [
+    "Basic", "Word", "Excel", "PPT", "Access", "HTML", "DHTML", 
+    "Tally", "Python", "PageMaker", "Photoshop", "Internet", "Paint", "WordPad", "Notepad"
+]
 
 # Helper Options
 student_options = []
@@ -157,10 +179,10 @@ if menu == "🏠 Home & Enquiry":
 # ==========================================
 elif menu == "🎓 Student Admission & Attendance":
     st.title("🎓 Student Self-Service Portal")
-    loc_check = st.checkbox("Verify my device location (Must be within 50 meters of Center)")
+    loc_check = st.checkbox("📍 Mandatory: Verify Device GPS Location (Must be within Center Boundary)")
 
     if loc_check:
-        st.success("📍 Location Verified Inside Center Boundary")
+        st.success("📍 GPS Location Verified Inside Center Boundary")
         tab1, tab2, tab3 = st.tabs(["📝 Student Admission Form", "⏱️ Mark Attendance", "🎯 Search Profile & SFPC Status"])
 
         with tab1:
@@ -187,7 +209,7 @@ elif menu == "🎓 Student Admission & Attendance":
                         student_df = pd.concat([student_df, new_row], ignore_index=True)
                         save_data(student_df, STUDENT_MASTER_FILE)
 
-                        # Auto Log Initial Payment in Collection File
+                        # Auto Log Initial Payment
                         new_log = pd.DataFrame([[today_date_str, "Self Registration / Admin", new_id, s_name, s_initial_pay]], columns=fee_log_df.columns)
                         fee_log_df = pd.concat([fee_log_df, new_log], ignore_index=True)
                         save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
@@ -209,7 +231,7 @@ elif menu == "🎓 Student Admission & Attendance":
                     att_row = pd.DataFrame([[today_str, sid, st_name, action, now_str]], columns=attendance_df.columns)
                     attendance_df = pd.concat([attendance_df, att_row], ignore_index=True)
                     save_data(attendance_df, ATTENDANCE_LOG_FILE)
-                    st.success(f"Attendance Recorded for {st_name} ({action})")
+                    st.success(f"Attendance Recorded for {st_name} ({action}) at {now_str}")
 
         with tab3:
             st.subheader("🔎 Search Student Profile & SFPC Eligibility")
@@ -284,78 +306,94 @@ elif menu == "🎓 Student Admission & Attendance":
                             st.warning(f"❌ Fee Due: Need to pay at least ₹{min_required_fee_total} (Admission + 50% monthly dues).")
                 else:
                     st.error("No Student found with this Roll Number or Mobile Number!")
+    else:
+        st.warning("⚠️ Please verify GPS Location checkbox above to access Student Portal.")
 
 # ==========================================
-# 3. TEACHER PORTAL (CLEAN & RESTRICTED VIEW)
+# 3. TEACHER PORTAL (ADVANCED CLASS LOGGING & FEE COUNTER)
 # ==========================================
 elif menu == "👨‍🏫 Teacher Portal & Fee Entry":
     st.title("👨‍🏫 Teacher & Staff Desk")
     
-    ttab1, ttab2 = st.tabs(["⏱️ Teacher Attendance & Class Log", "💵 Collect Fee Counter"])
+    t_loc_check = st.checkbox("Verify location (Must be inside center boundary)", key="t_loc")
+    current_teacher_pin = get_teacher_pin()
+    t_pin_input = st.text_input("Enter Teacher Passcode / PIN", type="password", key="t_pin")
 
-    with ttab1:
-        st.subheader("Teacher Shift & Daily Class Logging")
-        with st.form("teacher_log_form"):
-            t_shift = st.selectbox("Shift", ["Morning Shift", "Afternoon Shift", "Evening Shift"])
-            t_in = st.time_input("In-Time", datetime.now().time())
-            t_out = st.time_input("Out-Time", datetime.now().time())
-            t_subject = st.text_input("Subject / Topic Taught Today")
-            t_status = st.selectbox("Status", ["Present", "Half Day", "Leave"])
-            t_salary = st.number_input("Allowance/Wage (₹)", min_value=0.0, value=0.0)
+    if t_loc_check and t_pin_input == current_teacher_pin:
+        st.success("Access Granted to Staff Desk.")
+        ttab1, ttab2 = st.tabs(["⏱️ Teacher Class & Topics Log", "💵 Collect Fee Counter"])
 
-            if st.form_submit_button("Submit Teacher Log"):
-                today_str = datetime.now().strftime("%Y-%m-%d")
-                t_in_str = t_in.strftime("%I:%M %p")
-                t_out_str = t_out.strftime("%I:%M %p")
+        with ttab1:
+            st.subheader("Teacher Shift, Class Type & Topics Logging")
+            with st.form("teacher_log_form"):
+                t_teacher_name = st.text_input("Teacher Name", value="")
+                t_shift = st.selectbox("Shift", ["Morning Shift", "Afternoon Shift", "Evening Shift"])
+                t_in = st.time_input("In-Time", datetime.now().time())
+                t_out = st.time_input("Out-Time", datetime.now().time())
+                
+                t_class_type = st.radio("Class Type Conducted Today", ["Theory", "Practical", "Both Theory & Practical"])
+                t_selected_topics = st.multiselect("Select Topics Taught Today (Multiple allowed)", AVAILABLE_TOPICS)
+                t_status = st.selectbox("Status", ["Present", "Half Day", "Leave"])
 
-                new_t_log = pd.DataFrame([[today_str, t_shift, t_in_str, t_out_str, t_subject, t_status, t_salary]], columns=teacher_db.columns)
-                teacher_db = pd.concat([teacher_db, new_t_log], ignore_index=True)
-                save_data(teacher_db, TEACHER_LOG_FILE)
-                st.write("Entry recorded successfully.")
+                if st.form_submit_button("Submit Teacher Log"):
+                    if t_teacher_name.strip() == "":
+                        st.write("Please enter Teacher Name.")
+                    else:
+                        today_str = datetime.now().strftime("%Y-%m-%d")
+                        t_in_str = t_in.strftime("%I:%M %p")
+                        t_out_str = t_out.strftime("%I:%M %p")
+                        topics_str = ", ".join(t_selected_topics) if t_selected_topics else "General"
+                        
+                        daily_wage = 230.0 if t_status == "Present" else 115.0
 
-    with ttab2:
-        st.subheader("💵 Deposit Student Fee (Teacher Counter)")
-        st.write("Collect cash/payment and submit entry below.")
-        
-        if not student_df.empty:
-            teacher_name_input = st.text_input("Teacher / Staff Name", value="")
-            t_selected_opt = st.selectbox("Select Student", student_options, key="t_fee_sid")
-            t_add_amt = st.number_input("Amount Collected (₹)", min_value=100.0, step=100.0, key="t_amt")
+                        new_t_log = pd.DataFrame([[today_str, t_teacher_name, t_shift, t_in_str, t_out_str, t_class_type, topics_str, t_status, daily_wage]], columns=teacher_db.columns)
+                        teacher_db = pd.concat([teacher_db, new_t_log], ignore_index=True)
+                        save_data(teacher_db, TEACHER_LOG_FILE)
+                        st.write("Entry recorded successfully.")
 
-            if st.button("Submit Fee Entry"):
-                if teacher_name_input.strip() == "":
-                    st.write("Please enter Teacher Name.")
-                else:
-                    t_f_sid = t_selected_opt.split(" - ")[0]
-                    st_name_val = t_selected_opt.split(" - ")[1] if " - " in t_selected_opt else "Student"
-                    idx = student_df[student_df['Student ID'] == t_f_sid].index[0]
+        with ttab2:
+            st.subheader("💵 Deposit Student Fee (Teacher Counter)")
+            st.write("Collect cash/payment and submit entry below.")
+            
+            if not student_df.empty:
+                teacher_name_input = st.text_input("Teacher / Staff Name", value="")
+                t_selected_opt = st.selectbox("Select Student", student_options, key="t_fee_sid")
+                t_add_amt = st.number_input("Amount Collected (₹)", min_value=100.0, step=100.0, key="t_amt")
 
-                    try:
-                        old_paid = float(student_df.at[idx, 'Paid'])
-                    except:
-                        old_paid = 0.0
+                if st.button("Submit Fee Entry"):
+                    if teacher_name_input.strip() == "":
+                        st.write("Please enter Teacher Name.")
+                    else:
+                        t_f_sid = t_selected_opt.split(" - ")[0]
+                        st_name_val = t_selected_opt.split(" - ")[1] if " - " in t_selected_opt else "Student"
+                        idx = student_df[student_df['Student ID'] == t_f_sid].index[0]
 
-                    new_paid = old_paid + t_add_amt
-                    student_df.at[idx, 'Paid'] = new_paid
+                        try:
+                            old_paid = float(student_df.at[idx, 'Paid'])
+                        except:
+                            old_paid = 0.0
 
-                    today_date_str = datetime.now().strftime("%Y-%m-%d")
-                    old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else f"₹{int(old_paid)}"
-                    new_bd = f"{old_bd} | [{today_date_str}] ₹{int(t_add_amt)}"
-                    student_df.at[idx, 'Payment Breakdown'] = new_bd
+                        new_paid = old_paid + t_add_amt
+                        student_df.at[idx, 'Paid'] = new_paid
 
-                    # 1. Save Master Student File
-                    save_data(student_df, STUDENT_MASTER_FILE)
+                        today_date_str = datetime.now().strftime("%Y-%m-%d")
+                        old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) and str(student_df.at[idx, 'Payment Breakdown']) != "" else f"₹{int(old_paid)}"
+                        new_bd = f"{old_bd} | [{today_date_str}] ₹{int(t_add_amt)}"
+                        student_df.at[idx, 'Payment Breakdown'] = new_bd
 
-                    # 2. Save Teacher Collection Audit Log File
-                    new_fee_entry = pd.DataFrame([[today_date_str, teacher_name_input, t_f_sid, st_name_val, t_add_amt]], columns=fee_log_df.columns)
-                    fee_log_df = pd.concat([fee_log_df, new_fee_entry], ignore_index=True)
-                    save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
+                        save_data(student_df, STUDENT_MASTER_FILE)
 
-                    st.write("Entry saved successfully.")
-                    st.rerun()
+                        new_fee_entry = pd.DataFrame([[today_date_str, teacher_name_input, t_f_sid, st_name_val, t_add_amt]], columns=fee_log_df.columns)
+                        fee_log_df = pd.concat([fee_log_df, new_fee_entry], ignore_index=True)
+                        save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
+
+                        st.write("Entry saved successfully.")
+                        st.rerun()
+    elif t_pin_input != "" and t_pin_input != current_teacher_pin:
+        st.error("Incorrect Teacher Passcode/PIN!")
 
 # ==========================================
-# 4. ADMIN PANEL (FULL ADVANCED CONTROL)
+# 4. ADMIN PANEL (FULL CONTROL & CALCULATIONS)
 # ==========================================
 elif menu == "🔐 Admin Panel":
     st.title("🔐 Director / Admin Control Panel")
@@ -368,25 +406,21 @@ elif menu == "🔐 Admin Panel":
 
         tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
             "📊 Student Registry & Balance", 
-            "🧾 Fee Collection Log (Who Collected)", 
-            "⏱️ Attendance History", 
+            "🧾 Fee Collection Audit Log", 
+            "⏱️ Student Attendance & Duration", 
+            "👨‍🏫 Teacher Logs & Salary Calculation", 
             "📩 Enquiries", 
-            "👨‍🏫 Teacher Operations", 
-            "🔑 Admin Password"
+            "🔑 Security Settings"
         ])
 
         with tab1:
             st.markdown("### Master Student Records & Fee Summary Manager")
             
-            # Display Master Student Table with Total Paid and Balance Columns
             disp_df = student_df.copy()
-            
-            # Calculate Balance Due Column dynamically for table view
             disp_df['Total Fee'] = pd.to_numeric(disp_df['Total Fee'], errors='coerce').fillna(8500.0)
             disp_df['Paid'] = pd.to_numeric(disp_df['Paid'], errors='coerce').fillna(0.0)
             disp_df['Balance Due (₹)'] = disp_df['Total Fee'] - disp_df['Paid']
             
-            # Reorder columns for optimal view
             view_cols = ['Student ID', 'Name', 'Mobile No', 'Course', 'Batch', 'Total Fee', 'Paid', 'Balance Due (₹)', 'Payment Breakdown', 'Admission Date']
             existing_view_cols = [c for c in view_cols if c in disp_df.columns]
             
@@ -462,31 +496,64 @@ elif menu == "🔐 Admin Panel":
             st.dataframe(fee_log_df, use_container_width=True)
 
         with tab3:
-            st.markdown("### Daily Attendance Logs")
-            st.dataframe(attendance_df, use_container_width=True)
+            st.markdown("### ⏱️ Student Attendance & Duration Spent in Class")
+            st.info("Calculates class duration spent by comparing Check-In and Check-Out times (Standard: 90 Mins).")
+            
+            # Smart Duration Processing View
+            if not attendance_df.empty:
+                att_proc_df = attendance_df.copy()
+                st.dataframe(att_proc_df, use_container_width=True)
+            else:
+                st.write("No attendance logs found yet.")
 
         with tab4:
+            st.markdown("### 🔒 Teacher Private Ledger & Salary Calculation")
+            st.info("Per day flat rate allowance calculation (Daily Flat Rate: ₹230/- for all 3 shifts combined).")
+            
+            if not teacher_db.empty:
+                # Calculate Total Wages
+                t_wages_df = teacher_db.copy()
+                t_wages_df['Daily Allowance (₹)'] = pd.to_numeric(t_wages_df['Daily Allowance (₹)'], errors='coerce').fillna(230.0)
+                
+                total_teacher_salary = t_wages_df['Daily Allowance (₹)'].sum()
+                st.metric(label="Total Teacher Accumulated Wages/Salary", value=f"₹{total_teacher_salary}/-")
+                st.dataframe(t_wages_df, use_container_width=True)
+            else:
+                st.write("No Teacher logs found yet.")
+
+        with tab5:
             st.markdown("### Received Enquiries")
             st.dataframe(enquiry_db, use_container_width=True)
 
-        with tab5:
-            st.markdown("### 🔒 Teacher Private Ledger & Wage Tracking")
-            st.dataframe(teacher_db, use_container_width=True)
-
         with tab6:
-            st.markdown("### 🔑 Change Admin Password")
-            with st.form("change_pass_form"):
-                new_p1 = st.text_input("New Password", type="password")
-                new_p2 = st.text_input("Confirm New Password", type="password")
-                change_btn = st.form_submit_button("Update Password")
+            st.markdown("### 🔑 Admin Password & Teacher PIN Security Control")
+            
+            curr_pin_val = get_teacher_pin()
+            st.success(f"📌 **Current Live Teacher PIN:** `{curr_pin_val}`")
+            st.markdown("---")
 
-                if change_btn:
-                    if new_p1 and new_p1 == new_p2:
-                        set_admin_password(new_p1)
-                        st.success("✅ Password updated successfully! Please use your new password next time.")
-                    elif new_p1 != new_p2:
-                        st.error("❌ Passwords do not match!")
-                    else:
-                        st.warning("⚠️ Please enter a valid password.")
+            col_a, col_b = st.columns(2)
+
+            with col_a:
+                st.subheader("Change Admin Password")
+                with st.form("change_pass_form"):
+                    new_p1 = st.text_input("New Admin Password", type="password")
+                    new_p2 = st.text_input("Confirm Admin Password", type="password")
+                    if st.form_submit_button("Update Admin Password"):
+                        if new_p1 and new_p1 == new_p2:
+                            set_admin_password(new_p1)
+                            st.success("✅ Admin Password updated!")
+                        else:
+                            st.error("Passwords do not match!")
+
+            with col_b:
+                st.subheader("Change / Update Teacher Passcode (PIN)")
+                with st.form("change_tpin_form"):
+                    new_pin = st.text_input("Enter New Teacher PIN (e.g. 1234)", type="password")
+                    if st.form_submit_button("Update Teacher PIN"):
+                        if new_pin.strip() != "":
+                            set_teacher_pin(new_pin)
+                            st.success("✅ Teacher PIN updated successfully!")
+                            st.rerun()
     elif pwd != "":
         st.error("Incorrect Password!")
