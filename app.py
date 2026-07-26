@@ -23,28 +23,6 @@ def get_ist_datetime_str():
 # Page Configuration
 st.set_page_config(page_title="Soft Tech Computers", page_icon="💻", layout="wide")
 
-# Custom Colorful & Bold Navigation Styling
-st.markdown("""
-<style>
-    /* Custom Navigation Button Colors & Fonts */
-    .stRadio > div {
-        background-color: #f8f9fa;
-        padding: 10px;
-        border-radius: 10px;
-    }
-    div[data-testid="stMarkdownContainer"] > p {
-        font-size: 16px;
-    }
-    /* Highlight Cards */
-    .card-box {
-        border: 2px solid #004085;
-        border-radius: 10px;
-        padding: 15px;
-        background-color: #f0f8ff;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 # File Paths
 STUDENT_MASTER_FILE = "students_db.csv"
 ATTENDANCE_LOG_FILE = "attendance_log.csv"
@@ -125,10 +103,6 @@ def get_admin_password():
             pass
     return "admin123"
 
-def set_admin_password(new_pass):
-    pdf = pd.DataFrame([{"password": str(new_pass)}])
-    pdf.to_csv(PASSWORD_FILE, index=False)
-
 def get_teacher_pin():
     if os.path.exists(TEACHER_PIN_FILE):
         try:
@@ -138,10 +112,6 @@ def get_teacher_pin():
         except:
             pass
     return "1234"
-
-def set_teacher_pin(new_pin):
-    tpdf = pd.DataFrame([{"pin": str(new_pin)}])
-    tpdf.to_csv(TEACHER_PIN_FILE, index=False)
 
 # Load Clean Databases
 student_df = load_clean_data(STUDENT_MASTER_FILE, student_cols, is_student_file=True)
@@ -202,22 +172,22 @@ teacher_options = []
 if not teachers_master_df.empty:
     teacher_options = [f"{row['Teacher ID']} - {row['Teacher Name']}" for _, row in teachers_master_df.iterrows()]
 
-# Navigation Menu Options
-st.sidebar.markdown("## 💻 STC Navigation Portal")
-menu = st.sidebar.radio("Go to Section:", [
-    "🔵 🏠 Home & Public Enquiry", 
-    "🟢 📝 New Student Admission", 
-    "🟣 🔑 Student Login Portal", 
-    "🟠 🎯 Sunday Free Practice Class (SFPC)", 
-    "🔴 👨‍🏫 Teacher Portal & Fee Counter", 
-    "🔵 👨‍👩‍👧 Parents Live Student Tracker", 
-    "🟤 🔐 Admin Control Panel"
+# Fast Native Navigation Menu Options
+st.sidebar.title("💻 STC Portal")
+menu = st.sidebar.radio("Navigation Menu:", [
+    "🏠 Home & Public Enquiry", 
+    "📝 New Student Admission", 
+    "🔑 Student Login Portal", 
+    "🎯 Sunday Free Practice Class (SFPC)", 
+    "👨‍🏫 Teacher Portal & Fee Counter", 
+    "👨‍👩‍👧 Parents Live Student Tracker", 
+    "🔐 Admin Control Panel"
 ])
 
 # ==========================================
 # 1. PUBLIC DASHBOARD & ENQUIRY
 # ==========================================
-if "🏠 Home & Public Enquiry" in menu:
+if menu == "🏠 Home & Public Enquiry":
     header_col1, header_col2 = st.columns([1, 4])
     with header_col1:
         if os.path.exists(LOGO_FILE):
@@ -232,7 +202,7 @@ if "🏠 Home & Public Enquiry" in menu:
 
     st.markdown("---")
 
-    # MULTI-WINNER 100% ATTENDANCE HIGHLIGHT WITH PHOTOS & MARQUEE
+    # MOVING STUDENT OF THE MONTH & 100% ATTENDANCE CHAMPIONS
     st.markdown("### 🏆 Student of the Month & 100% Attendance Champions")
     
     top_winners = []
@@ -250,28 +220,36 @@ if "🏠 Home & Public Enquiry" in menu:
                 top_winners.append({"id": tid, "name": tname})
 
     if top_winners:
-        winner_names_str = ", ".join([f"{w['name']} ({w['id']})" for w in top_winners])
-        
-        photo_cols = st.columns(min(len(top_winners), 5))
-        for idx, winner in enumerate(top_winners[:5]):
+        winner_items_html = ""
+        for winner in top_winners:
             wid = winner['id']
             wname = winner['name']
             p_path = os.path.join(PHOTOS_DIR, f"{wid}.jpg")
             
-            with photo_cols[idx]:
-                if os.path.exists(p_path):
-                    st.image(p_path, caption=f"⭐ {wname}", width=110)
-                else:
-                    st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", caption=f"⭐ {wname}", width=100)
+            # Default Avatar if photo not present
+            img_src = f"app/static/{wid}.jpg" if os.path.exists(p_path) else "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+            
+            winner_items_html += f'''
+            <div style="display: inline-block; text-align: center; margin-right: 40px; background: #ffffff; padding: 10px; border-radius: 12px; border: 2px solid #ffc107; box-shadow: 2px 2px 8px rgba(0,0,0,0.1);">
+                <img src="{img_src}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #004085;"><br>
+                <span style="font-size: 15px; font-weight: bold; color: #004085;">⭐ {wname}</span><br>
+                <span style="font-size: 12px; color: #28a745; font-weight: bold;">{wid} ({max_count} Days Attended)</span>
+            </div>
+            '''
 
-        marquee_html = f'''
-        <div style="background-color: #fff3cd; border: 2px solid #ffeba2; padding: 12px; border-radius: 10px; margin-top: 10px;">
-            <marquee behavior="scroll" direction="left" scrollamount="7" style="font-size: 18px; font-weight: bold; color: #856404;">
-                🌟 Congratulations to our 100% Attendance Champions ({max_count} Days Attended): <b>{winner_names_str}</b>! Keep up the brilliant dedication! 🌟
+        full_marquee_html = f'''
+        <div style="background-color: #fff8e1; border: 2px solid #ffe082; padding: 12px; border-radius: 12px; margin-top: 10px;">
+            <marquee behavior="scroll" direction="left" scrollamount="6" onmouseover="this.stop();" onmouseout="this.start();">
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 18px; font-weight: bold; color: #d32f2f; margin-right: 25px;">
+                        🏆 STUDENT OF THE MONTH CHAMPIONS:
+                    </span>
+                    {winner_items_html}
+                </div>
             </marquee>
         </div>
         '''
-        st.markdown(marquee_html, unsafe_allow_html=True)
+        st.markdown(full_marquee_html, unsafe_allow_html=True)
     else:
         st.info("🌟 **Student of the Month:** Will be announced based on monthly attendance performance!")
 
@@ -342,7 +320,7 @@ if "🏠 Home & Public Enquiry" in menu:
 # ==========================================
 # 2. NEW STUDENT ADMISSION FORM ONLY
 # ==========================================
-elif "New Student Admission" in menu:
+elif menu == "📝 New Student Admission":
     st.title("📝 Student Record & Registration Form")
     st.markdown("<h4 style='color: #004085;'>SOFT TECH COMPUTERS, KAMARCHUBURI, THELAMARA</h4>", unsafe_allow_html=True)
     st.info("Fill out the formal student record form below to register new admission.")
@@ -441,7 +419,7 @@ elif "New Student Admission" in menu:
 # ==========================================
 # 3. STUDENT LOGIN PORTAL (PRIVACY SECURED)
 # ==========================================
-elif "Student Login Portal" in menu:
+elif menu == "🔑 Student Login Portal":
     st.title("🔑 Student Self-Service Login Portal")
     
     if 'student_logged_in' not in st.session_state:
@@ -576,7 +554,7 @@ elif "Student Login Portal" in menu:
 # ==========================================
 # 4. SUNDAY FREE PRACTICE CLASS (SFPC)
 # ==========================================
-elif "Sunday Free Practice Class" in menu:
+elif menu == "🎯 Sunday Free Practice Class (SFPC)":
     st.title("🎯 Sunday Free Practice Class (SFPC) Portal")
     st.info("💡 **SFPC Eligibility Rule:** Attendance ≥ 75% AND Paid Admission Fee (₹999) + minimum 50% of monthly fee dues till date.")
 
@@ -632,7 +610,7 @@ elif "Sunday Free Practice Class" in menu:
 # ==========================================
 # 5. TEACHER PORTAL & FEE COUNTER
 # ==========================================
-elif "Teacher Portal" in menu:
+elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
     st.title("👨‍🏫 Teacher & Staff Desk")
     
     current_teacher_pin = get_teacher_pin()
@@ -711,7 +689,7 @@ elif "Teacher Portal" in menu:
 # ==========================================
 # 6. PARENTS LIVE TRACKER
 # ==========================================
-elif "Parents Live Student Tracker" in menu:
+elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
     st.title("👨‍👩‍👧 Parents Live Student Progress Tracker")
     st.info("Parents can monitor their child's attendance and course progress by entering their mobile number.")
 
@@ -734,7 +712,7 @@ elif "Parents Live Student Tracker" in menu:
 # ==========================================
 # 7. ADMIN CONTROL PANEL
 # ==========================================
-elif "Admin Control Panel" in menu:
+elif menu == "🔐 Admin Control Panel":
     st.title("🔐 Director / Admin Control Panel")
     
     current_admin_pass = get_admin_password()
