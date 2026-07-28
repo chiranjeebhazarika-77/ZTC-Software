@@ -195,7 +195,7 @@ if not student_df.empty:
 # Default Teachers
 if teachers_master_df.empty:
     teachers_master_df = pd.DataFrame([
-        {"Teacher ID": "TC-01", "Teacher Name": "Zaan Hazarika", "Mobile No": "9854341170", "Designation": "Director / Instructor"},
+        {"Teacher ID": "TC-01", "Teacher Name": "Chiranjeeb Hazarika", "Mobile No": "9854341170", "Designation": "Director / Instructor"},
         {"Teacher ID": "TC-02", "Teacher Name": "BIJOY KURMI", "Mobile No": "9854865864", "Designation": "Faculty"}
     ])
 
@@ -357,7 +357,7 @@ if menu == "🏠 Home & Public Enquiry":
                     st.error("⚠️ Please fill in both Name and Mobile Number to view fee!")
 
 # ==========================================
-# 2. NEW STUDENT ADMISSION FORM (SECURITY LOCKED)
+# 2. NEW STUDENT ADMISSION FORM (SECURED)
 # ==========================================
 elif menu == "📝 New Student Admission":
     st.title("📝 Student Record & Registration Form")
@@ -464,7 +464,7 @@ elif menu == "📝 New Student Admission":
         st.error("❌ Incorrect Passcode! Access Denied.")
 
 # ==========================================
-# 3. STUDENT LOGIN PORTAL (FIXED FUTURISTIC ID CARD)
+# 3. STUDENT LOGIN PORTAL (MODEL 3 SIGNATURE & ISOLATED PRINT)
 # ==========================================
 elif menu == "🔑 Student Login Portal":
     st.title("🔑 Student Self-Service Login Portal")
@@ -535,13 +535,14 @@ elif menu == "🔑 Student Login Portal":
                 qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={st_id}"
                 barcode_url = f"https://barcode.tec-it.com/barcode.ashx?data={st_id}&code=Code128&translate-esc=false"
 
-                # High-Tech IFRAME Component Rendering (Eliminates raw Markdown code box bug)
+                # High-Tech IFRAME Component with Model 3 Signature and Self-Contained Print Trigger
                 card_component_code = f"""
                 <!DOCTYPE html>
                 <html>
                 <head>
+                <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
                 <style>
-                  body {{ margin: 0; padding: 10px; background-color: transparent; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+                  body {{ margin: 0; padding: 10px; background-color: transparent; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; }}
                   .card {{
                     max-width: 580px;
                     margin: auto;
@@ -553,6 +554,7 @@ elif menu == "🔑 Student Login Portal":
                     box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
                     position: relative;
                     box-sizing: border-box;
+                    text-align: left;
                   }}
                   .neon-bar {{
                     position: absolute; top: 0; left: 0; width: 100%; height: 5px;
@@ -572,10 +574,51 @@ elif menu == "🔑 Student Login Portal":
                   .label {{ color: #00f2fe; font-weight: 600; }}
                   .footer-grid {{ margin-top: 15px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 12px; }}
                   .barcode-img {{ height: 38px; background: #fff; padding: 3px; border-radius: 4px; }}
+                  
+                  /* Model 3: Cyber Glowing Neon Signature */
                   .sign-box {{ text-align: center; }}
-                  .sign-font {{ font-family: 'Brush Script MT', cursive, sans-serif; font-size: 22px; color: #ffffff; text-shadow: 0 0 5px rgba(255,255,255,0.5); }}
-                  .sign-title {{ font-size: 10px; color: #00f2fe; border-top: 1px solid #00f2fe; padding-top: 2px; font-weight: bold; text-transform: uppercase; }}
+                  .sign-font {{
+                    font-family: 'Great Vibes', cursive, sans-serif;
+                    font-size: 24px;
+                    color: #ffffff;
+                    text-shadow: 0 0 8px #00f2fe, 0 0 12px #00f2fe;
+                  }}
+                  .sign-title {{
+                    font-size: 9px;
+                    color: #00f2fe;
+                    border-top: 1px dashed #00f2fe;
+                    padding-top: 2px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    margin-top: 2px;
+                  }}
+                  
                   .qr-img {{ width: 55px; height: 55px; border-radius: 6px; border: 1px solid #00f2fe; background: #fff; padding: 2px; }}
+                  
+                  .print-btn {{
+                    margin-top: 18px;
+                    background: linear-gradient(90deg, #00f2fe, #4facfe);
+                    color: #000000;
+                    border: none;
+                    padding: 10px 24px;
+                    border-radius: 20px;
+                    font-weight: bold;
+                    font-size: 13px;
+                    cursor: pointer;
+                    box-shadow: 0 0 12px rgba(0, 242, 254, 0.5);
+                    transition: 0.3s;
+                  }}
+                  .print-btn:hover {{ background: #ffffff; box-shadow: 0 0 18px rgba(0, 242, 254, 0.8); }}
+
+                  @media print {{
+                    body {{ background: transparent; padding: 0; }}
+                    .no-print {{ display: none !important; }}
+                    .card {{
+                      box-shadow: none !important;
+                      -webkit-print-color-adjust: exact !important;
+                      print-color-adjust: exact !important;
+                    }}
+                  }}
                 </style>
                 </head>
                 <body>
@@ -604,24 +647,25 @@ elif menu == "🔑 Student Login Portal":
                         <img class="barcode-img" src="{barcode_url}">
                         <div style="font-size:8px; color:#aaa; text-align:center; margin-top:2px;">DIGITAL TRACKING ID</div>
                       </div>
+                      
+                      <!-- Model 3 Signature Placement -->
                       <div class="sign-box">
-                        <div class="sign-font">Zaan Hazarika</div>
-                        <div class="sign-title">Director Signature</div>
+                        <div class="sign-font">Chiranjeeb Hazarika</div>
+                        <div class="sign-title">Director & Founder</div>
                       </div>
+                      
                       <div>
                         <img class="qr-img" src="{qr_code_url}">
                       </div>
                     </div>
                   </div>
+                  
+                  <button class="print-btn no-print" onclick="window.print()">🖨️ Print / Save ID Card as PDF</button>
                 </body>
                 </html>
                 """
                 
-                # Render via Native Streamlit HTML Frame Component
-                components.html(card_component_code, height=360)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                st.info("💡 **To Print/Save ID Card as PDF:** Press `Ctrl + P` on your keyboard and select 'Save as PDF'. Make sure to enable 'Background graphics' in print settings for full colors!")
+                components.html(card_component_code, height=430)
 
             with stab2:
                 st.subheader("💳 Student Record Form - Fee Installment Details")
@@ -789,7 +833,7 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
         with ttab1:
             st.subheader("Teacher Class Logging (Auto Live System Time)")
             with st.form("teacher_log_form"):
-                t_selected_teacher = st.selectbox("Select Teacher Name", teacher_options if teacher_options else ["TC-01 - Zaan Hazarika"])
+                t_selected_teacher = st.selectbox("Select Teacher Name", teacher_options if teacher_options else ["TC-01 - Chiranjeeb Hazarika"])
                 t_shift = st.selectbox("Shift", ["Morning Shift", "Afternoon Shift", "Evening Shift"])
                 
                 live_time_now_str = get_ist_time_str()
@@ -835,7 +879,7 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
             st.subheader("💵 Deposit Student Fee (Manual Receipt Sync)")
             
             if not student_df.empty:
-                t_collector = st.selectbox("Collector / Teacher", teacher_options if teacher_options else ["TC-01 - Zaan Hazarika"])
+                t_collector = st.selectbox("Collector / Teacher", teacher_options if teacher_options else ["TC-01 - Chiranjeeb Hazarika"])
                 t_selected_opt = st.selectbox("Select Student", student_options)
                 
                 col_m1, col_m2, col_m3 = st.columns(3)
