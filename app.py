@@ -178,7 +178,7 @@ routine_db = load_clean_data(ROUTINE_FILE, ['Shift', 'Timing', 'Days', 'Assigned
 st_pass_cols = ['Student ID', 'Password']
 st_pass_df = load_clean_data(STUDENT_PASSWORDS_FILE, st_pass_cols)
 
-# Ensure All Students Have Credentials Initialized (Auto Login Fix)
+# Ensure All Students Have Credentials Initialized
 if not student_df.empty:
     updated_passwords = False
     for _, srow in student_df.iterrows():
@@ -266,7 +266,6 @@ if menu == "🏠 Home & Public Enquiry":
 
     st.markdown("---")
 
-    # MOVING STUDENT OF THE MONTH
     st.markdown("### 🏆 Student of the Month & 100% Attendance Champions")
     
     top_winners = []
@@ -380,104 +379,112 @@ if menu == "🏠 Home & Public Enquiry":
                     st.error("⚠️ Please fill in both Name and Mobile Number to view fee!")
 
 # ==========================================
-# 2. NEW STUDENT ADMISSION FORM (EXACT CALENDAR DATES)
+# 2. NEW STUDENT ADMISSION FORM (SECURED)
 # ==========================================
 elif menu == "📝 New Student Admission":
     st.title("📝 Student Record & Registration Form")
     st.markdown("<h4 style='color: #004085;'>SOFT TECH COMPUTERS, KAMARCHUBURI, THELAMARA</h4>", unsafe_allow_html=True)
-    st.info("Fill out the formal student record form below to register new admission.")
-
-    with st.form("admission_form"):
-        st.markdown("#### 👤 Student Personal Details")
-        c1, c2 = st.columns(2)
-        s_name = c1.text_input("Student Name *")
-        s_father = c2.text_input("Father Name *")
-        s_mother = c1.text_input("Mother Name *")
-        s_gender = c2.selectbox("Gender *", ["Male", "Female", "Other"])
+    
+    # Security Lock for Admission Form
+    st.warning("🔒 **Secure Section: Staff Access Only**")
+    auth_pin = st.text_input("Enter Passcode (Teacher or Admin PIN) to unlock Admission Form", type="password")
+    
+    if auth_pin == get_teacher_pin() or auth_pin == get_admin_password():
+        st.success("✅ Access Granted. You may proceed with the admission.")
         
-        c3, c4 = st.columns(2)
-        s_dob = c3.text_input("D.O.B (DD-MM-YYYY) *", value="01-01-2008")
-        s_caste = c4.selectbox("Caste *", ["General", "OBC / MOBC", "SC", "ST", "Other"])
-        s_mobile = c3.text_input("Contact No. (Mobile) *")
-        s_photo = c4.file_uploader("Upload Student Photo (JPG/PNG)", type=['jpg', 'jpeg', 'png'])
-
-        st.markdown("---")
-        st.markdown("#### 🏡 Mandatory Address Breakup (Separate Cells)")
-        a1, a2 = st.columns(2)
-        s_vill = a1.text_input("Village / Town (Vill) *")
-        s_po = a2.text_input("Post Office (P.O.) *")
-        s_ps = a1.text_input("Police Station (P.S.) *")
-        s_pin = a2.text_input("PIN Code *")
-        s_dist = a1.text_input("District *", value="Sonitpur")
-
-        st.markdown("---")
-        st.markdown("#### 📚 Academic & Course Duration Details")
-        ac1, ac2, ac3 = st.columns(3)
-        s_course = ac1.selectbox("Course Selected *", list(st.session_state.fee_settings.keys()))
-        s_duration = ac2.selectbox("Duration *", ["12 Months", "6 Months", "3 Months", "2 Months", "1 Month", "45 Days"])
-        s_session = ac3.text_input("Session *", value="2026-2027")
-
-        ac4, ac5 = st.columns(2)
-        s_join_date = ac4.text_input("Join Date (YYYY-MM-DD) *", value=get_ist_date_str())
-        
-        auto_calculated_valid_date = calculate_course_end_date(s_join_date, s_duration)
-        s_valid_upto = ac5.text_input("Valid Up To (Exact 1-Year/Duration Match) *", value=auto_calculated_valid_date)
-        
-        s_batch = st.selectbox("Batch Time Schedule *", BATCH_OPTIONS)
-        s_mode = st.selectbox("Admission Mode *", ["Monthly Installments", "Full Onetime"])
-
-        st.markdown("---")
-        st.markdown("#### 💳 Initial Admission Fee & Receipt Details")
-        fc1, fc2, fc3 = st.columns(3)
-        s_exact_fee = fc1.number_input("Exact Course Fee (₹)", value=8598.0)
-        s_discount = fc2.number_input("Discount (₹)", value=0.0)
-        s_exam_fee = fc3.number_input("Exam Fee (₹)", value=999.0)
-
-        fc4, fc5, fc6 = st.columns(3)
-        s_initial_pay = fc4.number_input("Initial Admission Fee Paid (₹) *", min_value=0.0, value=999.0)
-        s_pay_mode = fc5.selectbox("Payment Mode *", PAYMENT_MODES)
-        s_receipt_no = fc6.text_input("Manual Fee Receipt No. *", value="001")
-
-        if st.form_submit_button("🎓 Confirm & Save Student Record"):
-            existing_mobiles = student_df['Mobile No'].astype(str).tolist() if not student_df.empty else []
+        with st.form("admission_form"):
+            st.markdown("#### 👤 Student Personal Details")
+            c1, c2 = st.columns(2)
+            s_name = c1.text_input("Student Name *")
+            s_father = c2.text_input("Father Name *")
+            s_mother = c1.text_input("Mother Name *")
+            s_gender = c2.selectbox("Gender *", ["Male", "Female", "Other"])
             
-            if str(s_mobile).strip() in existing_mobiles:
-                st.error("❌ **Duplicate Mobile Blocked:** This Contact Number is already registered for another student!")
-            elif s_name and s_mobile and s_vill and s_po and s_ps and s_pin and s_dist and s_receipt_no:
-                new_id = f"STC26-00{len(student_df)+1}"
-                today_date_str = get_ist_date_str()
-                full_addr_str = f"Vill- {s_vill}, P.O.- {s_po}, P.S.- {s_ps}, PIN- {s_pin}, Dist- {s_dist}"
+            c3, c4 = st.columns(2)
+            s_dob = c3.text_input("D.O.B (DD-MM-YYYY) *", value="01-01-2008")
+            s_caste = c4.selectbox("Caste *", ["General", "OBC / MOBC", "SC", "ST", "Other"])
+            s_mobile = c3.text_input("Contact No. (Mobile) *")
+            s_photo = c4.file_uploader("Upload Student Photo (JPG/PNG)", type=['jpg', 'jpeg', 'png'])
+
+            st.markdown("---")
+            st.markdown("#### 🏡 Mandatory Address Breakup (Separate Cells)")
+            a1, a2 = st.columns(2)
+            s_vill = a1.text_input("Village / Town (Vill) *")
+            s_po = a2.text_input("Post Office (P.O.) *")
+            s_ps = a1.text_input("Police Station (P.S.) *")
+            s_pin = a2.text_input("PIN Code *")
+            s_dist = a1.text_input("District *", value="Sonitpur")
+
+            st.markdown("---")
+            st.markdown("#### 📚 Academic & Course Duration Details")
+            ac1, ac2, ac3 = st.columns(3)
+            s_course = ac1.selectbox("Course Selected *", list(st.session_state.fee_settings.keys()))
+            s_duration = ac2.selectbox("Duration *", ["12 Months", "6 Months", "3 Months", "2 Months", "1 Month", "45 Days"])
+            s_session = ac3.text_input("Session *", value="2026-2027")
+
+            ac4, ac5 = st.columns(2)
+            s_join_date = ac4.text_input("Join Date (YYYY-MM-DD) *", value=get_ist_date_str())
+            
+            auto_calculated_valid_date = calculate_course_end_date(s_join_date, s_duration)
+            s_valid_upto = ac5.text_input("Valid Up To (Exact 1-Year/Duration Match) *", value=auto_calculated_valid_date)
+            
+            s_batch = st.selectbox("Batch Time Schedule *", BATCH_OPTIONS)
+            s_mode = st.selectbox("Admission Mode *", ["Monthly Installments", "Full Onetime"])
+
+            st.markdown("---")
+            st.markdown("#### 💳 Initial Admission Fee & Receipt Details")
+            fc1, fc2, fc3 = st.columns(3)
+            s_exact_fee = fc1.number_input("Exact Course Fee (₹)", value=8598.0)
+            s_discount = fc2.number_input("Discount (₹)", value=0.0)
+            s_exam_fee = fc3.number_input("Exam Fee (₹)", value=999.0)
+
+            fc4, fc5, fc6 = st.columns(3)
+            s_initial_pay = fc4.number_input("Initial Admission Fee Paid (₹) *", min_value=0.0, value=999.0)
+            s_pay_mode = fc5.selectbox("Payment Mode *", PAYMENT_MODES)
+            s_receipt_no = fc6.text_input("Manual Fee Receipt No. *", value="001")
+
+            if st.form_submit_button("🎓 Confirm & Save Student Record"):
+                existing_mobiles = student_df['Mobile No'].astype(str).tolist() if not student_df.empty else []
                 
-                if s_photo is not None:
-                    photo_save_path = os.path.join(PHOTOS_DIR, f"{new_id}.jpg")
-                    with open(photo_save_path, "wb") as f:
-                        f.write(s_photo.getbuffer())
+                if str(s_mobile).strip() in existing_mobiles:
+                    st.error("❌ **Duplicate Mobile Blocked:** This Contact Number is already registered for another student!")
+                elif s_name and s_mobile and s_vill and s_po and s_ps and s_pin and s_dist and s_receipt_no:
+                    new_id = f"STC26-00{len(student_df)+1}"
+                    today_date_str = get_ist_date_str()
+                    full_addr_str = f"Vill- {s_vill}, P.O.- {s_po}, P.S.- {s_ps}, PIN- {s_pin}, Dist- {s_dist}"
+                    
+                    if s_photo is not None:
+                        photo_save_path = os.path.join(PHOTOS_DIR, f"{new_id}.jpg")
+                        with open(photo_save_path, "wb") as f:
+                            f.write(s_photo.getbuffer())
 
-                breakdown = f"1st Installment [Admission Fee]: ₹{int(s_initial_pay)} ({s_pay_mode}) [Receipt No: {s_receipt_no}] on {today_date_str}"
-                
-                new_row = pd.DataFrame([[
-                    new_id, s_name, s_father, s_mother, s_gender, s_dob, s_caste, str(s_mobile),
-                    s_vill, s_po, s_ps, str(s_pin), s_dist, full_addr_str, s_course, s_duration, s_session, s_join_date, s_valid_upto, s_batch,
-                    s_mode, s_exact_fee, s_discount, s_exam_fee, s_initial_pay, breakdown, today_date_str,
-                    "Pending", "Pending", "Pending", "No", "Pending", "Pending", "N/A", "N/A"
-                ]], columns=student_df.columns)
-                
-                student_df = pd.concat([student_df, new_row], ignore_index=True)
-                save_data(student_df, STUDENT_MASTER_FILE)
+                    breakdown = f"1st Installment [Admission Fee]: ₹{int(s_initial_pay)} ({s_pay_mode}) [Receipt No: {s_receipt_no}] on {today_date_str}"
+                    
+                    new_row = pd.DataFrame([[
+                        new_id, s_name, s_father, s_mother, s_gender, s_dob, s_caste, str(s_mobile),
+                        s_vill, s_po, s_ps, str(s_pin), s_dist, full_addr_str, s_course, s_duration, s_session, s_join_date, s_valid_upto, s_batch,
+                        s_mode, s_exact_fee, s_discount, s_exam_fee, s_initial_pay, breakdown, today_date_str,
+                        "Pending", "Pending", "Pending", "No", "Pending", "Pending", "N/A", "N/A"
+                    ]], columns=student_df.columns)
+                    
+                    student_df = pd.concat([student_df, new_row], ignore_index=True)
+                    save_data(student_df, STUDENT_MASTER_FILE)
 
-                pass_row = pd.DataFrame([[new_id, str(s_mobile)]], columns=st_pass_df.columns)
-                st_pass_df = pd.concat([st_pass_df, pass_row], ignore_index=True)
-                save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
+                    pass_row = pd.DataFrame([[new_id, str(s_mobile)]], columns=st_pass_df.columns)
+                    st_pass_df = pd.concat([st_pass_df, pass_row], ignore_index=True)
+                    save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
 
-                new_log = pd.DataFrame([[today_date_str, "Self / Desk", new_id, s_name, s_initial_pay, s_pay_mode, s_receipt_no]], columns=fee_log_df.columns)
-                fee_log_df = pd.concat([fee_log_df, new_log], ignore_index=True)
-                save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
+                    new_log = pd.DataFrame([[today_date_str, "Self / Desk", new_id, s_name, s_initial_pay, s_pay_mode, s_receipt_no]], columns=fee_log_df.columns)
+                    fee_log_df = pd.concat([fee_log_df, new_log], ignore_index=True)
+                    save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
 
-                st.success(f"🎉 **Student Record Saved Successfully!** Generated Roll No: **{new_id}**")
-                st.info(f"🗓️ **Exact Course End Date:** `{s_valid_upto}`")
-                st.info(f"🔑 **Default Student Login Password:** `{s_mobile}`")
-            else:
-                st.error("⚠️ Please fill in all mandatory fields!")
+                    st.success(f"🎉 **Student Record Saved Successfully!** Generated Roll No: **{new_id}**")
+                    st.info(f"🗓️ **Exact Course End Date:** `{s_valid_upto}`")
+                    st.info(f"🔑 **Default Student Login Password:** `{s_mobile}`")
+                else:
+                    st.error("⚠️ Please fill in all mandatory fields!")
+    elif auth_pin:
+        st.error("❌ Incorrect Passcode! Access Denied.")
 
 # ==========================================
 # 3. STUDENT LOGIN PORTAL (FUTURISTIC ID CARD)
@@ -551,6 +558,7 @@ elif menu == "🔑 Student Login Portal":
                 qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={st_id}"
                 barcode_url = f"https://barcode.tec-it.com/barcode.ashx?data={st_id}&code=Code128&translate-esc=false"
 
+                # Fully fixed HTML block using correct tags
                 id_card_html = f'''
                 <div style="max-width: 650px; margin: auto; background: linear-gradient(135deg, rgba(0, 11, 24, 0.95), rgba(0, 36, 74, 0.95)); border: 2px solid #00f2fe; border-radius: 15px; padding: 25px; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 0 25px rgba(0, 242, 254, 0.4); position: relative; overflow: hidden;">
                     
