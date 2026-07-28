@@ -20,7 +20,7 @@ def get_ist_time_str():
 def get_ist_datetime_str():
     return get_ist_now().strftime("%Y-%m-%d %I:%M %p")
 
-# Smart AI Course End Date Calculator
+# Exact Calendar Month Course End Date Calculator (1 Year = Exact 12 Months)
 def calculate_course_end_date(start_date_str, duration_str):
     try:
         dt = datetime.strptime(str(start_date_str).strip(), "%Y-%m-%d")
@@ -28,20 +28,41 @@ def calculate_course_end_date(start_date_str, duration_str):
         dt = get_ist_now()
     
     d_str = str(duration_str).lower().strip()
-    if "12" in d_str:
-        end_dt = dt + timedelta(days=365)
+    
+    if "12" in d_str or "year" in d_str:
+        try:
+            end_dt = dt.replace(year=dt.year + 1) - timedelta(days=1)
+        except ValueError:
+            end_dt = dt + timedelta(days=365)
     elif "6" in d_str:
-        end_dt = dt + timedelta(days=180)
+        month = dt.month - 1 + 6
+        year = dt.year + month // 12
+        month = month % 12 + 1
+        day = min(dt.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+        end_dt = datetime(year, month, day) - timedelta(days=1)
     elif "3" in d_str:
-        end_dt = dt + timedelta(days=90)
+        month = dt.month - 1 + 3
+        year = dt.year + month // 12
+        month = month % 12 + 1
+        day = min(dt.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+        end_dt = datetime(year, month, day) - timedelta(days=1)
     elif "2" in d_str:
-        end_dt = dt + timedelta(days=60)
+        month = dt.month - 1 + 2
+        year = dt.year + month // 12
+        month = month % 12 + 1
+        day = min(dt.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+        end_dt = datetime(year, month, day) - timedelta(days=1)
     elif "1" in d_str or "month" in d_str:
-        end_dt = dt + timedelta(days=30)
+        month = dt.month - 1 + 1
+        year = dt.year + month // 12
+        month = month % 12 + 1
+        day = min(dt.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+        end_dt = datetime(year, month, day) - timedelta(days=1)
     elif "45" in d_str:
-        end_dt = dt + timedelta(days=45)
+        end_dt = dt + timedelta(days=44)
     else:
-        end_dt = dt + timedelta(days=180)
+        end_dt = dt + timedelta(days=179)
+        
     return end_dt.strftime("%Y-%m-%d")
 
 # Page Configuration
@@ -77,9 +98,8 @@ student_cols = [
 ]
 attendance_cols = ['Date', 'Student ID', 'Name', 'Action', 'Time']
 fee_collect_cols = ['Date', 'Collected By', 'Student ID', 'Student Name', 'Amount (₹)', 'Payment Mode', 'Fee Receipt No']
-teacher_cols = ['Date', 'Teacher Name', 'Shift', 'In-Time', 'Out-Time', 'Class Type', 'Topics Taught', 'Status', 'Shift Wage (₹)']
+teacher_cols = ['Date', 'Teacher Name', 'Shift', 'In-Time', 'Out-Time', 'Class Type', 'Topics Taught', 'Status', 'Status Info', 'Late Reason', 'Shift Wage (₹)']
 teacher_master_cols = ['Teacher ID', 'Teacher Name', 'Mobile No', 'Designation']
-feedback_cols = ['Timestamp', 'Student Name / ID', 'Rating', 'Teaching Quality', 'Lab Infrastructure', 'Comments']
 
 # Load Data Safely & Fix Missing Columns
 def load_clean_data(file_path, default_cols, is_student_file=False):
@@ -145,21 +165,20 @@ def set_teacher_pin(new_pin):
     tpdf = pd.DataFrame([{"pin": str(new_pin)}])
     tpdf.to_csv(TEACHER_PIN_FILE, index=False)
 
-# Load Clean Databases
+# Load Databases
 student_df = load_clean_data(STUDENT_MASTER_FILE, student_cols, is_student_file=True)
 attendance_df = load_clean_data(ATTENDANCE_LOG_FILE, attendance_cols)
 fee_log_df = load_clean_data(FEE_COLLECTION_LOG_FILE, fee_collect_cols)
 enquiry_db = load_clean_data(ENQUIRY_FILE, ['Name', 'Mobile', 'Course Selected', 'Timestamp'])
 teacher_db = load_clean_data(TEACHER_LOG_FILE, teacher_cols)
 teachers_master_df = load_clean_data(TEACHERS_MASTER_FILE, teacher_master_cols)
-feedback_db = load_clean_data(FEEDBACK_FILE, feedback_cols)
 routine_db = load_clean_data(ROUTINE_FILE, ['Shift', 'Timing', 'Days', 'Assigned Class'])
 
 # Student Passwords DB
 st_pass_cols = ['Student ID', 'Password']
 st_pass_df = load_clean_data(STUDENT_PASSWORDS_FILE, st_pass_cols)
 
-# Ensure All Students Have Credentials Initialized (Auto-Fix Login Issue)
+# Ensure All Students Have Credentials Initialized (Auto Login Fix)
 if not student_df.empty:
     updated_passwords = False
     for _, srow in student_df.iterrows():
@@ -172,14 +191,14 @@ if not student_df.empty:
     if updated_passwords:
         save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
 
-# Default Teachers if master is empty
+# Default Teachers
 if teachers_master_df.empty:
     teachers_master_df = pd.DataFrame([
         {"Teacher ID": "TC-01", "Teacher Name": "Zaan Hazarika", "Mobile No": "9854341170", "Designation": "Director / Instructor"},
         {"Teacher ID": "TC-02", "Teacher Name": "BIJOY KURMI", "Mobile No": "9854865864", "Designation": "Faculty"}
     ])
 
-# Clean Fixed STC Routine
+# Fixed Routine
 if routine_db.empty:
     routine_db = pd.DataFrame([
         {"Shift": "Morning Shift", "Timing": "07:30 AM - 09:00 AM", "Days": "MWF / TTS Slots", "Assigned Class": "Computer ADCA/DCA"},
@@ -208,16 +227,16 @@ BATCH_OPTIONS = [
 
 PAYMENT_MODES = ["Cash", "UPI (GooglePay/PhonePe/Paytm)", "Online / NetBanking", "Card / Cheque"]
 
-# Helper Options
-student_options = []
-if not student_df.empty:
-    student_options = [f"{row['Student ID']} - {row['Name']}" for _, row in student_df.iterrows()]
+SHIFT_TIMINGS = {
+    "Morning Shift": "07:30",
+    "Afternoon Shift": "16:00",
+    "Evening Shift": "17:30"
+}
 
-teacher_options = []
-if not teachers_master_df.empty:
-    teacher_options = [f"{row['Teacher ID']} - {row['Teacher Name']}" for _, row in teachers_master_df.iterrows()]
+student_options = [f"{row['Student ID']} - {row['Name']}" for _, row in student_df.iterrows()] if not student_df.empty else []
+teacher_options = [f"{row['Teacher ID']} - {row['Teacher Name']}" for _, row in teachers_master_df.iterrows()] if not teachers_master_df.empty else []
 
-# Fast Native Navigation Menu Options
+# Fast Navigation Menu
 st.sidebar.title("💻 STC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
     "🏠 Home & Public Enquiry", 
@@ -247,7 +266,7 @@ if menu == "🏠 Home & Public Enquiry":
 
     st.markdown("---")
 
-    # MOVING STUDENT OF THE MONTH & 100% ATTENDANCE CHAMPIONS
+    # MOVING STUDENT OF THE MONTH
     st.markdown("### 🏆 Student of the Month & 100% Attendance Champions")
     
     top_winners = []
@@ -361,7 +380,7 @@ if menu == "🏠 Home & Public Enquiry":
                     st.error("⚠️ Please fill in both Name and Mobile Number to view fee!")
 
 # ==========================================
-# 2. NEW STUDENT ADMISSION FORM (SMART AI AUTO DATES)
+# 2. NEW STUDENT ADMISSION FORM (EXACT CALENDAR DATES)
 # ==========================================
 elif menu == "📝 New Student Admission":
     st.title("📝 Student Record & Registration Form")
@@ -392,7 +411,7 @@ elif menu == "📝 New Student Admission":
         s_dist = a1.text_input("District *", value="Sonitpur")
 
         st.markdown("---")
-        st.markdown("#### 📚 Academic & Course Duration Details (Smart AI End Date Calculator)")
+        st.markdown("#### 📚 Academic & Course Duration Details")
         ac1, ac2, ac3 = st.columns(3)
         s_course = ac1.selectbox("Course Selected *", list(st.session_state.fee_settings.keys()))
         s_duration = ac2.selectbox("Duration *", ["12 Months", "6 Months", "3 Months", "2 Months", "1 Month", "45 Days"])
@@ -401,9 +420,8 @@ elif menu == "📝 New Student Admission":
         ac4, ac5 = st.columns(2)
         s_join_date = ac4.text_input("Join Date (YYYY-MM-DD) *", value=get_ist_date_str())
         
-        # Smart AI Calculated End Date
         auto_calculated_valid_date = calculate_course_end_date(s_join_date, s_duration)
-        s_valid_upto = ac5.text_input("Valid Up To (Auto Calculated End Date) *", value=auto_calculated_valid_date)
+        s_valid_upto = ac5.text_input("Valid Up To (Exact 1-Year/Duration Match) *", value=auto_calculated_valid_date)
         
         s_batch = st.selectbox("Batch Time Schedule *", BATCH_OPTIONS)
         s_mode = st.selectbox("Admission Mode *", ["Monthly Installments", "Full Onetime"])
@@ -430,7 +448,6 @@ elif menu == "📝 New Student Admission":
                 today_date_str = get_ist_date_str()
                 full_addr_str = f"Vill- {s_vill}, P.O.- {s_po}, P.S.- {s_ps}, PIN- {s_pin}, Dist- {s_dist}"
                 
-                # Save Photo
                 if s_photo is not None:
                     photo_save_path = os.path.join(PHOTOS_DIR, f"{new_id}.jpg")
                     with open(photo_save_path, "wb") as f:
@@ -448,24 +465,22 @@ elif menu == "📝 New Student Admission":
                 student_df = pd.concat([student_df, new_row], ignore_index=True)
                 save_data(student_df, STUDENT_MASTER_FILE)
 
-                # Set Default Student Password as Mobile Number
                 pass_row = pd.DataFrame([[new_id, str(s_mobile)]], columns=st_pass_df.columns)
                 st_pass_df = pd.concat([st_pass_df, pass_row], ignore_index=True)
                 save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
 
-                # Log Payment
                 new_log = pd.DataFrame([[today_date_str, "Self / Desk", new_id, s_name, s_initial_pay, s_pay_mode, s_receipt_no]], columns=fee_log_df.columns)
                 fee_log_df = pd.concat([fee_log_df, new_log], ignore_index=True)
                 save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
 
                 st.success(f"🎉 **Student Record Saved Successfully!** Generated Roll No: **{new_id}**")
-                st.info(f"🗓️ **Auto AI Calculated Course End Date:** `{s_valid_upto}`")
+                st.info(f"🗓️ **Exact Course End Date:** `{s_valid_upto}`")
                 st.info(f"🔑 **Default Student Login Password:** `{s_mobile}`")
             else:
-                st.error("⚠️ Please fill in all mandatory fields (including separate Address fields)!")
+                st.error("⚠️ Please fill in all mandatory fields!")
 
 # ==========================================
-# 3. STUDENT LOGIN PORTAL (FIXED LOGIN & INSTALLMENT LEDGER)
+# 3. STUDENT LOGIN PORTAL (FUTURISTIC ID CARD)
 # ==========================================
 elif menu == "🔑 Student Login Portal":
     st.title("🔑 Student Self-Service Login Portal")
@@ -488,18 +503,15 @@ elif menu == "🔑 Student Login Portal":
                 
                 user_authenticated = False
                 
-                # Check DB Passwords
                 if not matched_pass.empty:
                     correct_pass = str(matched_pass.iloc[0]['Password']).strip()
                     if login_pass == correct_pass:
                         user_authenticated = True
                 
-                # Auto-Fix Fallback: Check Direct Mobile No from Student Master
                 if not user_authenticated and not matched_st_master.empty:
                     actual_mobile = str(matched_st_master.iloc[0]['Mobile No']).strip()
                     if login_pass == actual_mobile:
                         user_authenticated = True
-                        # Auto-fix credential ledger
                         p_idx = st_pass_df[st_pass_df['Student ID'] == login_user].index
                         if not p_idx.empty:
                             st_pass_df.loc[p_idx, 'Password'] = actual_mobile
@@ -529,32 +541,75 @@ elif menu == "🔑 Student Login Portal":
 
             st.title(f"Welcome, {s_info['Name']}! 👋")
             
-            stab1, stab2, stab3, stab4 = st.tabs(["🆔 Digital ID Card (QR)", "💳 Fee Installment Record Form", "⏱️ Attendance & Duration", "🎟️ Exam, Admit Card & Result"])
+            stab1, stab2, stab3, stab4 = st.tabs(["🆔 AI Futuristic Digital ID Card", "💳 Fee Installment Record Form", "⏱️ Attendance & Badges", "🎟️ Exam, Admit Card & Result"])
 
             with stab1:
-                st.markdown("### 🆔 SOFT TECH COMPUTERS - DIGITAL STUDENT ID CARD")
+                st.markdown("### 🆔 SOFT TECH COMPUTERS - FUTURISTIC DIGITAL ID CARD")
                 
-                id_col1, id_col2 = st.columns([1, 2])
                 p_path = os.path.join(PHOTOS_DIR, f"{st_id}.jpg")
-                
-                with id_col1:
-                    if os.path.exists(p_path):
-                        st.image(p_path, width=160, caption=f"Roll No: {st_id}")
-                    else:
-                        st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=140, caption="Student Avatar")
-                    
-                    qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={st_id}"
-                    st.image(qr_code_url, caption="Digital Attendance QR", width=120)
+                avatar_url = f"app/static/{st_id}.jpg" if os.path.exists(p_path) else "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+                qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={st_id}"
+                barcode_url = f"https://barcode.tec-it.com/barcode.ashx?data={st_id}&code=Code128&translate-esc=false"
 
-                with id_col2:
-                    st.markdown(f"#### **SOFT TECH COMPUTERS, KAMARCHUBURI, THELAMARA**")
-                    st.markdown(f"**Roll No:** `{st_id}`")
-                    st.write(f"**Student Name:** {s_info['Name']}")
-                    st.write(f"**Father Name:** {s_info['Father Name']} | **Mother Name:** {s_info['Mother Name']}")
-                    st.write(f"**Gender:** {s_info['Gender']} | **D.O.B:** {s_info['DOB']} | **Caste:** {s_info['Caste']}")
-                    st.write(f"**Course:** {s_info['Course']} | **Duration:** {s_info['Duration']} | **Session:** {s_info['Session']}")
-                    st.write(f"**Batch Time Schedule:** {s_info['Batch Time']}")
-                    st.write(f"**Address:** {s_info['Full Address']}")
+                id_card_html = f'''
+                <div style="max-width: 650px; margin: auto; background: linear-gradient(135deg, rgba(0, 11, 24, 0.95), rgba(0, 36, 74, 0.95)); border: 2px solid #00f2fe; border-radius: 15px; padding: 25px; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 0 25px rgba(0, 242, 254, 0.4); position: relative; overflow: hidden;">
+                    
+                    <!-- Glowing Top Neon Bar -->
+                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: linear-gradient(90deg, #00f2fe, #4facfe, #00f2fe); box-shadow: 0 0 10px #00f2fe;"></div>
+
+                    <!-- Header -->
+                    <div style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #00f2fe; text-transform: uppercase; letter-spacing: 2.5px; text-shadow: 0 0 8px rgba(0, 242, 254, 0.6); font-weight: 900;">Soft Tech Computers</h2>
+                        <p style="margin: 5px 0 0; font-size: 11px; color: #ccc; letter-spacing: 1px;">KAMARCHUBURI, THELAMARA, SONITPUR | CENTER CODE: 4159</p>
+                        <p style="margin: 2px 0 0; font-size: 10px; color: #28a745; font-weight: bold;">ISO 9001:2015 CERTIFIED INSTITUTION</p>
+                    </div>
+
+                    <div style="display: flex; gap: 25px; align-items: center;">
+                        <!-- Glowing Photo Area -->
+                        <div style="flex: 1; text-align: center;">
+                            <div style="width: 130px; height: 130px; margin: auto; border-radius: 50%; padding: 4px; background: linear-gradient(45deg, #00f2fe, #4facfe, #00f2fe); box-shadow: 0 0 20px rgba(0, 242, 254, 0.6);">
+                                <img src="{avatar_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #001122;">
+                            </div>
+                            <div style="margin-top: 15px; background: rgba(0, 242, 254, 0.15); border: 1px solid #00f2fe; border-radius: 20px; padding: 6px 15px; font-size: 13px; font-weight: bold; color: #00f2fe; display: inline-block; box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);">
+                                ID: {st_id}
+                            </div>
+                        </div>
+                        
+                        <!-- Details Area -->
+                        <div style="flex: 2; line-height: 1.7; font-size: 14px; text-shadow: 0 0 2px rgba(0,0,0,0.5);">
+                            <div style="font-size: 22px; font-weight: 900; color: #ffffff; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;">{s_info['Name']}</div>
+                            <div><span style="color: #00f2fe; font-weight: 600;">Course:</span> <span style="color: #fff;">{s_info['Course']}</span></div>
+                            <div><span style="color: #00f2fe; font-weight: 600;">Batch Time:</span> {s_info['Batch Time']}</div>
+                            <div><span style="color: #00f2fe; font-weight: 600;">Validity:</span> {s_info['Join Date']} <span style="color: #aaa;">to</span> <span style="color: #28a745; font-weight: bold;">{s_info['Valid Up To']}</span></div>
+                            <div><span style="color: #00f2fe; font-weight: 600;">Contact:</span> +91 {s_info['Mobile No']}</div>
+                        </div>
+                    </div>
+
+                    <!-- Footer with Dual Codes and Signature -->
+                    <div style="margin-top: 25px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 20px;">
+                        <!-- Digital Barcode -->
+                        <div>
+                            <img src="{barcode_url}" style="height: 45px; background: #fff; padding: 4px; border-radius: 6px;">
+                            <div style="font-size: 9px; color: #aaa; text-align: center; margin-top: 4px; letter-spacing: 1px;">DIGITAL TRACKING ID</div>
+                        </div>
+                        
+                        <!-- Director Signature -->
+                        <div style="text-align: center;">
+                            <div style="font-family: 'Brush Script MT', 'Dancing Script', cursive; font-size: 24px; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.5);">Zaan Hazarika</div>
+                            <div style="font-size: 11px; color: #00f2fe; border-top: 1px solid #00f2fe; margin-top: 4px; padding-top: 4px; font-weight: bold; text-transform: uppercase;">Director Signature</div>
+                        </div>
+                        
+                        <!-- QR Code -->
+                        <div>
+                            <img src="{qr_code_url}" style="width: 60px; height: 60px; border-radius: 8px; border: 2px solid #00f2fe; padding: 3px; background: #fff; box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);">
+                        </div>
+                    </div>
+                </div>
+                '''
+                st.markdown(id_card_html, unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.info("💡 **To Print/Save ID Card as PDF:** Press `Ctrl + P` on your keyboard and select 'Save as PDF'. Make sure to enable 'Background graphics' in print settings for the colors!")
 
             with stab2:
                 st.subheader("💳 Student Record Form - Fee Installment Details")
@@ -574,7 +629,6 @@ elif menu == "🔑 Student Login Portal":
                 st.markdown("---")
                 st.markdown("### 📋 Formally Formatted 1st to 15th Fee Installment Ledger")
                 
-                # Parse Payment Breakdown into Table
                 breakdown_str = str(s_info['Payment Breakdown'])
                 installments_list = []
                 
@@ -593,18 +647,37 @@ elif menu == "🔑 Student Login Portal":
                     st.info("No installment payments recorded yet.")
 
             with stab3:
-                st.subheader("⏱️ Daily Attendance & Class Duration Monitor")
+                st.subheader("⏱️ Daily Attendance, Performance Badge & Duration")
                 
                 st_att_logs = attendance_df[attendance_df['Student ID'] == st_id] if not attendance_df.empty else pd.DataFrame()
                 st_att_count = len(st_att_logs)
                 total_classes = 20  
                 att_pct = round((st_att_count / total_classes) * 100, 1) if total_classes > 0 else 0
                 
+                # Performance Badges
+                if att_pct >= 100:
+                    badge_str = "🏆 ATTENDANCE CHAMPION (100% Attended)"
+                    badge_color = "#28a745"
+                elif att_pct >= 85:
+                    badge_str = "🔥 STAR PERFORMER STUDENT (85%+ Attended)"
+                    badge_color = "#ffc107"
+                elif att_pct >= 75:
+                    badge_str = "⭐ REGULAR LEARNER (75%+ Attended)"
+                    badge_color = "#17a2b8"
+                else:
+                    badge_str = "⚠️ ATTENDANCE LOW (Below 75%)"
+                    badge_color = "#dc3545"
+
+                st.markdown(f'''
+                    <div style="background-color: {badge_color}; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 16px; text-align: center; margin-bottom: 15px;">
+                        {badge_str}
+                    </div>
+                ''', unsafe_allow_html=True)
+
                 st.write(f"**Total Attended Days:** {st_att_count} Days (**{att_pct}%**)")
                 st.progress(min(att_pct / 100.0, 1.0))
                 
                 st.markdown("#### ⏳ Class Time Duration Standard: **90 Minutes / Shift**")
-                st.info("💡 **Shift Standard:** 90 Minutes per class. Attendance is marked per daily shift.")
 
             with stab4:
                 st.subheader("🎟️ Final Examination Lifecycle Tracker")
@@ -694,7 +767,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             st.error("No Student found with this Roll Number or Mobile Number!")
 
 # ==========================================
-# 5. TEACHER PORTAL & CLASS DURATION COUNTER
+# 5. TEACHER PORTAL (STRICT MANAGEMENT RULES)
 # ==========================================
 elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
     st.title("👨‍🏫 Teacher & Staff Desk")
@@ -704,46 +777,55 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
 
     if t_pin_input == current_teacher_pin:
         st.success("Access Granted to Staff Desk.")
-        ttab1, ttab2 = st.tabs(["⏱️ Teacher Shift & 90-Min Class Duration Log", "💵 Collect Fee & Issue Receipt"])
+        ttab1, ttab2 = st.tabs(["⏱️ Teacher Shift & Class Log", "💵 Collect Fee & Issue Receipt"])
 
         with ttab1:
-            st.subheader("Teacher Class Logging (Auto 90-Min Duration Calc)")
+            st.subheader("Teacher Class Logging (Auto Live System Time)")
             with st.form("teacher_log_form"):
                 t_selected_teacher = st.selectbox("Select Teacher Name", teacher_options if teacher_options else ["TC-01 - Zaan Hazarika"])
                 t_shift = st.selectbox("Shift", ["Morning Shift", "Afternoon Shift", "Evening Shift"])
                 
-                c_in_col, c_out_col = st.columns(2)
-                t_in = c_in_col.time_input("In-Time", datetime.strptime("07:30", "%H:%M").time())
-                t_out = c_out_col.time_input("Out-Time", datetime.strptime("09:00", "%H:%M").time())
-                
-                # Calculate Duration out of 90 Mins
-                dummy_date = datetime.today().date()
-                dt_in = datetime.combine(dummy_date, t_in)
-                dt_out = datetime.combine(dummy_date, t_out)
-                duration_mins = int((dt_out - dt_in).total_seconds() / 60)
-                if duration_mins < 0:
-                    duration_mins += 24 * 60
-                
-                dur_pct = round((duration_mins / 90.0) * 100, 1)
-                st.info(f"⏱️ **Calculated Class Duration:** **{duration_mins} Minutes** / 90 Minutes Standard (**{dur_pct}% Duration Completed**)")
+                live_time_now_str = get_ist_time_str()
+                st.info(f"🕒 **System Live Clock Capture:** `{live_time_now_str}`")
 
                 t_class_type = st.radio("Class Type", ["Theory", "Practical", "Both Theory & Practical"])
                 t_selected_topics = st.multiselect("Select Topics Taught Today", AVAILABLE_TOPICS)
-                t_status = st.selectbox("Status", ["Present", "Leave / Absent"])
+                t_status = st.selectbox("Status", ["Present", "Absent / Leave"])
+
+                # Strict Lateness and Absence tracking logic
+                st_info = ""
+                late_reason = ""
+                if t_status == "Present":
+                    # For simplicity, assuming any present submission requires a check against shift start.
+                    shift_start_str = SHIFT_TIMINGS.get(t_shift, "07:30")
+                    try:
+                        shift_start_dt = datetime.strptime(shift_start_str, "%H:%M").time()
+                        curr_time_dt = get_ist_now().time()
+                        # Calculate diff in minutes loosely
+                        shift_start_mins = shift_start_dt.hour * 60 + shift_start_dt.minute
+                        curr_time_mins = curr_time_dt.hour * 60 + curr_time_dt.minute
+                        
+                        if (curr_time_mins - shift_start_mins) > 10:
+                            st.error(f"🔴 **LATE ENTRY DETECTED:** You are logging in later than the {shift_start_str} start time.")
+                            late_reason = st.selectbox("Mandatory: Select Reason for Lateness *", 
+                                ["🚗 Traffic Jam / Road Block", "🤒 Health Issue / Not Well", "🏠 Family Emergency", "🛵 Vehicle Breakdown", "📌 Other Personal Reason"])
+                        else:
+                            st.success("🟢 **ON TIME ENTRY**")
+                    except Exception as e:
+                        pass
+                else:
+                    st_info = st.selectbox("Absent Status Information *", ["✅ Informed (By Phone/WhatsApp/Physical)", "❌ Uninformed / Absent Without Notice"])
 
                 if st.form_submit_button("Submit Class Log"):
                     t_teacher_name = t_selected_teacher.split(" - ")[1] if " - " in t_selected_teacher else t_selected_teacher
                     today_str = get_ist_date_str()
-                    t_in_str = t_in.strftime("%I:%M %p")
-                    t_out_str = t_out.strftime("%I:%M %p")
-                    topics_str = f"{', '.join(t_selected_topics)} ({duration_mins} Mins Class)" if t_selected_topics else f"General ({duration_mins} Mins Class)"
-                    
+                    topics_str = ", ".join(t_selected_topics) if t_selected_topics else "General"
                     shift_wage = round(230.0 / 3.0, 2) if t_status == "Present" else 0.0
 
-                    new_t_log = pd.DataFrame([[today_str, t_teacher_name, t_shift, t_in_str, t_out_str, t_class_type, topics_str, t_status, shift_wage]], columns=teacher_db.columns)
+                    new_t_log = pd.DataFrame([[today_str, t_teacher_name, t_shift, live_time_now_str, live_time_now_str, t_class_type, topics_str, t_status, st_info, late_reason, shift_wage]], columns=teacher_db.columns)
                     teacher_db = pd.concat([teacher_db, new_t_log], ignore_index=True)
                     save_data(teacher_db, TEACHER_LOG_FILE)
-                    st.success(f"✅ **Class log recorded! Durations: {duration_mins} Mins / 90 Mins.**")
+                    st.success(f"✅ **Class log recorded at {live_time_now_str}!** Saved to Salary Log.")
 
         with ttab2:
             st.subheader("💵 Deposit Student Fee (Manual Receipt Sync)")
@@ -809,7 +891,7 @@ elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
             st.error("No student record found with this mobile number!")
 
 # ==========================================
-# 7. ADMIN CONTROL PANEL (SMART OVERDUE FEE ALERTS)
+# 7. ADMIN CONTROL PANEL
 # ==========================================
 elif menu == "🔐 Admin Control Panel":
     st.title("🔐 Director / Admin Control Panel")
@@ -872,7 +954,7 @@ elif menu == "🔐 Admin Control Panel":
 
         with tab2:
             st.markdown("### 🚨 Smart Overdue Fee Defaulters & Red Notice Tracker")
-            st.info("💡 **Automatic Alert Rule:** Highlights students with pending fee due > ₹1500 or enrolled over 2 months with low payments.")
+            st.info("💡 **Automatic Alert Rule:** Highlights students with pending fee due > ₹1500.")
             
             overdue_list = []
             if not student_df.empty:
@@ -889,14 +971,13 @@ elif menu == "🔐 Admin Control Panel":
                             "Course": srow['Course'],
                             "Total Fee": f"₹{tot}",
                             "Paid": f"₹{paid}",
-                            "Pending Due": f"₹{due}",
-                            "Action": f"WhatsApp Warning"
+                            "Pending Due": f"₹{due}"
                         })
             
             if overdue_list:
                 od_df = pd.DataFrame(overdue_list)
                 st.error(f"⚠️ **Found {len(overdue_list)} Student(s) with High Pending Fees!**")
-                st.table(od_df[['Student ID', 'Name', 'Mobile No', 'Course', 'Paid', 'Pending Due']])
+                st.table(od_df)
                 
                 st.markdown("#### 📲 Send Direct Fee Reminder Warning")
                 sel_od_st = st.selectbox("Select Student to Send WhatsApp Alert", [f"{r['Student ID']} - {r['Name']}" for r in overdue_list])
