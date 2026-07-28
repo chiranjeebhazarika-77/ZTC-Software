@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 from datetime import datetime, timedelta
 import urllib.parse
@@ -290,26 +291,9 @@ if menu == "🏠 Home & Public Enquiry":
             p_path = os.path.join(PHOTOS_DIR, f"{wid}.jpg")
             img_src = f"app/static/{wid}.jpg" if os.path.exists(p_path) else "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
             
-            winner_items_html += f'''
-            <div style="display: inline-block; text-align: center; margin-right: 40px; background: #ffffff; padding: 10px; border-radius: 12px; border: 2px solid #ffc107; box-shadow: 2px 2px 8px rgba(0,0,0,0.1);">
-                <img src="{img_src}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #004085;"><br>
-                <span style="font-size: 15px; font-weight: bold; color: #004085;">⭐ {wname}</span><br>
-                <span style="font-size: 12px; color: #28a745; font-weight: bold;">{wid} ({max_count} Days Attended)</span>
-            </div>
-            '''
+            winner_items_html += f'<div style="display: inline-block; text-align: center; margin-right: 40px; background: #ffffff; padding: 10px; border-radius: 12px; border: 2px solid #ffc107; box-shadow: 2px 2px 8px rgba(0,0,0,0.1);"><img src="{img_src}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #004085;"><br><span style="font-size: 15px; font-weight: bold; color: #004085;">⭐ {wname}</span><br><span style="font-size: 12px; color: #28a745; font-weight: bold;">{wid} ({max_count} Days Attended)</span></div>'
 
-        full_marquee_html = f'''
-        <div style="background-color: #fff8e1; border: 2px solid #ffe082; padding: 12px; border-radius: 12px; margin-top: 10px;">
-            <marquee behavior="scroll" direction="left" scrollamount="6" onmouseover="this.stop();" onmouseout="this.start();">
-                <div style="display: flex; align-items: center;">
-                    <span style="font-size: 18px; font-weight: bold; color: #d32f2f; margin-right: 25px;">
-                        🏆 STUDENT OF THE MONTH CHAMPIONS:
-                    </span>
-                    {winner_items_html}
-                </div>
-            </marquee>
-        </div>
-        '''
+        full_marquee_html = f'<div style="background-color: #fff8e1; border: 2px solid #ffe082; padding: 12px; border-radius: 12px; margin-top: 10px;"><marquee behavior="scroll" direction="left" scrollamount="6" onmouseover="this.stop();" onmouseout="this.start();"><div style="display: flex; align-items: center;"><span style="font-size: 18px; font-weight: bold; color: #d32f2f; margin-right: 25px;">🏆 STUDENT OF THE MONTH CHAMPIONS:</span>{winner_items_html}</div></marquee></div>'
         st.markdown(full_marquee_html, unsafe_allow_html=True)
     else:
         st.info("🌟 **Student of the Month:** Will be announced based on monthly attendance performance!")
@@ -368,29 +352,22 @@ if menu == "🏠 Home & Public Enquiry":
                     whatsapp_number = "919854341170"
                     whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}"
 
-                    st.markdown(f'''
-                        <a href="{whatsapp_url}" target="_blank">
-                            <button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer; width:100%; margin-top:10px;">
-                                📲 Send Details directly on WhatsApp
-                            </button>
-                        </a>
-                    ''', unsafe_allow_html=True)
+                    st.markdown(f'''<a href="{whatsapp_url}" target="_blank"><button style="background-color:#25D366; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer; width:100%; margin-top:10px;">📲 Send Details directly on WhatsApp</button></a>''', unsafe_allow_html=True)
                 else:
                     st.error("⚠️ Please fill in both Name and Mobile Number to view fee!")
 
 # ==========================================
-# 2. NEW STUDENT ADMISSION FORM (SECURED)
+# 2. NEW STUDENT ADMISSION FORM (SECURITY LOCKED)
 # ==========================================
 elif menu == "📝 New Student Admission":
     st.title("📝 Student Record & Registration Form")
     st.markdown("<h4 style='color: #004085;'>SOFT TECH COMPUTERS, KAMARCHUBURI, THELAMARA</h4>", unsafe_allow_html=True)
     
-    # Security Lock for Admission Form
-    st.warning("🔒 **Secure Section: Staff Access Only**")
-    auth_pin = st.text_input("Enter Passcode (Teacher or Admin PIN) to unlock Admission Form", type="password")
+    st.warning("🔒 **Secure Section: Staff / Admin Access Only**")
+    auth_pin = st.text_input("Enter Passcode (Teacher PIN or Admin Password) to unlock form", type="password")
     
     if auth_pin == get_teacher_pin() or auth_pin == get_admin_password():
-        st.success("✅ Access Granted. You may proceed with the admission.")
+        st.success("✅ Access Granted! Fill out the formal record form below.")
         
         with st.form("admission_form"):
             st.markdown("#### 👤 Student Personal Details")
@@ -487,7 +464,7 @@ elif menu == "📝 New Student Admission":
         st.error("❌ Incorrect Passcode! Access Denied.")
 
 # ==========================================
-# 3. STUDENT LOGIN PORTAL (FUTURISTIC ID CARD)
+# 3. STUDENT LOGIN PORTAL (FIXED FUTURISTIC ID CARD)
 # ==========================================
 elif menu == "🔑 Student Login Portal":
     st.title("🔑 Student Self-Service Login Portal")
@@ -558,66 +535,93 @@ elif menu == "🔑 Student Login Portal":
                 qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={st_id}"
                 barcode_url = f"https://barcode.tec-it.com/barcode.ashx?data={st_id}&code=Code128&translate-esc=false"
 
-                # Fully fixed HTML block using correct tags
-                id_card_html = f'''
-                <div style="max-width: 650px; margin: auto; background: linear-gradient(135deg, rgba(0, 11, 24, 0.95), rgba(0, 36, 74, 0.95)); border: 2px solid #00f2fe; border-radius: 15px; padding: 25px; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 0 25px rgba(0, 242, 254, 0.4); position: relative; overflow: hidden;">
-                    
-                    <!-- Glowing Top Neon Bar -->
-                    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 6px; background: linear-gradient(90deg, #00f2fe, #4facfe, #00f2fe); box-shadow: 0 0 10px #00f2fe;"></div>
-
-                    <!-- Header -->
-                    <div style="text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 20px;">
-                        <h2 style="margin: 0; color: #00f2fe; text-transform: uppercase; letter-spacing: 2.5px; text-shadow: 0 0 8px rgba(0, 242, 254, 0.6); font-weight: 900;">Soft Tech Computers</h2>
-                        <p style="margin: 5px 0 0; font-size: 11px; color: #ccc; letter-spacing: 1px;">KAMARCHUBURI, THELAMARA, SONITPUR | CENTER CODE: 4159</p>
-                        <p style="margin: 2px 0 0; font-size: 10px; color: #28a745; font-weight: bold;">ISO 9001:2015 CERTIFIED INSTITUTION</p>
+                # High-Tech IFRAME Component Rendering (Eliminates raw Markdown code box bug)
+                card_component_code = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                <style>
+                  body {{ margin: 0; padding: 10px; background-color: transparent; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+                  .card {{
+                    max-width: 580px;
+                    margin: auto;
+                    background: linear-gradient(135deg, #000b18 0%, #00244a 100%);
+                    border: 2px solid #00f2fe;
+                    border-radius: 16px;
+                    padding: 20px;
+                    color: #ffffff;
+                    box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
+                    position: relative;
+                    box-sizing: border-box;
+                  }}
+                  .neon-bar {{
+                    position: absolute; top: 0; left: 0; width: 100%; height: 5px;
+                    background: linear-gradient(90deg, #00f2fe, #4facfe, #00f2fe);
+                    border-top-left-radius: 16px; border-top-right-radius: 16px;
+                  }}
+                  .header {{ text-align: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 10px; margin-bottom: 15px; }}
+                  .header h2 {{ margin: 0; color: #00f2fe; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: 900; text-shadow: 0 0 8px rgba(0,242,254,0.6); }}
+                  .header p {{ margin: 3px 0 0 0; font-size: 11px; color: #cccccc; letter-spacing: 0.5px; }}
+                  .header .iso {{ font-size: 10px; color: #28a745; font-weight: bold; margin-top: 2px; }}
+                  .body-grid {{ display: flex; gap: 20px; align-items: center; }}
+                  .photo-box {{ flex: 0 0 120px; text-align: center; }}
+                  .photo-img {{ width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid #00f2fe; box-shadow: 0 0 15px rgba(0,242,254,0.5); }}
+                  .id-badge {{ margin-top: 10px; background: rgba(0, 242, 254, 0.2); border: 1px solid #00f2fe; border-radius: 12px; padding: 4px 10px; font-size: 11px; font-weight: bold; color: #00f2fe; display: inline-block; }}
+                  .info-box {{ flex: 1; font-size: 13px; line-height: 1.7; }}
+                  .st-name {{ font-size: 19px; font-weight: 900; color: #ffffff; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px; }}
+                  .label {{ color: #00f2fe; font-weight: 600; }}
+                  .footer-grid {{ margin-top: 15px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 12px; }}
+                  .barcode-img {{ height: 38px; background: #fff; padding: 3px; border-radius: 4px; }}
+                  .sign-box {{ text-align: center; }}
+                  .sign-font {{ font-family: 'Brush Script MT', cursive, sans-serif; font-size: 22px; color: #ffffff; text-shadow: 0 0 5px rgba(255,255,255,0.5); }}
+                  .sign-title {{ font-size: 10px; color: #00f2fe; border-top: 1px solid #00f2fe; padding-top: 2px; font-weight: bold; text-transform: uppercase; }}
+                  .qr-img {{ width: 55px; height: 55px; border-radius: 6px; border: 1px solid #00f2fe; background: #fff; padding: 2px; }}
+                </style>
+                </head>
+                <body>
+                  <div class="card">
+                    <div class="neon-bar"></div>
+                    <div class="header">
+                      <h2>Soft Tech Computers</h2>
+                      <p>KAMARCHUBURI, THELAMARA, SONITPUR | CENTER CODE: 4159</p>
+                      <p class="iso">ISO 9001:2015 CERTIFIED INSTITUTION</p>
                     </div>
-
-                    <div style="display: flex; gap: 25px; align-items: center;">
-                        <!-- Glowing Photo Area -->
-                        <div style="flex: 1; text-align: center;">
-                            <div style="width: 130px; height: 130px; margin: auto; border-radius: 50%; padding: 4px; background: linear-gradient(45deg, #00f2fe, #4facfe, #00f2fe); box-shadow: 0 0 20px rgba(0, 242, 254, 0.6);">
-                                <img src="{avatar_url}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #001122;">
-                            </div>
-                            <div style="margin-top: 15px; background: rgba(0, 242, 254, 0.15); border: 1px solid #00f2fe; border-radius: 20px; padding: 6px 15px; font-size: 13px; font-weight: bold; color: #00f2fe; display: inline-block; box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);">
-                                ID: {st_id}
-                            </div>
-                        </div>
-                        
-                        <!-- Details Area -->
-                        <div style="flex: 2; line-height: 1.7; font-size: 14px; text-shadow: 0 0 2px rgba(0,0,0,0.5);">
-                            <div style="font-size: 22px; font-weight: 900; color: #ffffff; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;">{s_info['Name']}</div>
-                            <div><span style="color: #00f2fe; font-weight: 600;">Course:</span> <span style="color: #fff;">{s_info['Course']}</span></div>
-                            <div><span style="color: #00f2fe; font-weight: 600;">Batch Time:</span> {s_info['Batch Time']}</div>
-                            <div><span style="color: #00f2fe; font-weight: 600;">Validity:</span> {s_info['Join Date']} <span style="color: #aaa;">to</span> <span style="color: #28a745; font-weight: bold;">{s_info['Valid Up To']}</span></div>
-                            <div><span style="color: #00f2fe; font-weight: 600;">Contact:</span> +91 {s_info['Mobile No']}</div>
-                        </div>
+                    <div class="body-grid">
+                      <div class="photo-box">
+                        <img class="photo-img" src="{avatar_url}" alt="Photo">
+                        <div class="id-badge">ID: {st_id}</div>
+                      </div>
+                      <div class="info-box">
+                        <div class="st-name">{s_info['Name']}</div>
+                        <div><span class="label">Course:</span> {s_info['Course']} ({s_info['Duration']})</div>
+                        <div><span class="label">Batch Time:</span> {s_info['Batch Time']}</div>
+                        <div><span class="label">Validity:</span> {s_info['Join Date']} to <span style="color:#28a745; font-weight:bold;">{s_info['Valid Up To']}</span></div>
+                        <div><span class="label">Contact:</span> +91 {s_info['Mobile No']}</div>
+                      </div>
                     </div>
-
-                    <!-- Footer with Dual Codes and Signature -->
-                    <div style="margin-top: 25px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 20px;">
-                        <!-- Digital Barcode -->
-                        <div>
-                            <img src="{barcode_url}" style="height: 45px; background: #fff; padding: 4px; border-radius: 6px;">
-                            <div style="font-size: 9px; color: #aaa; text-align: center; margin-top: 4px; letter-spacing: 1px;">DIGITAL TRACKING ID</div>
-                        </div>
-                        
-                        <!-- Director Signature -->
-                        <div style="text-align: center;">
-                            <div style="font-family: 'Brush Script MT', 'Dancing Script', cursive; font-size: 24px; color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.5);">Zaan Hazarika</div>
-                            <div style="font-size: 11px; color: #00f2fe; border-top: 1px solid #00f2fe; margin-top: 4px; padding-top: 4px; font-weight: bold; text-transform: uppercase;">Director Signature</div>
-                        </div>
-                        
-                        <!-- QR Code -->
-                        <div>
-                            <img src="{qr_code_url}" style="width: 60px; height: 60px; border-radius: 8px; border: 2px solid #00f2fe; padding: 3px; background: #fff; box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);">
-                        </div>
+                    <div class="footer-grid">
+                      <div>
+                        <img class="barcode-img" src="{barcode_url}">
+                        <div style="font-size:8px; color:#aaa; text-align:center; margin-top:2px;">DIGITAL TRACKING ID</div>
+                      </div>
+                      <div class="sign-box">
+                        <div class="sign-font">Zaan Hazarika</div>
+                        <div class="sign-title">Director Signature</div>
+                      </div>
+                      <div>
+                        <img class="qr-img" src="{qr_code_url}">
+                      </div>
                     </div>
-                </div>
-                '''
-                st.markdown(id_card_html, unsafe_allow_html=True)
+                  </div>
+                </body>
+                </html>
+                """
+                
+                # Render via Native Streamlit HTML Frame Component
+                components.html(card_component_code, height=360)
                 
                 st.markdown("<br>", unsafe_allow_html=True)
-                st.info("💡 **To Print/Save ID Card as PDF:** Press `Ctrl + P` on your keyboard and select 'Save as PDF'. Make sure to enable 'Background graphics' in print settings for the colors!")
+                st.info("💡 **To Print/Save ID Card as PDF:** Press `Ctrl + P` on your keyboard and select 'Save as PDF'. Make sure to enable 'Background graphics' in print settings for full colors!")
 
             with stab2:
                 st.subheader("💳 Student Record Form - Fee Installment Details")
@@ -662,7 +666,6 @@ elif menu == "🔑 Student Login Portal":
                 total_classes = 20  
                 att_pct = round((st_att_count / total_classes) * 100, 1) if total_classes > 0 else 0
                 
-                # Performance Badges
                 if att_pct >= 100:
                     badge_str = "🏆 ATTENDANCE CHAMPION (100% Attended)"
                     badge_color = "#28a745"
@@ -676,11 +679,7 @@ elif menu == "🔑 Student Login Portal":
                     badge_str = "⚠️ ATTENDANCE LOW (Below 75%)"
                     badge_color = "#dc3545"
 
-                st.markdown(f'''
-                    <div style="background-color: {badge_color}; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 16px; text-align: center; margin-bottom: 15px;">
-                        {badge_str}
-                    </div>
-                ''', unsafe_allow_html=True)
+                st.markdown(f'<div style="background-color: {badge_color}; color: white; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 16px; text-align: center; margin-bottom: 15px;">{badge_str}</div>', unsafe_allow_html=True)
 
                 st.write(f"**Total Attended Days:** {st_att_count} Days (**{att_pct}%**)")
                 st.progress(min(att_pct / 100.0, 1.0))
@@ -800,16 +799,13 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
                 t_selected_topics = st.multiselect("Select Topics Taught Today", AVAILABLE_TOPICS)
                 t_status = st.selectbox("Status", ["Present", "Absent / Leave"])
 
-                # Strict Lateness and Absence tracking logic
                 st_info = ""
                 late_reason = ""
                 if t_status == "Present":
-                    # For simplicity, assuming any present submission requires a check against shift start.
                     shift_start_str = SHIFT_TIMINGS.get(t_shift, "07:30")
                     try:
                         shift_start_dt = datetime.strptime(shift_start_str, "%H:%M").time()
                         curr_time_dt = get_ist_now().time()
-                        # Calculate diff in minutes loosely
                         shift_start_mins = shift_start_dt.hour * 60 + shift_start_dt.minute
                         curr_time_mins = curr_time_dt.hour * 60 + curr_time_dt.minute
                         
@@ -1000,13 +996,7 @@ elif menu == "🔐 Admin Control Panel":
                     encoded_msg = urllib.parse.quote(msg_text)
                     wa_url = f"https://wa.me/91{od_mob}?text={encoded_msg}"
                     
-                    st.markdown(f'''
-                        <a href="{wa_url}" target="_blank">
-                            <button style="background-color:#d32f2f; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer;">
-                                📲 Send Direct WhatsApp Overdue Notice to {od_row['Name']}
-                            </button>
-                        </a>
-                    ''', unsafe_allow_html=True)
+                    st.markdown(f'''<a href="{wa_url}" target="_blank"><button style="background-color:#d32f2f; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer;">📲 Send Direct WhatsApp Overdue Notice to {od_row['Name']}</button></a>''', unsafe_allow_html=True)
             else:
                 st.success("🎉 No Overdue Fee Defaulters found! All payments are up to date.")
 
