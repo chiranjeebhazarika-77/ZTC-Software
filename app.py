@@ -1037,13 +1037,23 @@ elif menu == "🔐 Admin Control Panel":
             "🚨 Smart Overdue Alerts",
             "🔑 Credentials Ledger (Change Pass)",
             "🧾 Fee Audit Log", 
-            "🔐 Security Settings"
+            "🔐 Security Settings & Backups"
         ])
 
-        # TAB 1: ALL STUDENTS LIST
+        # TAB 1: ALL STUDENTS LIST (WITH EXPLICIT DIRECT DOWNLOAD BUTTON)
         with tab1:
             st.markdown(f"### Master Student Records ({len(student_df)} Total Students)")
-            st.dataframe(get_display_df(student_df), height=700, use_container_width=True)
+            
+            # Big Direct CSV Download Button for Students DB
+            st.download_button(
+                label="📥 Download Full Student Database (students_db.csv)",
+                data=student_df.to_csv(index=False).encode('utf-8'),
+                file_name="students_db.csv",
+                mime="text/csv",
+                key="download_students_db_btn"
+            )
+            
+            st.dataframe(get_display_df(student_df), height=600, use_container_width=True)
 
         # TAB 2: DIRECT QUICK FEE & BULK ATTENDANCE UPDATER
         with tab2:
@@ -1304,7 +1314,7 @@ elif menu == "🔐 Admin Control Panel":
             st.markdown("### 🧾 Fee Audit Log with Receipt Numbers")
             st.dataframe(get_display_df(fee_log_df), use_container_width=True)
 
-        # TAB 8: SECURITY SETTINGS
+        # TAB 8: SECURITY SETTINGS & FULL BACKUP DOWNLOADS
         with tab8:
             st.markdown("### 🔐 Admin & Teacher Passcode Settings")
             curr_adm_pwd = get_admin_password()
@@ -1319,3 +1329,13 @@ elif menu == "🔐 Admin Control Panel":
                     set_teacher_pin(new_teacher_pin.strip())
                     st.success("✅ Security Passcodes Updated Successfully!")
                     st.rerun()
+
+            st.markdown("---")
+            st.markdown("### 📦 One-Click System CSV Backups")
+            bk_c1, bk_c2 = st.columns(2)
+            bk_c1.download_button("📥 Backup Students Database (students_db.csv)", data=student_df.to_csv(index=False).encode('utf-8'), file_name="students_db.csv", mime="text/csv")
+            bk_c2.download_button("📥 Backup Teachers Master (teachers_db.csv)", data=teachers_master_df.to_csv(index=False).encode('utf-8'), file_name="teachers_db.csv", mime="text/csv")
+            
+            bk_c3, bk_c4 = st.columns(2)
+            bk_c3.download_button("📥 Backup Attendance Logs (attendance_log.csv)", data=attendance_df.to_csv(index=False).encode('utf-8'), file_name="attendance_log.csv", mime="text/csv")
+            bk_c4.download_button("📥 Backup Fee Collection Logs (fee_collection_log.csv)", data=fee_log_df.to_csv(index=False).encode('utf-8'), file_name="fee_collection_log.csv", mime="text/csv")
