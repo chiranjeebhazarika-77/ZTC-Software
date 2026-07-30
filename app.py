@@ -1027,19 +1027,19 @@ elif menu == "🔐 Admin Control Panel":
 
         if st.form_submit_button("💾 Save Profile Changes"):
    	 # Convert dataframe columns to string/object to avoid Pandas TypeError
-    student_df = student_df.astype(str)
-    student_df.loc[e_idx, 'Name'] = str(up_name)
-    student_df.loc[e_idx, 'Father Name'] = str(up_father)
-    student_df.loc[e_idx, 'Mother Name'] = str(up_mother)
-    student_df.loc[e_idx, 'Mobile No'] = str(up_mobile).strip()
-    student_df.loc[e_idx, 'Vill Town'] = str(up_vill)
-    student_df.loc[e_idx, 'PO'] = str(up_po)
-    student_df.loc[e_idx, 'PS'] = str(up_ps)
-    student_df.loc[e_idx, 'PIN Code'] = str(up_pin)
-    student_df.loc[e_idx, 'District'] = str(up_dist)
-    student_df.loc[e_idx, 'Full Address'] = f"Vill- {up_vill}, P.O.- {up_po}, P.S.- {up_ps}, PIN- {up_pin}, Dist- {up_dist}"
-    student_df.loc[e_idx, 'Batch Time'] = str(up_batch)
-    student_df.loc[e_idx, 'Student Status'] = str(up_status)
+    	student_df = student_df.astype(str)
+    	student_df.loc[e_idx, 'Name'] = str(up_name)
+    	student_df.loc[e_idx, 'Father Name'] = str(up_father)
+    	student_df.loc[e_idx, 'Mother Name'] = str(up_mother)
+    	student_df.loc[e_idx, 'Mobile No'] = str(up_mobile).strip()
+    	student_df.loc[e_idx, 'Vill Town'] = str(up_vill)
+    	student_df.loc[e_idx, 'PO'] = str(up_po)
+    	student_df.loc[e_idx, 'PS'] = str(up_ps)
+    	student_df.loc[e_idx, 'PIN Code'] = str(up_pin)
+    	student_df.loc[e_idx, 'District'] = str(up_dist)
+   	student_df.loc[e_idx, 'Full Address'] = f"Vill- {up_vill}, P.O.- {up_po}, P.S.- {up_ps}, PIN- {up_pin}, Dist- {up_dist}"
+    	student_df.loc[e_idx, 'Batch Time'] = str(up_batch)
+    	student_df.loc[e_idx, 'Student Status'] = str(up_status)
 
     save_data(student_df, STUDENT_MASTER_FILE)
     st.success(f"✅ Record for {up_name} ({edit_sid}) updated successfully!")
