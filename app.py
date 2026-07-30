@@ -1044,10 +1044,9 @@ elif menu == "🔐 Admin Control Panel":
     save_data(student_df, STUDENT_MASTER_FILE)
     st.success(f"✅ Record for {up_name} ({edit_sid}) updated successfully!")
     st.rerun()
-
-                st.markdown("---")
-                st.markdown("### 🗑️ Permanent Delete Student Record")
-                st.warning("⚠️ **Danger Zone:** Deleting a student will completely remove them from the database.")
+    st.markdown("---")
+    st.markdown("### 🗑️ Permanent Delete Student Record")
+    st.warning("⚠️ **Danger Zone:** Deleting a student will completely remove them from the database.")
                 
                 del_confirm = st.checkbox(f"I confirm that I want to delete student **{e_row['Name']} ({edit_sid})** permanently.")
                 if st.button("🗑️ Delete Student Permanently") and del_confirm:
