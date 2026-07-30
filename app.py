@@ -22,6 +22,15 @@ def get_ist_time_str():
 def get_ist_datetime_str():
     return get_ist_now().strftime("%Y-%m-%d %I:%M %p")
 
+# Display DataFrame with Sl No. starting from 1
+def get_display_df(df):
+    if df.empty:
+        return df
+    disp_df = df.copy()
+    disp_df.index = range(1, len(disp_df) + 1)
+    disp_df.index.name = "Sl. No."
+    return disp_df
+
 # Smart Roll Number Auto-Generator
 def generate_next_student_id(df):
     if df.empty or 'Student ID' not in df.columns:
@@ -238,9 +247,12 @@ if routine_db.empty:
         {"Shift": "Evening Shift", "Timing": "05:30 PM - 07:00 PM", "Days": "MWF / TTS Slots", "Assigned Class": "Computer Batch B"}
     ])
 
-# Session States
+# Session States (Added New Certificate Courses)
 if 'fee_settings' not in st.session_state:
-    st.session_state.fee_settings = {"ADCA": 8598, "DCA": 5500, "DTP": 4000, "Tally": 4500}
+    st.session_state.fee_settings = {
+        "ADCA": 8598, "DCA": 5500, "DTP": 4000, "Tally": 4500,
+        "Certificate (3 Months)": 2500, "Certificate (2 Months)": 1500, "Certificate (45 Days)": 1000
+    }
 
 AVAILABLE_TOPICS = [
     "Basic Computer", "MS Word", "MS Excel", "MS PPT", "MS Access", "HTML / DHTML", 
@@ -298,6 +310,7 @@ if menu == "🏠 Home & Public Enquiry":
 
     st.markdown("---")
 
+    # Marquee (Moving) Student of the Month
     st.markdown("### 🏆 Student of the Month & 100% Attendance Champions")
     
     top_winners = []
@@ -324,7 +337,15 @@ if menu == "🏠 Home & Public Enquiry":
             
             winner_items_html += f'<div style="display: inline-block; text-align: center; margin-right: 40px; background: #ffffff; padding: 10px; border-radius: 12px; border: 2px solid #ffc107; box-shadow: 2px 2px 8px rgba(0,0,0,0.1);"><img src="{img_src}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid #004085;"><br><span style="font-size: 15px; font-weight: bold; color: #004085;">⭐ {wname}</span><br><span style="font-size: 12px; color: #28a745; font-weight: bold;">{wid} ({max_count} Days Attended)</span></div>'
 
-        full_marquee_html = f'<div style="background-color: #fff8e1; border: 2px solid #ffe082; padding: 12px; border-radius: 12px; margin-top: 10px;"><marquee behavior="scroll" direction="left" scrollamount="6" onmouseover="this.stop();" onmouseout="this.start();"><div style="display: flex; align-items: center;"><span style="font-size: 18px; font-weight: bold; color: #d32f2f; margin-right: 25px;">🏆 STUDENT OF THE MONTH CHAMPIONS:</span>{winner_items_html}</div></marquee></div>'
+        full_marquee_html = f'''
+        <div style="background-color: #fff8e1; border: 2px solid #ffe082; padding: 15px; border-radius: 12px; margin-top: 10px; overflow: hidden;">
+            <marquee behavior="scroll" direction="left" scrollamount="8" onmouseover="this.stop();" onmouseout="this.start();">
+                <div style="display: flex; align-items: center;">
+                    <span style="font-size: 20px; font-weight: bold; color: #d32f2f; margin-right: 30px;">🏆 STUDENT OF THE MONTH CHAMPIONS 🏆</span>
+                    {winner_items_html}
+                </div>
+            </marquee>
+        </div>'''
         st.markdown(full_marquee_html, unsafe_allow_html=True)
     else:
         st.info("🌟 **Student of the Month:** Will be announced based on monthly attendance performance!")
@@ -335,11 +356,11 @@ if menu == "🏠 Home & Public Enquiry":
 
     with col1:
         st.markdown("### 🗓️ Active Class Time Table / Routine")
-        st.table(routine_db)
+        st.table(get_display_df(routine_db))
 
         st.markdown("### 🪙 Courses & Course Packages")
         fees_list = [{"Course/Class": k, "Total Course Fee": f"₹ {v}/-"} for k, v in st.session_state.fee_settings.items()]
-        st.table(pd.DataFrame(fees_list))
+        st.table(get_display_df(pd.DataFrame(fees_list)))
 
         st.markdown("### 🤖 Smart AI Course Recommendation Assistant")
         with st.expander("✨ Find the Best Course for You"):
@@ -388,7 +409,7 @@ if menu == "🏠 Home & Public Enquiry":
                     st.error("⚠️ Please fill in both Name and Mobile Number to view fee!")
 
 # ==========================================
-# 2. NEW STUDENT ADMISSION FORM (SECURED)
+# 2. NEW STUDENT ADMISSION FORM
 # ==========================================
 elif menu == "📝 New Student Admission":
     st.title("📝 Student Record & Registration Form")
@@ -510,7 +531,7 @@ elif menu == "🔑 Student Login Portal":
 
         with st.form("student_login_form"):
             login_user = st.text_input("Roll Number / Student ID").strip().upper()
-            login_pass = st.text_input("Password (Mobile No)", type="password").strip()
+            login_pass = st.text_input("Password", type="password").strip()
             
             if st.form_submit_button("🔑 Login Now"):
                 matched_st_master = student_df[student_df['Student ID'].astype(str).str.upper() == login_user]
@@ -540,7 +561,7 @@ elif menu == "🔑 Student Login Portal":
                     st.success("✅ Login Successful!")
                     st.rerun()
                 else:
-                    st.error("❌ Invalid Roll Number or Password (Mobile No)!")
+                    st.error("❌ Invalid Roll Number or Password!")
     else:
         st_id = st.session_state.logged_student_id
         matched_st = student_df[student_df['Student ID'] == st_id]
@@ -739,7 +760,7 @@ elif menu == "🔑 Student Login Portal":
                             })
                 
                 if installments_list:
-                    st.table(pd.DataFrame(installments_list))
+                    st.table(get_display_df(pd.DataFrame(installments_list)))
                 else:
                     st.info("No installment payments recorded yet.")
 
@@ -896,37 +917,42 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
                 t_selected_topics = st.multiselect("Select Topics Taught Today", AVAILABLE_TOPICS)
                 t_status = st.selectbox("Status", ["Present", "Absent / Leave"])
 
-                st_info = ""
-                late_reason = ""
-                if t_status == "Present":
-                    shift_start_str = SHIFT_TIMINGS.get(t_shift, "07:30")
-                    try:
-                        shift_start_dt = datetime.strptime(shift_start_str, "%H:%M").time()
-                        curr_time_dt = get_ist_now().time()
-                        shift_start_mins = shift_start_dt.hour * 60 + shift_start_dt.minute
-                        curr_time_mins = curr_time_dt.hour * 60 + curr_time_dt.minute
-                        
-                        if (curr_time_mins - shift_start_mins) > 10:
-                            st.error(f"🔴 **LATE ENTRY DETECTED:** You are logging in later than the {shift_start_str} start time.")
-                            late_reason = st.selectbox("Mandatory: Select Reason for Lateness *", 
-                                ["🚗 Traffic Jam / Road Block", "🤒 Health Issue / Not Well", "🏠 Family Emergency", "🛵 Vehicle Breakdown", "📌 Other Personal Reason"])
-                        else:
-                            st.success("🟢 **ON TIME ENTRY**")
-                    except Exception as e:
-                        pass
-                else:
-                    st_info = st.selectbox("Absent Status Information *", ["✅ Informed (By Phone/WhatsApp/Physical)", "❌ Uninformed / Absent Without Notice"])
+                late_reason = st.selectbox("Reason for Late Entry (If arriving late) *", ["N/A - On Time", "🚗 Traffic Jam / Road Block", "🤒 Health Issue / Not Well", "🏠 Family Emergency", "🛵 Vehicle Breakdown", "📌 Other Personal Reason"])
+                st_info = st.selectbox("Absent Status Information *", ["N/A - Present", "✅ Informed (By Phone/WhatsApp/Physical)", "❌ Uninformed / Absent Without Notice"])
 
                 if st.form_submit_button("Submit Class Log"):
-                    t_teacher_name = t_selected_teacher.split(" - ")[1] if " - " in t_selected_teacher else t_selected_teacher
-                    today_str = get_ist_date_str()
-                    topics_str = ", ".join(t_selected_topics) if t_selected_topics else "General"
-                    shift_wage = str(round(230.0 / 3.0, 2)) if t_status == "Present" else "0.0"
+                    
+                    is_valid = True
+                    # Validate Shift Timing dynamically based on the submitted t_shift
+                    if t_status == "Present":
+                        shift_start_str = SHIFT_TIMINGS.get(t_shift, "07:30")
+                        try:
+                            shift_start_dt = datetime.strptime(shift_start_str, "%H:%M").time()
+                            curr_time_dt = get_ist_now().time()
+                            shift_start_mins = shift_start_dt.hour * 60 + shift_start_dt.minute
+                            curr_time_mins = curr_time_dt.hour * 60 + curr_time_dt.minute
+                            
+                            if (curr_time_mins - shift_start_mins) > 10:
+                                if late_reason == "N/A - On Time":
+                                    st.error(f"🔴 **LATE ENTRY DETECTED:** You are logging in later than the {shift_start_str} start time. Please select a valid Reason for Late Entry!")
+                                    is_valid = False
+                                else:
+                                    st.warning("🟡 Logged with Late Reason.")
+                            else:
+                                st.success("🟢 **ON TIME ENTRY**")
+                        except Exception as e:
+                            pass
+                    
+                    if is_valid:
+                        t_teacher_name = t_selected_teacher.split(" - ")[1] if " - " in t_selected_teacher else t_selected_teacher
+                        today_str = get_ist_date_str()
+                        topics_str = ", ".join(t_selected_topics) if t_selected_topics else "General"
+                        shift_wage = str(round(230.0 / 3.0, 2)) if t_status == "Present" else "0.0"
 
-                    new_t_log = pd.DataFrame([[str(today_str), str(t_teacher_name), str(t_shift), str(live_time_now_str), str(live_time_now_str), str(t_class_type), str(topics_str), str(t_status), str(st_info), str(late_reason), str(shift_wage)]], columns=teacher_db.columns)
-                    teacher_db = pd.concat([teacher_db, new_t_log], ignore_index=True)
-                    save_data(teacher_db, TEACHER_LOG_FILE)
-                    st.success(f"✅ **Class log recorded at {live_time_now_str}!** Saved to Salary Log.")
+                        new_t_log = pd.DataFrame([[str(today_str), str(t_teacher_name), str(t_shift), str(live_time_now_str), str(live_time_now_str), str(t_class_type), str(topics_str), str(t_status), str(st_info), str(late_reason), str(shift_wage)]], columns=teacher_db.columns)
+                        teacher_db = pd.concat([teacher_db, new_t_log], ignore_index=True)
+                        save_data(teacher_db, TEACHER_LOG_FILE)
+                        st.success(f"✅ **Class log recorded successfully at {live_time_now_str}!** Saved to Salary Log.")
 
         with ttab2:
             st.subheader("💵 Deposit Student Fee (Manual Receipt Sync)")
@@ -992,7 +1018,7 @@ elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
             st.error("No student record found with this mobile number!")
 
 # ==========================================
-# 7. ADMIN CONTROL PANEL (WITH QUICK FEE & ATTENDANCE UPDATER)
+# 7. ADMIN CONTROL PANEL
 # ==========================================
 elif menu == "🔐 Admin Control Panel":
     st.title("🔐 Director / Admin Control Panel")
@@ -1005,21 +1031,21 @@ elif menu == "🔐 Admin Control Panel":
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
             "📊 Master Student Registry", 
-            "💵 Quick Fee & Attendance Updater",
+            "💵 Quick Fee/Attendance Updater",
             "✏️ Edit Student Details",
-            "👨‍🏫 Faculty / Teacher Manager",
+            "👨‍🏫 Faculty Manager (Edit/Delete)",
             "🚨 Smart Overdue Alerts",
-            "🔑 Credentials Ledger",
+            "🔑 Credentials Ledger (Change Pass)",
             "🧾 Fee Audit Log", 
             "🔐 Security Settings"
         ])
 
-        # TAB 1: ALL STUDENTS LIST (FULL UNTRUNCATED TABLE)
+        # TAB 1: ALL STUDENTS LIST
         with tab1:
             st.markdown(f"### Master Student Records ({len(student_df)} Total Students)")
-            st.dataframe(student_df, height=700, use_container_width=True)
+            st.dataframe(get_display_df(student_df), height=700, use_container_width=True)
 
-        # TAB 2: DIRECT QUICK FEE & BULK ATTENDANCE UPDATER (6-MONTH PAST DATA)
+        # TAB 2: DIRECT QUICK FEE & BULK ATTENDANCE UPDATER
         with tab2:
             st.markdown("### ⚡ Direct Bulk Fee & Past Attendance Updater")
             st.info("💡 **Use this for 6-month past record adjustment:** Enter total paid fee or add bulk past attended days in 1-click.")
@@ -1152,14 +1178,14 @@ elif menu == "🔐 Admin Control Panel":
                     st.success("❌ Student deleted permanently!")
                     st.rerun()
 
-        # TAB 4: MANAGE TEACHERS
+        # TAB 4: MANAGE TEACHERS (ADD, EDIT, DELETE)
         with tab4:
             st.markdown("### 👨‍🏫 Faculty / Teacher Master Registry")
-            st.dataframe(teachers_master_df, use_container_width=True)
+            st.dataframe(get_display_df(teachers_master_df), use_container_width=True)
 
-            col_t1, col_t2 = st.columns(2)
+            t_add_col, t_edit_col = st.columns(2)
 
-            with col_t1:
+            with t_add_col:
                 st.markdown("#### ➕ Add New Teacher / Faculty")
                 with st.form("add_teacher_form"):
                     new_t_id = st.text_input("Teacher ID", value=f"TC-0{len(teachers_master_df)+1}")
@@ -1177,18 +1203,45 @@ elif menu == "🔐 Admin Control Panel":
                         else:
                             st.error("Please fill Name and Mobile No!")
 
-            with col_t2:
-                st.markdown("#### 🗑️ Remove / Delete Teacher")
+            with t_edit_col:
+                st.markdown("#### ✏️ Edit / 🗑️ Delete Teacher")
                 if not teachers_master_df.empty:
                     current_teachers = [f"{r['Teacher ID']} - {r['Teacher Name']}" for _, r in teachers_master_df.iterrows()]
-                    del_t_sel = st.selectbox("Select Teacher to Permanently Delete", current_teachers, key="del_t_select_box")
                     
-                    if st.button("🗑️ Delete Selected Teacher"):
-                        del_tid = del_t_sel.split(" - ")[0]
-                        teachers_master_df = teachers_master_df[teachers_master_df['Teacher ID'] != del_tid].reset_index(drop=True)
-                        save_data(teachers_master_df, TEACHERS_MASTER_FILE)
-                        st.success(f"✅ Teacher {del_tid} removed from master database!")
-                        st.rerun()
+                    with st.form("edit_delete_teacher_form"):
+                        sel_t_combo = st.selectbox("Select Teacher to Update/Delete", current_teachers)
+                        sel_tid = sel_t_combo.split(" - ")[0]
+                        t_idx = teachers_master_df[teachers_master_df['Teacher ID'] == sel_tid].index[0]
+                        sel_t_row = teachers_master_df.loc[t_idx]
+
+                        up_t_name = st.text_input("Name", value=sel_t_row['Teacher Name'])
+                        up_t_mob = st.text_input("Mobile No", value=sel_t_row['Mobile No'])
+                        desig_options = ["Faculty / Instructor", "Lab Assistant", "Guest Teacher", "Director"]
+                        cur_desig = sel_t_row['Designation']
+                        up_t_desig = st.selectbox("Designation", desig_options, index=desig_options.index(cur_desig) if cur_desig in desig_options else 0)
+                        
+                        del_t_confirm = st.checkbox("Check here to confirm permanent deletion")
+                        
+                        e_btn1, e_btn2 = st.columns(2)
+                        upd_t_btn = e_btn1.form_submit_button("💾 Update Details")
+                        del_t_btn = e_btn2.form_submit_button("🗑️ Delete Teacher")
+                        
+                        if upd_t_btn:
+                            teachers_master_df.at[t_idx, 'Teacher Name'] = str(up_t_name)
+                            teachers_master_df.at[t_idx, 'Mobile No'] = str(up_t_mob)
+                            teachers_master_df.at[t_idx, 'Designation'] = str(up_t_desig)
+                            save_data(teachers_master_df, TEACHERS_MASTER_FILE)
+                            st.success(f"✅ Details updated for {sel_tid}!")
+                            st.rerun()
+                            
+                        if del_t_btn:
+                            if del_t_confirm:
+                                teachers_master_df = teachers_master_df.drop(t_idx).reset_index(drop=True)
+                                save_data(teachers_master_df, TEACHERS_MASTER_FILE)
+                                st.success(f"✅ Teacher {sel_tid} removed from master database!")
+                                st.rerun()
+                            else:
+                                st.error("⚠️ Please check the confirmation box to delete.")
 
         # TAB 5: OVERDUE ALERTS
         with tab5:
@@ -1220,19 +1273,36 @@ elif menu == "🔐 Admin Control Panel":
             if overdue_list:
                 od_df = pd.DataFrame(overdue_list)
                 st.error(f"⚠️ **Found {len(overdue_list)} Student(s) with Pending Fees > ₹1500!**")
-                st.table(od_df)
+                st.table(get_display_df(od_df))
             else:
                 st.success("🎉 No Overdue Fee Defaulters found!")
 
-        # TAB 6: CREDENTIALS LEDGER
+        # TAB 6: CREDENTIALS LEDGER (CHANGE STUDENT PASSWORD)
         with tab6:
             st.markdown("### 🔑 Student Credentials Ledger")
-            st.dataframe(st_pass_df, use_container_width=True)
+            st.dataframe(get_display_df(st_pass_df), use_container_width=True)
+            
+            st.markdown("#### 🔄 Change Student Login Password")
+            if not st_pass_df.empty:
+                with st.form("change_student_password_form"):
+                    pass_st_list = st_pass_df['Student ID'].tolist()
+                    sel_pass_id = st.selectbox("Select Student ID", pass_st_list)
+                    new_st_password = st.text_input("Enter New Password (e.g. Mobile No)")
+                    
+                    if st.form_submit_button("💾 Save New Password"):
+                        if new_st_password:
+                            p_idx = st_pass_df[st_pass_df['Student ID'] == sel_pass_id].index[0]
+                            st_pass_df.at[p_idx, 'Password'] = str(new_st_password).strip()
+                            save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
+                            st.success(f"✅ Password changed successfully for {sel_pass_id}!")
+                            st.rerun()
+                        else:
+                            st.error("Please enter a valid password.")
 
         # TAB 7: FEE AUDIT
         with tab7:
             st.markdown("### 🧾 Fee Audit Log with Receipt Numbers")
-            st.dataframe(fee_log_df, use_container_width=True)
+            st.dataframe(get_display_df(fee_log_df), use_container_width=True)
 
         # TAB 8: SECURITY SETTINGS
         with tab8:
