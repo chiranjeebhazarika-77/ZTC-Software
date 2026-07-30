@@ -1048,8 +1048,8 @@ elif menu == "🔐 Admin Control Panel":
     st.markdown("### 🗑️ Permanent Delete Student Record")
     st.warning("⚠️ **Danger Zone:** Deleting a student will completely remove them from the database.")
                 
-                del_confirm = st.checkbox(f"I confirm that I want to delete student **{e_row['Name']} ({edit_sid})** permanently.")
-                if st.button("🗑️ Delete Student Permanently") and del_confirm:
+    del_confirm = st.checkbox(f"I confirm that I want to delete student **{e_row['Name']} ({edit_sid})** permanently.")
+    if st.button("🗑️ Delete Student Permanently") and del_confirm:
                     student_df = student_df.drop(e_idx).reset_index(drop=True)
                     save_data(student_df, STUDENT_MASTER_FILE)
                     
