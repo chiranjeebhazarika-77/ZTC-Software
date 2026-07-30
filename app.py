@@ -1027,8 +1027,7 @@ elif menu == "🔐 Admin Control Panel":
 
         if st.form_submit_button("💾 Save Profile Changes"):
    	 # Convert dataframe columns to string/object to avoid Pandas TypeError
-   	 student_df = student_df.astype(str)
-    
+    student_df = student_df.astype(str)
     student_df.loc[e_idx, 'Name'] = str(up_name)
     student_df.loc[e_idx, 'Father Name'] = str(up_father)
     student_df.loc[e_idx, 'Mother Name'] = str(up_mother)
