@@ -1025,9 +1025,9 @@ elif menu == "🔐 Admin Control Panel":
                     up_batch = s1.selectbox("Batch Time", BATCH_OPTIONS, index=BATCH_OPTIONS.index(e_row['Batch Time']) if e_row['Batch Time'] in BATCH_OPTIONS else 0)
                     up_status = s2.selectbox("Student Status (Pass Out / Active)", ["Active", "Passed Out", "Left / Discontinued"], index=0 if e_row['Student Status']=="Active" else (1 if e_row['Student Status']=="Passed Out" else 2))
 
-                    if st.form_submit_button("💾 Save Profile Changes"):
-    # Convert dataframe columns to string/object to avoid Pandas TypeError
-    student_df = student_df.astype(str)
+        if st.form_submit_button("💾 Save Profile Changes"):
+   	 # Convert dataframe columns to string/object to avoid Pandas TypeError
+   	 student_df = student_df.astype(str)
     
     student_df.loc[e_idx, 'Name'] = str(up_name)
     student_df.loc[e_idx, 'Father Name'] = str(up_father)
