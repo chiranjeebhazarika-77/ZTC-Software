@@ -21,7 +21,7 @@ def get_ist_time_str():
 def get_ist_datetime_str():
     return get_ist_now().strftime("%Y-%m-%d %I:%M %p")
 
-# Exact Calendar Month Course End Date Calculator (1 Year = Exact 12 Months)
+# Exact Calendar Month Course End Date Calculator
 def calculate_course_end_date(start_date_str, duration_str):
     try:
         dt = datetime.strptime(str(start_date_str).strip(), "%Y-%m-%d")
@@ -85,9 +85,8 @@ STUDENT_PASSWORDS_FILE = "student_passwords.csv"
 LOGO_FILE = "logo.jpg"
 PHOTOS_DIR = "student_photos"
 
-# Ensure Photos Directory Exists
-if not os.path.exists(PHOTOS_DIR):
-    os.makedirs(PHOTOS_DIR)
+# Ensure Photos Directory Exists Safe Check
+os.makedirs(PHOTOS_DIR, exist_ok=True)
 
 # Master Column Definitions
 student_cols = [
@@ -95,7 +94,7 @@ student_cols = [
     'Vill Town', 'PO', 'PS', 'PIN Code', 'District', 'Full Address', 'Course', 'Duration', 'Session', 
     'Join Date', 'Valid Up To', 'Batch Time', 'Admission Mode', 'Total Fee', 'Discount', 'Exam Fee', 
     'Paid', 'Payment Breakdown', 'Admission Date', 'Exam Date', 'Result Grade', 'Cert Issue Date', 
-    'Exam Reg Status', 'Form Fillup Status', 'Admit Card Status', 'Cert No', 'Marksheet No'
+    'Exam Reg Status', 'Form Fillup Status', 'Admit Card Status', 'Cert No', 'Marksheet No', 'Student Status'
 ]
 attendance_cols = ['Date', 'Student ID', 'Name', 'Action', 'Time']
 fee_collect_cols = ['Date', 'Collected By', 'Student ID', 'Student Name', 'Amount (₹)', 'Payment Mode', 'Fee Receipt No']
@@ -127,6 +126,8 @@ def load_clean_data(file_path, default_cols, is_student_file=False):
                         df[col] = "0"
                     elif col == 'Admission Date':
                         df[col] = get_ist_date_str()
+                    elif col == 'Student Status':
+                        df[col] = "Active"
                     else:
                         df[col] = ""
             return df[default_cols]
@@ -192,12 +193,13 @@ if not student_df.empty:
     if updated_passwords:
         save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
 
-# Default Teachers
+# Default Teachers Initialization
 if teachers_master_df.empty:
     teachers_master_df = pd.DataFrame([
         {"Teacher ID": "TC-01", "Teacher Name": "Chiranjeeb Hazarika", "Mobile No": "9854341170", "Designation": "Director / Instructor"},
         {"Teacher ID": "TC-02", "Teacher Name": "BIJOY KURMI", "Mobile No": "9854865864", "Designation": "Faculty"}
     ])
+    save_data(teachers_master_df, TEACHERS_MASTER_FILE)
 
 # Fixed Routine
 if routine_db.empty:
@@ -441,7 +443,7 @@ elif menu == "📝 New Student Admission":
                         new_id, s_name, s_father, s_mother, s_gender, s_dob, s_caste, str(s_mobile),
                         s_vill, s_po, s_ps, str(s_pin), s_dist, full_addr_str, s_course, s_duration, s_session, s_join_date, s_valid_upto, s_batch,
                         s_mode, s_exact_fee, s_discount, s_exam_fee, s_initial_pay, breakdown, today_date_str,
-                        "Pending", "Pending", "Pending", "No", "Pending", "Pending", "N/A", "N/A"
+                        "Pending", "Pending", "Pending", "No", "Pending", "Pending", "N/A", "N/A", "Active"
                     ]], columns=student_df.columns)
                     
                     student_df = pd.concat([student_df, new_row], ignore_index=True)
@@ -535,7 +537,6 @@ elif menu == "🔑 Student Login Portal":
                 qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={st_id}"
                 barcode_url = f"https://barcode.tec-it.com/barcode.ashx?data={st_id}&code=Code128&translate-esc=false"
 
-                # High-Tech IFRAME Component with Model 3 Signature and Self-Contained Print Trigger
                 card_component_code = f"""
                 <!DOCTYPE html>
                 <html>
@@ -575,7 +576,6 @@ elif menu == "🔑 Student Login Portal":
                   .footer-grid {{ margin-top: 15px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 12px; }}
                   .barcode-img {{ height: 38px; background: #fff; padding: 3px; border-radius: 4px; }}
                   
-                  /* Model 3: Cyber Glowing Neon Signature */
                   .sign-box {{ text-align: center; }}
                   .sign-font {{
                     font-family: 'Great Vibes', cursive, sans-serif;
@@ -648,7 +648,6 @@ elif menu == "🔑 Student Login Portal":
                         <div style="font-size:8px; color:#aaa; text-align:center; margin-top:2px;">DIGITAL TRACKING ID</div>
                       </div>
                       
-                      <!-- Model 3 Signature Placement -->
                       <div class="sign-box">
                         <div class="sign-font">Chiranjeeb Hazarika</div>
                         <div class="sign-title">Director & Founder</div>
@@ -939,7 +938,7 @@ elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
             st.error("No student record found with this mobile number!")
 
 # ==========================================
-# 7. ADMIN CONTROL PANEL
+# 7. ADMIN CONTROL PANEL (WITH FULL EDIT, DELETE & TEACHER MANAGER)
 # ==========================================
 elif menu == "🔐 Admin Control Panel":
     st.title("🔐 Director / Admin Control Panel")
@@ -950,60 +949,127 @@ elif menu == "🔐 Admin Control Panel":
     if pwd == current_admin_pass:
         st.success("Access Granted. Welcome Sir!")
 
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-            "📊 Student Registry & Exam Manager", 
-            "🚨 Smart Overdue Fee Alerts",
-            "🔑 Student Credentials Ledger",
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+            "📊 Master Registry (All 26+ Students)", 
+            "✏️ Edit / Delete Student Profile",
+            "👨‍🏫 Manage Faculty / Teachers",
+            "🚨 Smart Overdue Alerts",
+            "🔑 Credentials Ledger",
             "🧾 Fee Audit Log", 
-            "👨‍🏫 Teacher Salary Logs", 
             "🔐 Security Settings"
         ])
 
+        # TAB 1: ALL STUDENTS LIST (SHOWS ALL ROWS WITHOUT truncation)
         with tab1:
-            st.markdown("### Master Student Records & Exam Lifecycle Manager")
-            st.dataframe(student_df, use_container_width=True)
+            st.markdown(f"### Master Student Records ({len(student_df)} Enrolled Students)")
+            # Fix pagination / row limit to show ALL students
+            st.dataframe(student_df, height=600, use_container_width=True)
 
-            st.markdown("---")
-            st.markdown("### ✏️ Edit Student Exam Status & Result")
+        # TAB 2: EDIT STUDENT PROFILE & ADDRESS / DELETE / PASS OUT
+        with tab2:
+            st.markdown("### ✏️ Edit Student Personal Profile, Address & Course Status")
             if not student_df.empty:
-                edit_selected_st = st.selectbox("Select Student to Update", student_options, key="adm_edit_st")
+                edit_selected_st = st.selectbox("Select Student to Modify Record", student_options, key="edit_prof_select")
                 edit_sid = edit_selected_st.split(" - ")[0]
-                e_row = student_df[student_df['Student ID'] == edit_sid].iloc[0]
+                e_idx = student_df[student_df['Student ID'] == edit_sid].index[0]
+                e_row = student_df.loc[e_idx]
 
-                with st.form("admin_edit_exam_form"):
-                    col_x1, col_x2, col_x3 = st.columns(3)
-                    e_reg = col_x1.selectbox("Registration Done?", ["Yes", "No"], index=0 if e_row['Exam Reg Status']=="Yes" else 1)
-                    e_form = col_x2.selectbox("Form Fillup Status", ["Submitted", "Pending"], index=0 if e_row['Form Fillup Status']=="Submitted" else 1)
-                    e_admit = col_x3.selectbox("Admit Card Status", ["Issued", "Pending"], index=0 if e_row['Admit Card Status']=="Issued" else 1)
+                with st.form("admin_edit_full_profile_form"):
+                    st.markdown("#### 👤 Update Personal & Contact Details")
+                    p1, p2 = st.columns(2)
+                    up_name = p1.text_input("Student Name", value=str(e_row['Name']))
+                    up_father = p2.text_input("Father Name", value=str(e_row['Father Name']))
+                    up_mother = p1.text_input("Mother Name", value=str(e_row['Mother Name']))
+                    up_mobile = p2.text_input("Mobile No", value=str(e_row['Mobile No']))
 
-                    col_y1, col_y2, col_y3 = st.columns(3)
-                    e_ex_date = col_y1.text_input("Exam Date", value=str(e_row['Exam Date']))
-                    e_grade = col_y2.text_input("Result / Grade", value=str(e_row['Result Grade']))
-                    e_cert_date = col_y3.text_input("Cert Issue Date", value=str(e_row['Cert Issue Date']))
+                    st.markdown("#### 🏡 Update Address Details")
+                    a1, a2, a3 = st.columns(3)
+                    up_vill = a1.text_input("Village/Town", value=str(e_row['Vill Town']))
+                    up_po = a2.text_input("P.O.", value=str(e_row['PO']))
+                    up_ps = a3.text_input("P.S.", value=str(e_row['PS']))
+                    
+                    a4, a5 = st.columns(2)
+                    up_pin = a4.text_input("PIN Code", value=str(e_row['PIN Code']))
+                    up_dist = a5.text_input("District", value=str(e_row['District']))
 
-                    col_z1, col_z2 = st.columns(2)
-                    e_cert_no = col_z1.text_input("Certificate No", value=str(e_row['Cert No']))
-                    e_marksheet_no = col_z2.text_input("Marksheet No", value=str(e_row['Marksheet No']))
+                    st.markdown("#### 🎓 Course Status & Lifecycle")
+                    s1, s2 = st.columns(2)
+                    up_batch = s1.selectbox("Batch Time", BATCH_OPTIONS, index=BATCH_OPTIONS.index(e_row['Batch Time']) if e_row['Batch Time'] in BATCH_OPTIONS else 0)
+                    up_status = s2.selectbox("Student Status (Pass Out / Active)", ["Active", "Passed Out", "Left / Discontinued"], index=0 if e_row['Student Status']=="Active" else (1 if e_row['Student Status']=="Passed Out" else 2))
 
-                    if st.form_submit_button("Update Exam Record"):
-                        e_idx = student_df[student_df['Student ID'] == edit_sid].index[0]
-                        student_df.loc[e_idx, 'Exam Reg Status'] = e_reg
-                        student_df.loc[e_idx, 'Form Fillup Status'] = e_form
-                        student_df.loc[e_idx, 'Admit Card Status'] = e_admit
-                        student_df.loc[e_idx, 'Exam Date'] = e_ex_date
-                        student_df.loc[e_idx, 'Result Grade'] = e_grade
-                        student_df.loc[e_idx, 'Cert Issue Date'] = e_cert_date
-                        student_df.loc[e_idx, 'Cert No'] = e_cert_no
-                        student_df.loc[e_idx, 'Marksheet No'] = e_marksheet_no
+                    if st.form_submit_button("💾 Save Profile Changes"):
+                        student_df.loc[e_idx, 'Name'] = up_name
+                        student_df.loc[e_idx, 'Father Name'] = up_father
+                        student_df.loc[e_idx, 'Mother Name'] = up_mother
+                        student_df.loc[e_idx, 'Mobile No'] = up_mobile
+                        student_df.loc[e_idx, 'Vill Town'] = up_vill
+                        student_df.loc[e_idx, 'PO'] = up_po
+                        student_df.loc[e_idx, 'PS'] = up_ps
+                        student_df.loc[e_idx, 'PIN Code'] = up_pin
+                        student_df.loc[e_idx, 'District'] = up_dist
+                        student_df.loc[e_idx, 'Full Address'] = f"Vill- {up_vill}, P.O.- {up_po}, P.S.- {up_ps}, PIN- {up_pin}, Dist- {up_dist}"
+                        student_df.loc[e_idx, 'Batch Time'] = up_batch
+                        student_df.loc[e_idx, 'Student Status'] = up_status
 
                         save_data(student_df, STUDENT_MASTER_FILE)
-                        st.success("✅ Exam record updated successfully!")
+                        st.success(f"✅ Record for {up_name} ({edit_sid}) updated successfully!")
                         st.rerun()
 
-        with tab2:
-            st.markdown("### 🚨 Smart Overdue Fee Defaulters & Red Notice Tracker")
-            st.info("💡 **Automatic Alert Rule:** Highlights students with pending fee due > ₹1500.")
-            
+                st.markdown("---")
+                st.markdown("### 🗑️ Permanent Delete Student Record")
+                st.warning("⚠️ **Danger Zone:** Deleting a student will completely remove them from the database.")
+                
+                del_confirm = st.checkbox(f"I confirm that I want to delete student **{e_row['Name']} ({edit_sid})** permanently.")
+                if st.button("🗑️ Delete Student Permanently") and del_confirm:
+                    student_df = student_df.drop(e_idx).reset_index(drop=True)
+                    save_data(student_df, STUDENT_MASTER_FILE)
+                    
+                    # Remove password record
+                    st_pass_df = st_pass_df[st_pass_df['Student ID'] != edit_sid].reset_index(drop=True)
+                    save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
+                    
+                    st.success("❌ Student deleted permanently!")
+                    st.rerun()
+
+        # TAB 3: MANAGE TEACHERS (ENTRY AND DELETE)
+        with tab3:
+            st.markdown("### 👨‍🏫 Faculty / Teacher Master Registry")
+            st.dataframe(teachers_master_df, use_container_width=True)
+
+            col_t1, col_t2 = st.columns(2)
+
+            with col_t1:
+                st.markdown("#### ➕ Add New Teacher / Faculty")
+                with st.form("add_teacher_form"):
+                    new_t_id = st.text_input("Teacher ID", value=f"TC-0{len(teachers_master_df)+1}")
+                    new_t_name = st.text_input("Full Name *")
+                    new_t_mob = st.text_input("Mobile No *")
+                    new_t_desig = st.selectbox("Designation", ["Faculty / Instructor", "Lab Assistant", "Guest Teacher", "Director"])
+
+                    if st.form_submit_button("➕ Save New Teacher"):
+                        if new_t_name and new_t_mob:
+                            new_t_row = pd.DataFrame([{"Teacher ID": new_t_id, "Teacher Name": new_t_name, "Mobile No": new_t_mob, "Designation": new_t_desig}])
+                            teachers_master_df = pd.concat([teachers_master_df, new_t_row], ignore_index=True)
+                            save_data(teachers_master_df, TEACHERS_MASTER_FILE)
+                            st.success(f"✅ Teacher **{new_t_name}** added successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Please fill Name and Mobile No!")
+
+            with col_t2:
+                st.markdown("#### 🗑️ Remove / Delete Teacher")
+                if not teachers_master_df.empty:
+                    del_t_sel = st.selectbox("Select Teacher to Delete", [f"{r['Teacher ID']} - {r['Teacher Name']}" for _, r in teachers_master_df.iterrows()])
+                    if st.button("🗑️ Delete Selected Teacher"):
+                        del_tid = del_t_sel.split(" - ")[0]
+                        teachers_master_df = teachers_master_df[teachers_master_df['Teacher ID'] != del_tid].reset_index(drop=True)
+                        save_data(teachers_master_df, TEACHERS_MASTER_FILE)
+                        st.success("✅ Teacher deleted from master list!")
+                        st.rerun()
+
+        # TAB 4: OVERDUE ALERTS
+        with tab4:
+            st.markdown("### 🚨 Smart Overdue Fee Defaulters Tracker")
             overdue_list = []
             if not student_df.empty:
                 for _, srow in student_df.iterrows():
@@ -1024,76 +1090,33 @@ elif menu == "🔐 Admin Control Panel":
             
             if overdue_list:
                 od_df = pd.DataFrame(overdue_list)
-                st.error(f"⚠️ **Found {len(overdue_list)} Student(s) with High Pending Fees!**")
+                st.error(f"⚠️ **Found {len(overdue_list)} Student(s) with Pending Fees > ₹1500!**")
                 st.table(od_df)
-                
-                st.markdown("#### 📲 Send Direct Fee Reminder Warning")
-                sel_od_st = st.selectbox("Select Student to Send WhatsApp Alert", [f"{r['Student ID']} - {r['Name']}" for r in overdue_list])
-                
-                if sel_od_st:
-                    od_sid = sel_od_st.split(" - ")[0]
-                    od_row = student_df[student_df['Student ID'] == od_sid].iloc[0]
-                    od_mob = str(od_row['Mobile No']).strip()
-                    od_due = float(od_row['Total Fee']) - float(od_row['Paid'])
-                    
-                    msg_text = f"Dear {od_row['Name']},\nThis is a formal reminder from Soft Tech Computers, Thelamara.\nYour pending course fee balance is Rs.{int(od_due)}/-\nPlease deposit your overdue installment at the center office as soon as possible.\nThank you!"
-                    encoded_msg = urllib.parse.quote(msg_text)
-                    wa_url = f"https://wa.me/91{od_mob}?text={encoded_msg}"
-                    
-                    st.markdown(f'''<a href="{wa_url}" target="_blank"><button style="background-color:#d32f2f; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; font-size:15px; cursor:pointer;">📲 Send Direct WhatsApp Overdue Notice to {od_row['Name']}</button></a>''', unsafe_allow_html=True)
             else:
-                st.success("🎉 No Overdue Fee Defaulters found! All payments are up to date.")
+                st.success("🎉 No Overdue Fee Defaulters found!")
 
-        with tab3:
-            st.markdown("### 🔑 Student Login Credentials Ledger")
+        # TAB 5: CREDENTIALS LEDGER
+        with tab5:
+            st.markdown("### 🔑 Student Credentials Ledger")
             st.dataframe(st_pass_df, use_container_width=True)
 
-            st.markdown("---")
-            st.markdown("### ✏️ Reset Student Password")
-            if not st_pass_df.empty:
-                reset_st_opt = st.selectbox("Select Student to Reset Password", [f"{r['Student ID']}" for _, r in st_pass_df.iterrows()])
-                new_st_pwd = st.text_input("Enter New Password for Student", type="password")
-                
-                if st.button("🔑 Reset Student Password"):
-                    if new_st_pwd.strip():
-                        p_idx = st_pass_df[st_pass_df['Student ID'] == reset_st_opt].index[0]
-                        st_pass_df.at[p_idx, 'Password'] = str(new_st_pwd).strip()
-                        save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
-                        st.success(f"✅ Password for Student **{reset_st_opt}** updated successfully!")
-                        st.rerun()
-
-        with tab4:
-            st.markdown("### 🧾 Fee Audit Log with Manual Receipt Numbers")
+        # TAB 6: FEE AUDIT
+        with tab6:
+            st.markdown("### 🧾 Fee Audit Log with Receipt Numbers")
             st.dataframe(fee_log_df, use_container_width=True)
 
-        with tab5:
-            st.markdown("### 👨‍🏫 Teacher Shift Salary Logs")
-            if not teacher_db.empty:
-                t_wages_df = teacher_db.copy()
-                t_wages_df['Shift Wage (₹)'] = pd.to_numeric(t_wages_df['Shift Wage (₹)'], errors='coerce').fillna(0.0)
-                tot_salary = round(t_wages_df['Shift Wage (₹)'].sum(), 2)
-                st.metric("Total Teacher Accumulated Wages", f"₹{tot_salary}/-")
-                st.dataframe(t_wages_df, use_container_width=True)
-            else:
-                st.info("No Teacher Salary Logs found yet.")
-
-        with tab6:
-            st.markdown("### 🔐 Admin & Teacher Security Settings")
+        # TAB 7: SECURITY SETTINGS
+        with tab7:
+            st.markdown("### 🔐 Admin & Teacher Passcode Settings")
             curr_adm_pwd = get_admin_password()
             curr_t_pin = get_teacher_pin()
 
-            st.info(f"📌 **Current Live Teacher PIN:** `{curr_t_pin}`")
-
             with st.form("security_update_form"):
-                st.markdown("#### Update Passcodes")
-                new_admin_pass = st.text_input("New Director Admin Password", value=curr_adm_pwd, type="password")
+                new_admin_pass = st.text_input("New Admin Password", value=curr_adm_pwd, type="password")
                 new_teacher_pin = st.text_input("New Teacher PIN", value=curr_t_pin, type="password")
 
-                if st.form_submit_button("💾 Save Security Changes"):
-                    if new_admin_pass.strip() and new_teacher_pin.strip():
-                        set_admin_password(new_admin_pass.strip())
-                        set_teacher_pin(new_teacher_pin.strip())
-                        st.success("✅ **Security Passcodes Updated Successfully!**")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ Passwords cannot be empty!")
+                if st.form_submit_button("💾 Save Passcodes"):
+                    set_admin_password(new_admin_pass.strip())
+                    set_teacher_pin(new_teacher_pin.strip())
+                    st.success("✅ Security Passcodes Updated Successfully!")
+                    st.rerun()
