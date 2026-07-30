@@ -992,7 +992,7 @@ elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
             st.error("No student record found with this mobile number!")
 
 # ==========================================
-# 7. ADMIN CONTROL PANEL
+# 7. ADMIN CONTROL PANEL (WITH QUICK FEE & ATTENDANCE UPDATER)
 # ==========================================
 elif menu == "🔐 Admin Control Panel":
     st.title("🔐 Director / Admin Control Panel")
@@ -1003,9 +1003,10 @@ elif menu == "🔐 Admin Control Panel":
     if pwd == current_admin_pass:
         st.success("Access Granted. Welcome Sir!")
 
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
             "📊 Master Student Registry", 
-            "✏️ Edit / Delete Student Profile",
+            "💵 Quick Fee & Attendance Updater",
+            "✏️ Edit Student Details",
             "👨‍🏫 Faculty / Teacher Manager",
             "🚨 Smart Overdue Alerts",
             "🔑 Credentials Ledger",
@@ -1018,8 +1019,69 @@ elif menu == "🔐 Admin Control Panel":
             st.markdown(f"### Master Student Records ({len(student_df)} Total Students)")
             st.dataframe(student_df, height=700, use_container_width=True)
 
-        # TAB 2: EDIT STUDENT PROFILE & ADDRESS / DELETE / PASS OUT
+        # TAB 2: DIRECT QUICK FEE & BULK ATTENDANCE UPDATER (6-MONTH PAST DATA)
         with tab2:
+            st.markdown("### ⚡ Direct Bulk Fee & Past Attendance Updater")
+            st.info("💡 **Use this for 6-month past record adjustment:** Enter total paid fee or add bulk past attended days in 1-click.")
+
+            if not student_df.empty:
+                q_selected_st = st.selectbox("Select Student for Direct Update", student_options, key="quick_st_select")
+                q_sid = q_selected_st.split(" - ")[0]
+                q_idx = student_df[student_df['Student ID'] == q_sid].index[0]
+                q_row = student_df.loc[q_idx]
+
+                q_col1, q_col2 = st.columns(2)
+
+                with q_col1:
+                    st.markdown("#### 💵 Direct Paid Fee Adjustment")
+                    try:
+                        curr_paid_val = float(q_row['Paid'])
+                    except:
+                        curr_paid_val = 0.0
+
+                    new_direct_paid = st.number_input("Update Total Paid Fee Till Date (₹)", value=curr_paid_val, step=100.0)
+                    fee_note = st.text_input("Payment Note / Receipt Reference", value="Bulk 6-Month Past Fee Update")
+
+                    if st.button("💾 Update Total Paid Fee"):
+                        student_df.at[q_idx, 'Paid'] = str(new_direct_paid)
+                        
+                        today_str = get_ist_date_str()
+                        old_bd = str(student_df.at[q_idx, 'Payment Breakdown']) if pd.notnull(student_df.at[q_idx, 'Payment Breakdown']) else ""
+                        new_bd = f"{old_bd} | Admin Direct Update: ₹{int(new_direct_paid)} [{fee_note}] on {today_str}"
+                        student_df.at[q_idx, 'Payment Breakdown'] = new_bd
+
+                        save_data(student_df, STUDENT_MASTER_FILE)
+
+                        # Audit Log
+                        new_fee_entry = pd.DataFrame([[str(today_str), "Admin Direct", str(q_sid), str(q_row['Name']), str(new_direct_paid), "Adjustment", "ADMIN-SET"]], columns=fee_log_df.columns)
+                        fee_log_df = pd.concat([fee_log_df, new_fee_entry], ignore_index=True)
+                        save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
+
+                        st.success(f"✅ Paid Fee updated to ₹{new_direct_paid}/- for {q_row['Name']}!")
+                        st.rerun()
+
+                with q_col2:
+                    st.markdown("#### ⏱️ Direct Bulk Attendance Generator")
+                    curr_att_count = len(attendance_df[attendance_df['Student ID'] == q_sid]) if not attendance_df.empty else 0
+                    st.write(f"Current Attended Logs in System: **{curr_att_count} Days**")
+
+                    add_days = st.number_input("Add Bulk Past Present Days (e.g., 40 days)", min_value=1, max_value=200, value=10)
+
+                    if st.button("➕ Inject Past Attendance Records"):
+                        today_str = get_ist_date_str()
+                        new_att_entries = []
+                        for i in range(int(add_days)):
+                            new_att_entries.append([today_str, q_sid, q_row['Name'], "Present", get_ist_time_str()])
+                        
+                        new_att_df = pd.DataFrame(new_att_entries, columns=attendance_df.columns)
+                        attendance_df = pd.concat([attendance_df, new_att_df], ignore_index=True)
+                        save_data(attendance_df, ATTENDANCE_LOG_FILE)
+
+                        st.success(f"🎉 Added {add_days} Days of Attendance for {q_row['Name']}!")
+                        st.rerun()
+
+        # TAB 3: EDIT STUDENT PROFILE
+        with tab3:
             st.markdown("### ✏️ Edit Student Personal Profile, Address & Course Status")
             if not student_df.empty:
                 edit_selected_st = st.selectbox("Select Student to Modify Record", student_options, key="edit_prof_select")
@@ -1034,6 +1096,11 @@ elif menu == "🔐 Admin Control Panel":
                     up_father = p2.text_input("Father Name", value=str(e_row['Father Name']))
                     up_mother = p1.text_input("Mother Name", value=str(e_row['Mother Name']))
                     up_mobile = p2.text_input("Mobile No", value=str(e_row['Mobile No']))
+
+                    st.markdown("#### 💳 Fee & Financial Records")
+                    f1, f2 = st.columns(2)
+                    up_tot_fee = f1.text_input("Exact Course Fee (₹)", value=str(e_row['Total Fee']))
+                    up_paid_fee = f2.text_input("Total Paid Fee (₹)", value=str(e_row['Paid']))
 
                     st.markdown("#### 🏡 Update Address Details")
                     a1, a2, a3 = st.columns(3)
@@ -1055,6 +1122,8 @@ elif menu == "🔐 Admin Control Panel":
                         student_df.at[e_idx, 'Father Name'] = str(up_father)
                         student_df.at[e_idx, 'Mother Name'] = str(up_mother)
                         student_df.at[e_idx, 'Mobile No'] = str(up_mobile).strip()
+                        student_df.at[e_idx, 'Total Fee'] = str(up_tot_fee)
+                        student_df.at[e_idx, 'Paid'] = str(up_paid_fee)
                         student_df.at[e_idx, 'Vill Town'] = str(up_vill)
                         student_df.at[e_idx, 'PO'] = str(up_po)
                         student_df.at[e_idx, 'PS'] = str(up_ps)
@@ -1083,8 +1152,8 @@ elif menu == "🔐 Admin Control Panel":
                     st.success("❌ Student deleted permanently!")
                     st.rerun()
 
-        # TAB 3: MANAGE TEACHERS
-        with tab3:
+        # TAB 4: MANAGE TEACHERS
+        with tab4:
             st.markdown("### 👨‍🏫 Faculty / Teacher Master Registry")
             st.dataframe(teachers_master_df, use_container_width=True)
 
@@ -1121,8 +1190,8 @@ elif menu == "🔐 Admin Control Panel":
                         st.success(f"✅ Teacher {del_tid} removed from master database!")
                         st.rerun()
 
-        # TAB 4: OVERDUE ALERTS
-        with tab4:
+        # TAB 5: OVERDUE ALERTS
+        with tab5:
             st.markdown("### 🚨 Smart Overdue Fee Defaulters Tracker")
             overdue_list = []
             if not student_df.empty:
@@ -1155,18 +1224,18 @@ elif menu == "🔐 Admin Control Panel":
             else:
                 st.success("🎉 No Overdue Fee Defaulters found!")
 
-        # TAB 5: CREDENTIALS LEDGER
-        with tab5:
+        # TAB 6: CREDENTIALS LEDGER
+        with tab6:
             st.markdown("### 🔑 Student Credentials Ledger")
             st.dataframe(st_pass_df, use_container_width=True)
 
-        # TAB 6: FEE AUDIT
-        with tab6:
+        # TAB 7: FEE AUDIT
+        with tab7:
             st.markdown("### 🧾 Fee Audit Log with Receipt Numbers")
             st.dataframe(fee_log_df, use_container_width=True)
 
-        # TAB 7: SECURITY SETTINGS
-        with tab7:
+        # TAB 8: SECURITY SETTINGS
+        with tab8:
             st.markdown("### 🔐 Admin & Teacher Passcode Settings")
             curr_adm_pwd = get_admin_password()
             curr_t_pin = get_teacher_pin()
