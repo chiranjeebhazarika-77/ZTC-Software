@@ -1026,22 +1026,25 @@ elif menu == "🔐 Admin Control Panel":
                     up_status = s2.selectbox("Student Status (Pass Out / Active)", ["Active", "Passed Out", "Left / Discontinued"], index=0 if e_row['Student Status']=="Active" else (1 if e_row['Student Status']=="Passed Out" else 2))
 
                     if st.form_submit_button("💾 Save Profile Changes"):
-                        student_df.loc[e_idx, 'Name'] = up_name
-                        student_df.loc[e_idx, 'Father Name'] = up_father
-                        student_df.loc[e_idx, 'Mother Name'] = up_mother
-                        student_df.loc[e_idx, 'Mobile No'] = up_mobile
-                        student_df.loc[e_idx, 'Vill Town'] = up_vill
-                        student_df.loc[e_idx, 'PO'] = up_po
-                        student_df.loc[e_idx, 'PS'] = up_ps
-                        student_df.loc[e_idx, 'PIN Code'] = up_pin
-                        student_df.loc[e_idx, 'District'] = up_dist
-                        student_df.loc[e_idx, 'Full Address'] = f"Vill- {up_vill}, P.O.- {up_po}, P.S.- {up_ps}, PIN- {up_pin}, Dist- {up_dist}"
-                        student_df.loc[e_idx, 'Batch Time'] = up_batch
-                        student_df.loc[e_idx, 'Student Status'] = up_status
+    # Convert dataframe columns to string/object to avoid Pandas TypeError
+    student_df = student_df.astype(str)
+    
+    student_df.loc[e_idx, 'Name'] = str(up_name)
+    student_df.loc[e_idx, 'Father Name'] = str(up_father)
+    student_df.loc[e_idx, 'Mother Name'] = str(up_mother)
+    student_df.loc[e_idx, 'Mobile No'] = str(up_mobile).strip()
+    student_df.loc[e_idx, 'Vill Town'] = str(up_vill)
+    student_df.loc[e_idx, 'PO'] = str(up_po)
+    student_df.loc[e_idx, 'PS'] = str(up_ps)
+    student_df.loc[e_idx, 'PIN Code'] = str(up_pin)
+    student_df.loc[e_idx, 'District'] = str(up_dist)
+    student_df.loc[e_idx, 'Full Address'] = f"Vill- {up_vill}, P.O.- {up_po}, P.S.- {up_ps}, PIN- {up_pin}, Dist- {up_dist}"
+    student_df.loc[e_idx, 'Batch Time'] = str(up_batch)
+    student_df.loc[e_idx, 'Student Status'] = str(up_status)
 
-                        save_data(student_df, STUDENT_MASTER_FILE)
-                        st.success(f"✅ Record for {up_name} ({edit_sid}) updated successfully!")
-                        st.rerun()
+    save_data(student_df, STUDENT_MASTER_FILE)
+    st.success(f"✅ Record for {up_name} ({edit_sid}) updated successfully!")
+    st.rerun()
 
                 st.markdown("---")
                 st.markdown("### 🗑️ Permanent Delete Student Record")
