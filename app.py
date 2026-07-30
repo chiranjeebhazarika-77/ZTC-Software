@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import urllib.parse
 import os
 import pytz
+import re
 
 # Indian Standard Time (IST) Setup
 IST = pytz.timezone('Asia/Kolkata')
@@ -20,6 +21,34 @@ def get_ist_time_str():
 
 def get_ist_datetime_str():
     return get_ist_now().strftime("%Y-%m-%d %I:%M %p")
+
+# Smart Roll Number Auto-Generator (Robust Numeric Regex Extractor)
+def generate_next_student_id(df):
+    if df.empty or 'Student ID' not in df.columns:
+        return "STC26-001"
+    
+    existing_ids = df['Student ID'].astype(str).tolist()
+    numeric_parts = []
+    
+    for sid in existing_ids:
+        numbers = re.findall(r'\d+', sid)
+        if len(numbers) >= 2:
+            try:
+                numeric_parts.append(int(numbers[1]))
+            except:
+                pass
+        elif len(numbers) == 1:
+            try:
+                numeric_parts.append(int(numbers[0]))
+            except:
+                pass
+                
+    if numeric_parts:
+        next_num = max(numeric_parts) + 1
+    else:
+        next_num = len(df) + 1
+        
+    return f"STC26-{next_num:03d}"
 
 # Exact Calendar Month Course End Date Calculator
 def calculate_course_end_date(start_date_str, duration_str):
@@ -85,7 +114,7 @@ STUDENT_PASSWORDS_FILE = "student_passwords.csv"
 LOGO_FILE = "logo.jpg"
 PHOTOS_DIR = "student_photos"
 
-# Ensure Photos Directory Exists Safe Check
+# Safe Photo Directory Creation
 os.makedirs(PHOTOS_DIR, exist_ok=True)
 
 # Master Column Definitions
@@ -101,7 +130,7 @@ fee_collect_cols = ['Date', 'Collected By', 'Student ID', 'Student Name', 'Amoun
 teacher_cols = ['Date', 'Teacher Name', 'Shift', 'In-Time', 'Out-Time', 'Class Type', 'Topics Taught', 'Status', 'Status Info', 'Late Reason', 'Shift Wage (₹)']
 teacher_master_cols = ['Teacher ID', 'Teacher Name', 'Mobile No', 'Designation']
 
-# Load Data Safely & Fix Missing Columns
+# Safe Data Loader
 def load_clean_data(file_path, default_cols, is_student_file=False):
     if os.path.exists(file_path):
         try:
@@ -138,7 +167,7 @@ def load_clean_data(file_path, default_cols, is_student_file=False):
 def save_data(df, file_path):
     df.to_csv(file_path, index=False)
 
-# Password & PIN Management
+# Passcode & Security Logic
 def get_admin_password():
     if os.path.exists(PASSWORD_FILE):
         try:
@@ -167,7 +196,7 @@ def set_teacher_pin(new_pin):
     tpdf = pd.DataFrame([{"pin": str(new_pin)}])
     tpdf.to_csv(TEACHER_PIN_FILE, index=False)
 
-# Load Databases
+# Load Master Databases
 student_df = load_clean_data(STUDENT_MASTER_FILE, student_cols, is_student_file=True)
 attendance_df = load_clean_data(ATTENDANCE_LOG_FILE, attendance_cols)
 fee_log_df = load_clean_data(FEE_COLLECTION_LOG_FILE, fee_collect_cols)
@@ -428,7 +457,7 @@ elif menu == "📝 New Student Admission":
                 if str(s_mobile).strip() in existing_mobiles:
                     st.error("❌ **Duplicate Mobile Blocked:** This Contact Number is already registered for another student!")
                 elif s_name and s_mobile and s_vill and s_po and s_ps and s_pin and s_dist and s_receipt_no:
-                    new_id = f"STC26-00{len(student_df)+1}"
+                    new_id = generate_next_student_id(student_df)
                     today_date_str = get_ist_date_str()
                     full_addr_str = f"Vill- {s_vill}, P.O.- {s_po}, P.S.- {s_ps}, PIN- {s_pin}, Dist- {s_dist}"
                     
@@ -938,7 +967,7 @@ elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
             st.error("No student record found with this mobile number!")
 
 # ==========================================
-# 7. ADMIN CONTROL PANEL (WITH FULL EDIT, DELETE & TEACHER MANAGER)
+# 7. ADMIN CONTROL PANEL
 # ==========================================
 elif menu == "🔐 Admin Control Panel":
     st.title("🔐 Director / Admin Control Panel")
@@ -950,20 +979,19 @@ elif menu == "🔐 Admin Control Panel":
         st.success("Access Granted. Welcome Sir!")
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-            "📊 Master Registry (All 26+ Students)", 
+            "📊 Master Student Registry", 
             "✏️ Edit / Delete Student Profile",
-            "👨‍🏫 Manage Faculty / Teachers",
+            "👨‍🏫 Faculty / Teacher Manager",
             "🚨 Smart Overdue Alerts",
             "🔑 Credentials Ledger",
             "🧾 Fee Audit Log", 
             "🔐 Security Settings"
         ])
 
-        # TAB 1: ALL STUDENTS LIST (SHOWS ALL ROWS WITHOUT truncation)
+        # TAB 1: ALL STUDENTS LIST (FULL UNTRUNCATED TABLE)
         with tab1:
-            st.markdown(f"### Master Student Records ({len(student_df)} Enrolled Students)")
-            # Fix pagination / row limit to show ALL students
-            st.dataframe(student_df, height=600, use_container_width=True)
+            st.markdown(f"### Master Student Records ({len(student_df)} Total Students)")
+            st.dataframe(student_df, height=700, use_container_width=True)
 
         # TAB 2: EDIT STUDENT PROFILE & ADDRESS / DELETE / PASS OUT
         with tab2:
@@ -1024,14 +1052,13 @@ elif menu == "🔐 Admin Control Panel":
                     student_df = student_df.drop(e_idx).reset_index(drop=True)
                     save_data(student_df, STUDENT_MASTER_FILE)
                     
-                    # Remove password record
                     st_pass_df = st_pass_df[st_pass_df['Student ID'] != edit_sid].reset_index(drop=True)
                     save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
                     
                     st.success("❌ Student deleted permanently!")
                     st.rerun()
 
-        # TAB 3: MANAGE TEACHERS (ENTRY AND DELETE)
+        # TAB 3: MANAGE TEACHERS (100% WORKING DELETE & INDEX REFRESH)
         with tab3:
             st.markdown("### 👨‍🏫 Faculty / Teacher Master Registry")
             st.dataframe(teachers_master_df, use_container_width=True)
@@ -1059,12 +1086,15 @@ elif menu == "🔐 Admin Control Panel":
             with col_t2:
                 st.markdown("#### 🗑️ Remove / Delete Teacher")
                 if not teachers_master_df.empty:
-                    del_t_sel = st.selectbox("Select Teacher to Delete", [f"{r['Teacher ID']} - {r['Teacher Name']}" for _, r in teachers_master_df.iterrows()])
+                    current_teachers = [f"{r['Teacher ID']} - {r['Teacher Name']}" for _, r in teachers_master_df.iterrows()]
+                    del_t_sel = st.selectbox("Select Teacher to Permanently Delete", current_teachers, key="del_t_select_box")
+                    
                     if st.button("🗑️ Delete Selected Teacher"):
                         del_tid = del_t_sel.split(" - ")[0]
+                        # Fix Index Re-indexing & Persistence
                         teachers_master_df = teachers_master_df[teachers_master_df['Teacher ID'] != del_tid].reset_index(drop=True)
                         save_data(teachers_master_df, TEACHERS_MASTER_FILE)
-                        st.success("✅ Teacher deleted from master list!")
+                        st.success(f"✅ Teacher {del_tid} removed from master database!")
                         st.rerun()
 
         # TAB 4: OVERDUE ALERTS
