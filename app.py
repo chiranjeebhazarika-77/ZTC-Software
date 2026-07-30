@@ -22,7 +22,7 @@ def get_ist_time_str():
 def get_ist_datetime_str():
     return get_ist_now().strftime("%Y-%m-%d %I:%M %p")
 
-# Smart Roll Number Auto-Generator (Robust Numeric Regex Extractor)
+# Smart Roll Number Auto-Generator
 def generate_next_student_id(df):
     if df.empty or 'Student ID' not in df.columns:
         return "STC26-001"
@@ -134,7 +134,7 @@ teacher_master_cols = ['Teacher ID', 'Teacher Name', 'Mobile No', 'Designation']
 def load_clean_data(file_path, default_cols, is_student_file=False):
     if os.path.exists(file_path):
         try:
-            df = pd.read_csv(file_path)
+            df = pd.read_csv(file_path, dtype=str)
             if df.empty:
                 return pd.DataFrame(columns=default_cols)
             
@@ -144,13 +144,13 @@ def load_clean_data(file_path, default_cols, is_student_file=False):
             for col in default_cols:
                 if col not in df.columns:
                     if col == 'Total Fee':
-                        df[col] = 8598.0
+                        df[col] = "8598.0"
                     elif col == 'Discount':
-                        df[col] = 0.0
+                        df[col] = "0.0"
                     elif col == 'Exam Fee':
-                        df[col] = 999.0
+                        df[col] = "999.0"
                     elif col == 'Paid':
-                        df[col] = 0.0
+                        df[col] = "0.0"
                     elif col == 'Payment Breakdown':
                         df[col] = "0"
                     elif col == 'Admission Date':
@@ -165,7 +165,7 @@ def load_clean_data(file_path, default_cols, is_student_file=False):
     return pd.DataFrame(columns=default_cols)
 
 def save_data(df, file_path):
-    df.to_csv(file_path, index=False)
+    df.astype(str).to_csv(file_path, index=False)
 
 # Passcode & Security Logic
 def get_admin_password():
@@ -469,20 +469,20 @@ elif menu == "📝 New Student Admission":
                     breakdown = f"1st Installment [Admission Fee]: ₹{int(s_initial_pay)} ({s_pay_mode}) [Receipt No: {s_receipt_no}] on {today_date_str}"
                     
                     new_row = pd.DataFrame([[
-                        new_id, s_name, s_father, s_mother, s_gender, s_dob, s_caste, str(s_mobile),
-                        s_vill, s_po, s_ps, str(s_pin), s_dist, full_addr_str, s_course, s_duration, s_session, s_join_date, s_valid_upto, s_batch,
-                        s_mode, s_exact_fee, s_discount, s_exam_fee, s_initial_pay, breakdown, today_date_str,
+                        str(new_id), str(s_name), str(s_father), str(s_mother), str(s_gender), str(s_dob), str(s_caste), str(s_mobile),
+                        str(s_vill), str(s_po), str(s_ps), str(s_pin), str(s_dist), str(full_addr_str), str(s_course), str(s_duration), str(s_session), str(s_join_date), str(s_valid_upto), str(s_batch),
+                        str(s_mode), str(s_exact_fee), str(s_discount), str(s_exam_fee), str(s_initial_pay), str(breakdown), str(today_date_str),
                         "Pending", "Pending", "Pending", "No", "Pending", "Pending", "N/A", "N/A", "Active"
                     ]], columns=student_df.columns)
                     
                     student_df = pd.concat([student_df, new_row], ignore_index=True)
                     save_data(student_df, STUDENT_MASTER_FILE)
 
-                    pass_row = pd.DataFrame([[new_id, str(s_mobile)]], columns=st_pass_df.columns)
+                    pass_row = pd.DataFrame([[str(new_id), str(s_mobile)]], columns=st_pass_df.columns)
                     st_pass_df = pd.concat([st_pass_df, pass_row], ignore_index=True)
                     save_data(st_pass_df, STUDENT_PASSWORDS_FILE)
 
-                    new_log = pd.DataFrame([[today_date_str, "Self / Desk", new_id, s_name, s_initial_pay, s_pay_mode, s_receipt_no]], columns=fee_log_df.columns)
+                    new_log = pd.DataFrame([[str(today_date_str), "Self / Desk", str(new_id), str(s_name), str(s_initial_pay), str(s_pay_mode), str(s_receipt_no)]], columns=fee_log_df.columns)
                     fee_log_df = pd.concat([fee_log_df, new_log], ignore_index=True)
                     save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
 
@@ -495,7 +495,7 @@ elif menu == "📝 New Student Admission":
         st.error("❌ Incorrect Passcode! Access Denied.")
 
 # ==========================================
-# 3. STUDENT LOGIN PORTAL (MODEL 3 SIGNATURE & ISOLATED PRINT)
+# 3. STUDENT LOGIN PORTAL
 # ==========================================
 elif menu == "🔑 Student Login Portal":
     st.title("🔑 Student Self-Service Login Portal")
@@ -698,11 +698,24 @@ elif menu == "🔑 Student Login Portal":
             with stab2:
                 st.subheader("💳 Student Record Form - Fee Installment Details")
                 
-                tot = float(s_info['Total Fee']) if pd.notnull(s_info['Total Fee']) else 8598.0
-                paid = float(s_info['Paid']) if pd.notnull(s_info['Paid']) else 0.0
+                try:
+                    tot = float(s_info['Total Fee'])
+                except:
+                    tot = 8598.0
+                try:
+                    paid = float(s_info['Paid'])
+                except:
+                    paid = 0.0
                 due = tot - paid
-                discount = float(s_info['Discount']) if pd.notnull(s_info['Discount']) else 0.0
-                exam_fee = float(s_info['Exam Fee']) if pd.notnull(s_info['Exam Fee']) else 999.0
+
+                try:
+                    discount = float(s_info['Discount'])
+                except:
+                    discount = 0.0
+                try:
+                    exam_fee = float(s_info['Exam Fee'])
+                except:
+                    exam_fee = 999.0
 
                 c1, c2, c3, c4 = st.columns(4)
                 c1.metric("Exact Course Fee", f"₹{tot}/-")
@@ -761,8 +774,14 @@ elif menu == "🔑 Student Login Portal":
             with stab4:
                 st.subheader("🎟️ Final Examination Lifecycle Tracker")
                 
-                tot = float(s_info['Total Fee']) if pd.notnull(s_info['Total Fee']) else 8598.0
-                paid = float(s_info['Paid']) if pd.notnull(s_info['Paid']) else 0.0
+                try:
+                    tot = float(s_info['Total Fee'])
+                except:
+                    tot = 8598.0
+                try:
+                    paid = float(s_info['Paid'])
+                except:
+                    paid = 0.0
                 due = tot - paid
 
                 e_col1, e_col2 = st.columns(2)
@@ -818,8 +837,14 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             days_passed = (today_dt - adm_dt).days
             months_enrolled = max(1, round(days_passed / 30.0, 1))
 
-            tot = float(s_info['Total Fee']) if pd.notnull(s_info['Total Fee']) else 8598.0
-            paid = float(s_info['Paid']) if pd.notnull(s_info['Paid']) else 0.0
+            try:
+                tot = float(s_info['Total Fee'])
+            except:
+                tot = 8598.0
+            try:
+                paid = float(s_info['Paid'])
+            except:
+                paid = 0.0
 
             monthly_rate = 550.0
             total_monthly_due_till_now = months_enrolled * monthly_rate
@@ -846,7 +871,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             st.error("No Student found with this Roll Number or Mobile Number!")
 
 # ==========================================
-# 5. TEACHER PORTAL (STRICT MANAGEMENT RULES)
+# 5. TEACHER PORTAL & FEE COUNTER
 # ==========================================
 elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
     st.title("👨‍🏫 Teacher & Staff Desk")
@@ -896,9 +921,9 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
                     t_teacher_name = t_selected_teacher.split(" - ")[1] if " - " in t_selected_teacher else t_selected_teacher
                     today_str = get_ist_date_str()
                     topics_str = ", ".join(t_selected_topics) if t_selected_topics else "General"
-                    shift_wage = round(230.0 / 3.0, 2) if t_status == "Present" else 0.0
+                    shift_wage = str(round(230.0 / 3.0, 2)) if t_status == "Present" else "0.0"
 
-                    new_t_log = pd.DataFrame([[today_str, t_teacher_name, t_shift, live_time_now_str, live_time_now_str, t_class_type, topics_str, t_status, st_info, late_reason, shift_wage]], columns=teacher_db.columns)
+                    new_t_log = pd.DataFrame([[str(today_str), str(t_teacher_name), str(t_shift), str(live_time_now_str), str(live_time_now_str), str(t_class_type), str(topics_str), str(t_status), str(st_info), str(late_reason), str(shift_wage)]], columns=teacher_db.columns)
                     teacher_db = pd.concat([teacher_db, new_t_log], ignore_index=True)
                     save_data(teacher_db, TEACHER_LOG_FILE)
                     st.success(f"✅ **Class log recorded at {live_time_now_str}!** Saved to Salary Log.")
@@ -927,7 +952,7 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
                         old_paid = 0.0
 
                     new_paid = old_paid + t_add_amt
-                    student_df.at[idx, 'Paid'] = new_paid
+                    student_df.at[idx, 'Paid'] = str(new_paid)
 
                     today_date_str = get_ist_date_str()
                     old_bd = str(student_df.at[idx, 'Payment Breakdown']) if pd.notnull(student_df.at[idx, 'Payment Breakdown']) else ""
@@ -936,7 +961,7 @@ elif menu == "👨‍🏫 Teacher Portal & Fee Counter":
 
                     save_data(student_df, STUDENT_MASTER_FILE)
 
-                    new_fee_entry = pd.DataFrame([[today_date_str, teacher_name_input, t_f_sid, st_name_val, t_add_amt, t_fee_pmode, t_manual_rec_no]], columns=fee_log_df.columns)
+                    new_fee_entry = pd.DataFrame([[str(today_date_str), str(teacher_name_input), str(t_f_sid), str(st_name_val), str(t_add_amt), str(t_fee_pmode), str(t_manual_rec_no)]], columns=fee_log_df.columns)
                     fee_log_df = pd.concat([fee_log_df, new_fee_entry], ignore_index=True)
                     save_data(fee_log_df, FEE_COLLECTION_LOG_FILE)
 
@@ -1025,31 +1050,30 @@ elif menu == "🔐 Admin Control Panel":
                     up_batch = s1.selectbox("Batch Time", BATCH_OPTIONS, index=BATCH_OPTIONS.index(e_row['Batch Time']) if e_row['Batch Time'] in BATCH_OPTIONS else 0)
                     up_status = s2.selectbox("Student Status (Pass Out / Active)", ["Active", "Passed Out", "Left / Discontinued"], index=0 if e_row['Student Status']=="Active" else (1 if e_row['Student Status']=="Passed Out" else 2))
 
-    if st.form_submit_button("💾 Save Profile Changes"):
-   	 # Convert dataframe columns to string/object to avoid Pandas TypeError
-        student_df = student_df.astype(str)
-        student_df.loc[e_idx, 'Name'] = str(up_name)
-        student_df.loc[e_idx, 'Father Name'] = str(up_father)
-        student_df.loc[e_idx, 'Mother Name'] = str(up_mother)
-        student_df.loc[e_idx, 'Mobile No'] = str(up_mobile).strip()
-        student_df.loc[e_idx, 'Vill Town'] = str(up_vill)
-        student_df.loc[e_idx, 'PO'] = str(up_po)
-        student_df.loc[e_idx, 'PS'] = str(up_ps)
-        student_df.loc[e_idx, 'PIN Code'] = str(up_pin)
-        student_df.loc[e_idx, 'District'] = str(up_dist)
-        student_df.loc[e_idx, 'Full Address'] = f"Vill- {up_vill}, P.O.- {up_po}, P.S.- {up_ps}, PIN- {up_pin}, Dist- {up_dist}"
-        student_df.loc[e_idx, 'Batch Time'] = str(up_batch)
-        student_df.loc[e_idx, 'Student Status'] = str(up_status)
+                    if st.form_submit_button("💾 Save Profile Changes"):
+                        student_df.at[e_idx, 'Name'] = str(up_name)
+                        student_df.at[e_idx, 'Father Name'] = str(up_father)
+                        student_df.at[e_idx, 'Mother Name'] = str(up_mother)
+                        student_df.at[e_idx, 'Mobile No'] = str(up_mobile).strip()
+                        student_df.at[e_idx, 'Vill Town'] = str(up_vill)
+                        student_df.at[e_idx, 'PO'] = str(up_po)
+                        student_df.at[e_idx, 'PS'] = str(up_ps)
+                        student_df.at[e_idx, 'PIN Code'] = str(up_pin)
+                        student_df.at[e_idx, 'District'] = str(up_dist)
+                        student_df.at[e_idx, 'Full Address'] = f"Vill- {up_vill}, P.O.- {up_po}, P.S.- {up_ps}, PIN- {up_pin}, Dist- {up_dist}"
+                        student_df.at[e_idx, 'Batch Time'] = str(up_batch)
+                        student_df.at[e_idx, 'Student Status'] = str(up_status)
 
-    save_data(student_df, STUDENT_MASTER_FILE)
-    st.success(f"✅ Record for {up_name} ({edit_sid}) updated successfully!")
-    st.rerun()
-    st.markdown("---")
-    st.markdown("### 🗑️ Permanent Delete Student Record")
-    st.warning("⚠️ **Danger Zone:** Deleting a student will completely remove them from the database.")
+                        save_data(student_df, STUDENT_MASTER_FILE)
+                        st.success(f"✅ Record for {up_name} ({edit_sid}) updated successfully!")
+                        st.rerun()
+
+                st.markdown("---")
+                st.markdown("### 🗑️ Permanent Delete Student Record")
+                st.warning("⚠️ **Danger Zone:** Deleting a student will completely remove them from the database.")
                 
-    del_confirm = st.checkbox(f"I confirm that I want to delete student **{e_row['Name']} ({edit_sid})** permanently.")
-    if st.button("🗑️ Delete Student Permanently") and del_confirm:
+                del_confirm = st.checkbox(f"I confirm that I want to delete student **{e_row['Name']} ({edit_sid})** permanently.")
+                if st.button("🗑️ Delete Student Permanently") and del_confirm:
                     student_df = student_df.drop(e_idx).reset_index(drop=True)
                     save_data(student_df, STUDENT_MASTER_FILE)
                     
@@ -1059,7 +1083,7 @@ elif menu == "🔐 Admin Control Panel":
                     st.success("❌ Student deleted permanently!")
                     st.rerun()
 
-        # TAB 3: MANAGE TEACHERS (100% WORKING DELETE & INDEX REFRESH)
+        # TAB 3: MANAGE TEACHERS
         with tab3:
             st.markdown("### 👨‍🏫 Faculty / Teacher Master Registry")
             st.dataframe(teachers_master_df, use_container_width=True)
@@ -1076,7 +1100,7 @@ elif menu == "🔐 Admin Control Panel":
 
                     if st.form_submit_button("➕ Save New Teacher"):
                         if new_t_name and new_t_mob:
-                            new_t_row = pd.DataFrame([{"Teacher ID": new_t_id, "Teacher Name": new_t_name, "Mobile No": new_t_mob, "Designation": new_t_desig}])
+                            new_t_row = pd.DataFrame([{"Teacher ID": str(new_t_id), "Teacher Name": str(new_t_name), "Mobile No": str(new_t_mob), "Designation": str(new_t_desig)}])
                             teachers_master_df = pd.concat([teachers_master_df, new_t_row], ignore_index=True)
                             save_data(teachers_master_df, TEACHERS_MASTER_FILE)
                             st.success(f"✅ Teacher **{new_t_name}** added successfully!")
@@ -1092,7 +1116,6 @@ elif menu == "🔐 Admin Control Panel":
                     
                     if st.button("🗑️ Delete Selected Teacher"):
                         del_tid = del_t_sel.split(" - ")[0]
-                        # Fix Index Re-indexing & Persistence
                         teachers_master_df = teachers_master_df[teachers_master_df['Teacher ID'] != del_tid].reset_index(drop=True)
                         save_data(teachers_master_df, TEACHERS_MASTER_FILE)
                         st.success(f"✅ Teacher {del_tid} removed from master database!")
@@ -1104,8 +1127,14 @@ elif menu == "🔐 Admin Control Panel":
             overdue_list = []
             if not student_df.empty:
                 for _, srow in student_df.iterrows():
-                    tot = float(srow['Total Fee']) if pd.notnull(srow['Total Fee']) else 8598.0
-                    paid = float(srow['Paid']) if pd.notnull(srow['Paid']) else 0.0
+                    try:
+                        tot = float(srow['Total Fee'])
+                    except:
+                        tot = 8598.0
+                    try:
+                        paid = float(srow['Paid'])
+                    except:
+                        paid = 0.0
                     due = tot - paid
                     
                     if due > 1500:
