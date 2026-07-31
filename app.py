@@ -6,15 +6,12 @@ import datetime
 # Page Configuration
 st.set_page_config(page_title="Soft Tech Computers & ZTC Portal", page_icon="💻", layout="wide")
 
-# Center Location Credentials (STC Center: Kamarchuburi, Thelamara)
-STC_LAT = 26.683389
-STC_LON = 92.556680
-
 # Paths for CSV Files
 STUDENT_MASTER_FILE = "students_db.csv"
 FEE_LOG_FILE = "fees_db.csv"
 ATTENDANCE_FILE = "attendance_db.csv"
 TEACHERS_FILE = "teachers_db.csv"
+ENQUIRY_FILE = "enquiries_db.csv"
 
 # Function to load CSV safely
 def load_data(file_path, columns):
@@ -39,17 +36,19 @@ student_cols = ["Sl. No.", "Student ID", "Name", "Father Name", "Mother Name", "
 fee_cols = ["Receipt No", "Student ID", "Date", "Amount Paid", "Payment Mode", "Remarks"]
 attendance_cols = ["Student ID", "Date", "Status", "Sign_Mode", "Location_Verified"]
 teacher_cols = ["Teacher ID", "Name", "Phone", "Qualification", "Designation", "Shift Assigned", "Shift Start Time"]
+enquiry_cols = ["Date", "Name", "Mobile", "Course Interested", "Village/Address", "Status"]
 
 # Load DataFrames
 student_df = load_data(STUDENT_MASTER_FILE, student_cols)
 fee_df = load_data(FEE_LOG_FILE, fee_cols)
 att_df = load_data(ATTENDANCE_FILE, attendance_cols)
 teacher_df = load_data(TEACHERS_FILE, teacher_cols)
+enquiry_df = load_data(ENQUIRY_FILE, enquiry_cols)
 
 # Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
-    "🏠 Home & Public Dashboard",
+    "🏠 Home & Public Enquiry",
     "📱 Smart QR & Mobile Attendance",
     "📝 New Student Admission",
     "🔑 Student Login Portal",
@@ -60,66 +59,86 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HOME & PUBLIC DASHBOARD (FULLY RESTORED & EXPANDED)
+# 1. HOME & PUBLIC ENQUIRY (CLEAN & RESTORED VIBE)
 # ---------------------------------------------------------
-if menu == "🏠 Home & Public Dashboard":
-    st.title("💻 Soft Tech Computers & ZTC — Public Dashboard")
-    st.write("### Official Computer Training & Academic Coaching Portal")
-    st.caption("📍 Kamarchuburi, Thelamara, Sonitpur, Assam | Center Code: 4159")
+if menu == "🏠 Home & Public Enquiry":
+    # Header Banner / Logo Title
+    st.markdown("""
+        <div style="background-color:#1E3A8A; padding:20px; border-radius:12px; text-align:center; color:white;">
+            <h1 style="margin:0; font-size:32px;">💻 SOFT TECH COMPUTERS & ZTC</h1>
+            <p style="margin:5px 0 0 0; font-size:16px;">Kamarchuburi, Thelamara, Sonitpur, Assam | Center Code: 4159</p>
+        </div>
+    """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    # 1. LIVE CENTER STATS
-    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    active_count = len(student_df[student_df["Status"] == "Active"]) if not student_df.empty else 0
-    total_count = len(student_df) if not student_df.empty else 0
-    
-    col_m1.metric("Total Registered Students", f"{total_count} Enrolled")
-    col_m2.metric("Active Regular Batches", f"{active_count} Active")
-    col_m3.metric("Center Code", "4159 (Verified)")
-    col_m4.metric("Morning Shift Timing", "06:30 AM - 08:00 AM")
-    
-    st.markdown("---")
-    
-    # 2. PUBLIC STUDENT & CERTIFICATE VERIFICATION COUNTER
-    st.subheader("🔍 Public Student ID & Registration Search")
-    st.write("Enter Student Roll ID to verify enrollment status, course details, and center validity:")
-    
-    pub_id_search = st.text_input("Enter Student ID (e.g. STC26-001):", key="pub_search").strip().upper()
-    
-    if pub_id_search:
-        p_res = student_df[student_df["Student ID"] == pub_id_search]
-        if not p_res.empty:
-            p = p_res.iloc[0]
-            st.success(f"✅ Verified Student: **{p['Name']}**")
-            
-            c1, c2, c3, c4 = st.columns(4)
-            c1.write(f"**Course:** {p['Course']}")
-            c2.write(f"**Batch Shift:** {p['Shift']}")
-            c3.write(f"**Joining Date:** {p['Join Date']}")
-            c4.write(f"**Status:** :green[{p['Status']}]")
-        else:
-            st.error("❌ Invalid ID! No record found in STC / ZTC Master Registry.")
+    # 1. MARQUEE BANNER FOR STUDENT OF THE MONTH
+    st.markdown("""
+        <div style="background-color:#FEF3C7; border:1px solid #F59E0B; padding:8px 15px; border-radius:8px;">
+            <marquee style="color:#B45309; font-weight:bold; font-size:16px;">
+                🏆 CONGRATULATIONS TO OUR STUDENT OF THE MONTH! WORK HARD & SHINE BRIGHT! 🏆
+            </marquee>
+        </div>
+    """, unsafe_allow_html=True)
 
     st.markdown("---")
+
+    # 2. TWO QR SCANNERS (PORTAL ACCESS & QUICK ATTENDANCE)
+    st.subheader("📲 Center Smart QR Scanners")
     
-    # 3. NOTICE BOARD & LOCATION INFO
-    col_n1, col_n2 = st.columns(2)
-    with col_n1:
-        st.info("""
-        📢 **Official Announcements:**
-        * ⏰ **Revised Morning Batch:** Class duration is **90 Minutes (06:30 AM to 08:00 AM)**.
-        * 📲 **Smart QR Attendance:** Students can scan the Notice Board QR code to register attendance with Touch Signature.
-        * 🎯 **Sunday Free Practice:** Computer lab open every Sunday for extra lab practice.
-        """)
+    col_qr1, col_qr2 = st.columns(2)
+    with col_qr1:
+        st.markdown("""
+            <div style="border:2px dashed #2563EB; background-color:#EFF6FF; padding:20px; border-radius:12px; text-align:center;">
+                <h3 style="color:#1E3A8A; margin-top:0;">🌐 1. Portal Access QR</h3>
+                <p style="color:#475569; font-size:14px;">Scan to open Official Portal on Mobile Browser</p>
+                <div style="font-size:40px;">📱🔗</div>
+                <p style="font-weight:bold; color:#2563EB; margin-bottom:0;">stcztc.streamlit.app</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with col_qr2:
+        st.markdown("""
+            <div style="border:2px dashed #059669; background-color:#ECFDF5; padding:20px; border-radius:12px; text-align:center;">
+                <h3 style="color:#065F46; margin-top:0;">✅ 2. Quick Attendance QR</h3>
+                <p style="color:#475569; font-size:14px;">Scan Notice Board QR for Daily Touch Signature Attendance</p>
+                <div style="font-size:40px;">📲✍️</div>
+                <p style="font-weight:bold; color:#059669; margin-bottom:0;">Kamarchuburi Center (Lat: 26.683389)</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # 3. PUBLIC ADMISSION ENQUIRY FORM
+    st.subheader("📝 Admission & Course Enquiry Desk")
+    st.write("Interested in Computer Courses or English Classes? Send us an Enquiry:")
+    
+    with st.form("public_enquiry_form", clear_on_submit=True):
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            enq_name = st.text_input("Your Full Name*")
+            enq_mobile = st.text_input("Contact Mobile Number*")
+        with col_e2:
+            enq_course = st.selectbox("Course Interested In", ["DCA", "ADCA", "DTP", "Tally Prime", "Class 9-12 English Coaching", "Other Certificate Course"])
+            enq_addr = st.text_input("Village / Address")
+            
+        enq_sub = st.form_submit_button("Submit Enquiry")
         
-    with col_n2:
-        st.success(f"""
-        📍 **Center Location Credentials:**
-        * **Institute:** Soft Tech Computers & ZTC
-        * **Location:** Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149
-        * **GPS Coordinates:** Lat `{STC_LAT}`, Long `{STC_LON}`
-        """)
+        if enq_sub:
+            if not enq_name or not enq_mobile:
+                st.error("Please enter Name and Mobile Number!")
+            else:
+                e_row = {
+                    "Date": str(datetime.date.today()),
+                    "Name": enq_name.upper(),
+                    "Mobile": enq_mobile,
+                    "Course Interested": enq_course,
+                    "Village/Address": enq_addr.upper(),
+                    "Status": "Pending"
+                }
+                enquiry_df = pd.concat([enquiry_df, pd.DataFrame([e_row])], ignore_index=True)
+                save_data(enquiry_df, ENQUIRY_FILE)
+                st.success("✅ Thank you! Your Enquiry has been submitted successfully. We will contact you soon.")
 
 # ---------------------------------------------------------
 # 2. SMART QR & MOBILE ATTENDANCE
@@ -129,7 +148,6 @@ elif menu == "📱 Smart QR & Mobile Attendance":
     st.write("Scan Notice Board QR code or enter Student ID below to mark daily attendance with Digital Touch Sign.")
     
     col_q1, col_q2 = st.columns([1, 2])
-    
     with col_q1:
         st.markdown("""
         <div style="border:2px dashed #1E3A8A; padding:15px; border-radius:10px; text-align:center; background:#EFF6FF;">
@@ -218,8 +236,8 @@ elif menu == "📝 New Student Admission":
             discount = st.number_input("Discount Allowed (₹)", min_value=0.0, step=50.0)
             
         with col4:
-            shift = st.selectbox("Shift Assigned", ["Morning (06:30 AM - 08:00 AM)", "Afternoon", "Evening"])
-            batch_time = st.text_input("Batch Timing", value="06:30 AM - 08:00 AM (90 Mins)")
+            shift = st.selectbox("Shift Assigned", ["Morning", "Afternoon", "Evening"])
+            batch_time = st.text_input("Batch Timing", value="As Assigned")
             
         submitted = st.form_submit_button("Submit & Generate Student ID (Clears Form)")
         
@@ -318,12 +336,12 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
     st.subheader("👨‍🏫 Teacher Punch-in & Late Warning Check")
     col_t1, col_t2 = st.columns(2)
     with col_t1:
-        t_shift = st.selectbox("Select Teacher Shift:", ["Morning (06:30 AM)", "Afternoon (12:30 PM)", "Evening (03:30 PM)"])
+        t_shift = st.selectbox("Select Teacher Shift:", ["Morning Shift", "Afternoon Shift", "Evening Shift"])
     with col_t2:
         punch_time = st.time_input("Punch-in Time Check:", value=datetime.datetime.now().time())
         
     if "Morning" in t_shift and punch_time > datetime.time(6, 35):
-        st.error(f"⚠️ **You are Late!** Morning shift starts at 06:30 AM. Punch-in recorded at {punch_time.strftime('%I:%M %p')}. Please inform Director!")
+        st.error(f"⚠️ **You are Late!** Morning shift punch-in recorded at {punch_time.strftime('%I:%M %p')}. Please report to Director!")
     elif "Morning" in t_shift:
         st.success(f"✅ On Time Arrival! Morning shift punch-in recorded at {punch_time.strftime('%I:%M %p')}.")
 
@@ -380,7 +398,7 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
 
     with tab3:
         st.subheader("Batch Wise Bulk Attendance")
-        sel_shift = st.selectbox("Filter Shift:", ["All", "Morning (06:30 AM - 08:00 AM)", "Afternoon", "Evening"])
+        sel_shift = st.selectbox("Filter Shift:", ["All", "Morning", "Afternoon", "Evening"])
         b_df = student_df if sel_shift == "All" else student_df[student_df["Shift"] == sel_shift]
         
         if not b_df.empty:
@@ -417,9 +435,10 @@ elif menu == "🔐 Admin Control Panel":
     if pwd == "zaan123":
         st.success("Access Granted. Welcome Sir!")
         
-        adm_tab1, adm_tab2 = st.tabs([
+        adm_tab1, adm_tab2, adm_tab3 = st.tabs([
             "📊 Master Student Registry",
-            "⚡ Quick Fee/Attendance Updater"
+            "⚡ Quick Fee/Attendance Updater",
+            "📩 Public Enquiries Log"
         ])
         
         with adm_tab1:
@@ -470,6 +489,13 @@ elif menu == "🔐 Admin Control Panel":
                         save_data(att_df, ATTENDANCE_FILE)
                         st.success(f"🎉 Attendance Overwritten! Total: {new_tot_class} Days, Present: {new_pres_days} Days, Absent: {needed_absent} Days.")
                         st.rerun()
+
+        with adm_tab3:
+            st.subheader("📩 Public Enquiries Submitted from Portal")
+            if not enquiry_df.empty:
+                st.dataframe(enquiry_df, use_container_width=True)
+            else:
+                st.info("No enquiries received yet.")
 
     elif pwd:
         st.error("Incorrect Admin Password!")
