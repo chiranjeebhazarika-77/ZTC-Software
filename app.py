@@ -49,7 +49,7 @@ teacher_df = load_data(TEACHERS_FILE, teacher_cols)
 # Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
-    "🏠 Home & Public Enquiry",
+    "🏠 Home & Public Dashboard",
     "📱 Smart QR & Mobile Attendance",
     "📝 New Student Admission",
     "🔑 Student Login Portal",
@@ -60,21 +60,69 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HOME & PUBLIC ENQUIRY
+# 1. HOME & PUBLIC DASHBOARD (FULLY RESTORED & EXPANDED)
 # ---------------------------------------------------------
-if menu == "🏠 Home & Public Enquiry":
-    st.title("Welcome to Soft Tech Computers & ZTC")
-    st.write("### Quality IT & Academic Education Center (Center Code: 4159)")
-    st.info("📍 Location: Kamarchuburi, Thelamara, Sonitpur | Google Geo: 26.683389, 92.556680")
+if menu == "🏠 Home & Public Dashboard":
+    st.title("💻 Soft Tech Computers & ZTC — Public Dashboard")
+    st.write("### Official Computer Training & Academic Coaching Portal")
+    st.caption("📍 Kamarchuburi, Thelamara, Sonitpur, Assam | Center Code: 4159")
     
-    col_h1, col_h2 = st.columns(2)
-    with col_h1:
-        st.success("⏰ **Morning Shift Revised Timing:** 06:30 AM to 08:00 AM (90 Mins Session)")
-    with col_h2:
-        st.success("📱 **Smart Mobile QR Scanner & Touch Sign Attendance Active**")
+    st.markdown("---")
+    
+    # 1. LIVE CENTER STATS
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    active_count = len(student_df[student_df["Status"] == "Active"]) if not student_df.empty else 0
+    total_count = len(student_df) if not student_df.empty else 0
+    
+    col_m1.metric("Total Registered Students", f"{total_count} Enrolled")
+    col_m2.metric("Active Regular Batches", f"{active_count} Active")
+    col_m3.metric("Center Code", "4159 (Verified)")
+    col_m4.metric("Morning Shift Timing", "06:30 AM - 08:00 AM")
+    
+    st.markdown("---")
+    
+    # 2. PUBLIC STUDENT & CERTIFICATE VERIFICATION COUNTER
+    st.subheader("🔍 Public Student ID & Registration Search")
+    st.write("Enter Student Roll ID to verify enrollment status, course details, and center validity:")
+    
+    pub_id_search = st.text_input("Enter Student ID (e.g. STC26-001):", key="pub_search").strip().upper()
+    
+    if pub_id_search:
+        p_res = student_df[student_df["Student ID"] == pub_id_search]
+        if not p_res.empty:
+            p = p_res.iloc[0]
+            st.success(f"✅ Verified Student: **{p['Name']}**")
+            
+            c1, c2, c3, c4 = st.columns(4)
+            c1.write(f"**Course:** {p['Course']}")
+            c2.write(f"**Batch Shift:** {p['Shift']}")
+            c3.write(f"**Joining Date:** {p['Join Date']}")
+            c4.write(f"**Status:** :green[{p['Status']}]")
+        else:
+            st.error("❌ Invalid ID! No record found in STC / ZTC Master Registry.")
+
+    st.markdown("---")
+    
+    # 3. NOTICE BOARD & LOCATION INFO
+    col_n1, col_n2 = st.columns(2)
+    with col_n1:
+        st.info("""
+        📢 **Official Announcements:**
+        * ⏰ **Revised Morning Batch:** Class duration is **90 Minutes (06:30 AM to 08:00 AM)**.
+        * 📲 **Smart QR Attendance:** Students can scan the Notice Board QR code to register attendance with Touch Signature.
+        * 🎯 **Sunday Free Practice:** Computer lab open every Sunday for extra lab practice.
+        """)
+        
+    with col_n2:
+        st.success(f"""
+        📍 **Center Location Credentials:**
+        * **Institute:** Soft Tech Computers & ZTC
+        * **Location:** Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149
+        * **GPS Coordinates:** Lat `{STC_LAT}`, Long `{STC_LON}`
+        """)
 
 # ---------------------------------------------------------
-# 2. SMART QR & MOBILE ATTENDANCE (NEW FEATURE)
+# 2. SMART QR & MOBILE ATTENDANCE
 # ---------------------------------------------------------
 elif menu == "📱 Smart QR & Mobile Attendance":
     st.header("📱 Smart Student QR & Mobile Display Signature Attendance")
@@ -107,7 +155,6 @@ elif menu == "📱 Smart QR & Mobile Attendance":
                     today_str = str(datetime.date.today())
                     st_name = student_df[student_df["Student ID"] == s_id_input]["Name"].values[0]
                     
-                    # Record Attendance
                     att_row = {
                         "Student ID": s_id_input,
                         "Date": today_str,
@@ -128,13 +175,11 @@ elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
     st.write("💡 *Memory Auto-Fill Enabled: Previously saved Village, PO, PS and PIN Codes can be quick-selected!*")
     
-    # Extract unique memory items from existing student registry
     vills_mem = [v for v in student_df["Vill Town"].unique() if str(v).strip() and str(v) != "nan"]
     pos_mem = [p for p in student_df["PO"].unique() if str(p).strip() and str(p) != "nan"]
     pss_mem = [ps for ps in student_df["PS"].unique() if str(ps).strip() and str(ps) != "nan"]
     pins_mem = [pin for pin in student_df["PIN Code"].unique() if str(pin).strip() and str(pin) != "nan"]
 
-    # Session State Memory Handlers
     col_m1, col_m2 = st.columns(2)
     with col_m1:
         sel_vill_mem = st.selectbox("🧠 Saved Village/Town Memory:", ["-- Type New or Select Saved --"] + vills_mem)
@@ -265,12 +310,11 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
     st.header("🎯 Sunday Free Practice Class Management")
 
 # ---------------------------------------------------------
-# 6. TEACHER PORTAL (LATE ARRIVAL ALERT ADDED)
+# 6. TEACHER PORTAL & FEE COUNTER
 # ---------------------------------------------------------
 elif menu == "🔑 Teacher Portal & Fee Counter":
     st.header("💳 Teacher Portal, Fee Counter & Faculty Attendance")
     
-    # Teacher Late Arrival Checker
     st.subheader("👨‍🏫 Teacher Punch-in & Late Warning Check")
     col_t1, col_t2 = st.columns(2)
     with col_t1:
@@ -278,7 +322,6 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
     with col_t2:
         punch_time = st.time_input("Punch-in Time Check:", value=datetime.datetime.now().time())
         
-    # Morning shift check (> 06:35 AM is late)
     if "Morning" in t_shift and punch_time > datetime.time(6, 35):
         st.error(f"⚠️ **You are Late!** Morning shift starts at 06:30 AM. Punch-in recorded at {punch_time.strftime('%I:%M %p')}. Please inform Director!")
     elif "Morning" in t_shift:
