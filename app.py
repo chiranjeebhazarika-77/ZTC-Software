@@ -6,12 +6,17 @@ import datetime
 # Page Configuration
 st.set_page_config(page_title="Soft Tech Computers & ZTC Portal", page_icon="💻", layout="wide")
 
+# Center Location Credentials
+STC_LAT = 26.683389
+STC_LON = 92.556680
+
 # Paths for CSV Files
 STUDENT_MASTER_FILE = "students_db.csv"
 FEE_LOG_FILE = "fees_db.csv"
 ATTENDANCE_FILE = "attendance_db.csv"
 TEACHERS_FILE = "teachers_db.csv"
 ENQUIRY_FILE = "enquiries_db.csv"
+SFPC_FILE = "sfpc_db.csv"
 
 # Function to load CSV safely
 def load_data(file_path, columns):
@@ -37,6 +42,7 @@ fee_cols = ["Receipt No", "Student ID", "Date", "Amount Paid", "Payment Mode", "
 attendance_cols = ["Student ID", "Date", "Status", "Sign_Mode", "Location_Verified"]
 teacher_cols = ["Teacher ID", "Name", "Phone", "Qualification", "Designation", "Shift Assigned", "Shift Start Time"]
 enquiry_cols = ["Date", "Name", "Mobile", "Course Interested", "Village/Address", "Status"]
+sfpc_cols = ["Date", "Student ID", "Student Name", "PC Machine No", "Topic Practiced", "Teacher Incharge"]
 
 # Load DataFrames
 student_df = load_data(STUDENT_MASTER_FILE, student_cols)
@@ -44,6 +50,7 @@ fee_df = load_data(FEE_LOG_FILE, fee_cols)
 att_df = load_data(ATTENDANCE_FILE, attendance_cols)
 teacher_df = load_data(TEACHERS_FILE, teacher_cols)
 enquiry_df = load_data(ENQUIRY_FILE, enquiry_cols)
+sfpc_df = load_data(SFPC_FILE, sfpc_cols)
 
 # Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
@@ -59,10 +66,9 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HOME & PUBLIC ENQUIRY (CLEAN & RESTORED VIBE)
+# 1. HOME & PUBLIC ENQUIRY
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Enquiry":
-    # Header Banner / Logo Title
     st.markdown("""
         <div style="background-color:#1E3A8A; padding:20px; border-radius:12px; text-align:center; color:white;">
             <h1 style="margin:0; font-size:32px;">💻 SOFT TECH COMPUTERS & ZTC</h1>
@@ -72,20 +78,19 @@ if menu == "🏠 Home & Public Enquiry":
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 1. MARQUEE BANNER FOR STUDENT OF THE MONTH
+    # MARQUEE BANNER
     st.markdown("""
         <div style="background-color:#FEF3C7; border:1px solid #F59E0B; padding:8px 15px; border-radius:8px;">
             <marquee style="color:#B45309; font-weight:bold; font-size:16px;">
-                🏆 CONGRATULATIONS TO OUR STUDENT OF THE MONTH! WORK HARD & SHINE BRIGHT! 🏆
+                🏆 CONGRATULATIONS TO OUR STUDENT OF THE MONTH! WORK HARD & SHINE BRIGHT AT SOFT TECH COMPUTERS & ZTC! 🏆
             </marquee>
         </div>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # 2. TWO QR SCANNERS (PORTAL ACCESS & QUICK ATTENDANCE)
+    # TWO QR SCANNERS
     st.subheader("📲 Center Smart QR Scanners")
-    
     col_qr1, col_qr2 = st.columns(2)
     with col_qr1:
         st.markdown("""
@@ -109,10 +114,8 @@ if menu == "🏠 Home & Public Enquiry":
 
     st.markdown("---")
 
-    # 3. PUBLIC ADMISSION ENQUIRY FORM
+    # PUBLIC ADMISSION ENQUIRY FORM
     st.subheader("📝 Admission & Course Enquiry Desk")
-    st.write("Interested in Computer Courses or English Classes? Send us an Enquiry:")
-    
     with st.form("public_enquiry_form", clear_on_submit=True):
         col_e1, col_e2 = st.columns(2)
         with col_e1:
@@ -123,7 +126,6 @@ if menu == "🏠 Home & Public Enquiry":
             enq_addr = st.text_input("Village / Address")
             
         enq_sub = st.form_submit_button("Submit Enquiry")
-        
         if enq_sub:
             if not enq_name or not enq_mobile:
                 st.error("Please enter Name and Mobile Number!")
@@ -138,7 +140,7 @@ if menu == "🏠 Home & Public Enquiry":
                 }
                 enquiry_df = pd.concat([enquiry_df, pd.DataFrame([e_row])], ignore_index=True)
                 save_data(enquiry_df, ENQUIRY_FILE)
-                st.success("✅ Thank you! Your Enquiry has been submitted successfully. We will contact you soon.")
+                st.success("✅ Thank you! Your Enquiry has been submitted successfully.")
 
 # ---------------------------------------------------------
 # 2. SMART QR & MOBILE ATTENDANCE
@@ -163,7 +165,6 @@ elif menu == "📱 Smart QR & Mobile Attendance":
             loc_check = st.checkbox("Verify Present inside STC/ZTC Campus Location", value=True)
             
             sub_att = st.form_submit_button("Submit Self Attendance")
-            
             if sub_att:
                 if not s_id_input:
                     st.error("Please enter a valid Student ID!")
@@ -236,8 +237,8 @@ elif menu == "📝 New Student Admission":
             discount = st.number_input("Discount Allowed (₹)", min_value=0.0, step=50.0)
             
         with col4:
-            shift = st.selectbox("Shift Assigned", ["Morning", "Afternoon", "Evening"])
-            batch_time = st.text_input("Batch Timing", value="As Assigned")
+            shift = st.selectbox("Shift Assigned", ["Morning (06:30 AM - 08:00 AM)", "Afternoon", "Evening"])
+            batch_time = st.text_input("Batch Timing", value="06:30 AM - 08:00 AM (90 Mins)")
             
         submitted = st.form_submit_button("Submit & Generate Student ID (Clears Form)")
         
@@ -322,10 +323,37 @@ elif menu == "🔑 Student Login Portal":
             st.error("No record found for this Student ID.")
 
 # ---------------------------------------------------------
-# 5. SUNDAY PRACTICE CLASS
+# 5. SUNDAY PRACTICE CLASS (SFPC)
 # ---------------------------------------------------------
 elif menu == "🎯 Sunday Free Practice Class (SFPC)":
-    st.header("🎯 Sunday Free Practice Class Management")
+    st.header("🎯 Sunday Free Practice Class (SFPC) Allocation")
+    st.info("Log attendance & machine allocations for students taking Sunday extra lab practice.")
+    
+    with st.form("sfpc_form", clear_on_submit=True):
+        col_sf1, col_sf2 = st.columns(2)
+        with col_sf1:
+            sf_sid = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+            sf_date = st.date_input("Practice Date", value=datetime.date.today())
+            sf_mc = st.selectbox("Assigned PC Lab Machine:", [f"Lab PC - {i:02d}" for i in range(1, 21)])
+        with col_sf2:
+            sf_topic = st.text_input("Practical Topic (e.g., Tally Entry / MS Word)")
+            sf_teacher = st.text_input("Teacher / Instructor Incharge", value="Center Admin")
+            
+        sf_sub = st.form_submit_button("Record SFPC Practice Session")
+        if sf_sub and sf_sid:
+            sid_code = sf_sid.split(" - ")[0]
+            s_name_val = sf_sid.split(" - ")[1]
+            sf_row = {
+                "Date": str(sf_date),
+                "Student ID": sid_code,
+                "Student Name": s_name_val,
+                "PC Machine No": sf_mc,
+                "Topic Practiced": sf_topic,
+                "Teacher Incharge": sf_teacher
+            }
+            sfpc_df = pd.concat([sfpc_df, pd.DataFrame([sf_row])], ignore_index=True)
+            save_data(sfpc_df, SFPC_FILE)
+            st.success(f"✅ SFPC Session Recorded for {s_name_val} on {sf_mc}!")
 
 # ---------------------------------------------------------
 # 6. TEACHER PORTAL & FEE COUNTER
@@ -336,12 +364,12 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
     st.subheader("👨‍🏫 Teacher Punch-in & Late Warning Check")
     col_t1, col_t2 = st.columns(2)
     with col_t1:
-        t_shift = st.selectbox("Select Teacher Shift:", ["Morning Shift", "Afternoon Shift", "Evening Shift"])
+        t_shift = st.selectbox("Select Teacher Shift:", ["Morning (06:30 AM)", "Afternoon (12:30 PM)", "Evening (03:30 PM)"])
     with col_t2:
         punch_time = st.time_input("Punch-in Time Check:", value=datetime.datetime.now().time())
         
     if "Morning" in t_shift and punch_time > datetime.time(6, 35):
-        st.error(f"⚠️ **You are Late!** Morning shift punch-in recorded at {punch_time.strftime('%I:%M %p')}. Please report to Director!")
+        st.error(f"⚠️ **You are Late!** Morning shift starts at 06:30 AM. Punch-in recorded at {punch_time.strftime('%I:%M %p')}. Please inform Director!")
     elif "Morning" in t_shift:
         st.success(f"✅ On Time Arrival! Morning shift punch-in recorded at {punch_time.strftime('%I:%M %p')}.")
 
@@ -365,7 +393,7 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
             with st.form("pay_fee_form", clear_on_submit=True):
                 pay_amt = st.number_input("Amount to Deposit (₹)", min_value=1.0, max_value=max(due, 10000.0), step=100.0)
                 pay_mode = st.selectbox("Payment Mode", ["Cash", "UPI / Google Pay", "Bank Transfer", "Card"])
-                remarks = st.text_input("Receipt Remarks / Note", value="Installment Payment")
+                remarks = st.text_input("Receipt Remarks / Collector Note", value="Collected by Teacher/Counter")
                 
                 pay_sub = st.form_submit_button("Process Payment & Issue Receipt")
                 if pay_sub:
@@ -398,7 +426,7 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
 
     with tab3:
         st.subheader("Batch Wise Bulk Attendance")
-        sel_shift = st.selectbox("Filter Shift:", ["All", "Morning", "Afternoon", "Evening"])
+        sel_shift = st.selectbox("Filter Shift:", ["All", "Morning (06:30 AM - 08:00 AM)", "Afternoon", "Evening"])
         b_df = student_df if sel_shift == "All" else student_df[student_df["Shift"] == sel_shift]
         
         if not b_df.empty:
@@ -426,21 +454,25 @@ elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
     st.header("👨‍👩‍👧 Parents Live Performance Tracker")
 
 # ---------------------------------------------------------
-# 8. ADMIN CONTROL PANEL
+# 8. ADMIN CONTROL PANEL (FULLY RESTORED RICH TABS)
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
     pwd = st.text_input("Enter Director Admin Password", type="password")
     
     if pwd == "zaan123":
-        st.success("Access Granted. Welcome Sir!")
+        st.success("Access Granted. Welcome Director Sir!")
         
-        adm_tab1, adm_tab2, adm_tab3 = st.tabs([
+        adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6 = st.tabs([
             "📊 Master Student Registry",
+            "🚨 Smart Overdue Dues & Pending List",
+            "💰 Fee Collection & Audit Ledger",
+            "🎯 SFPC Beneficiaries Tracker",
             "⚡ Quick Fee/Attendance Updater",
             "📩 Public Enquiries Log"
         ])
         
+        # TAB 1: MASTER REGISTRY
         with adm_tab1:
             st.subheader("Master Student Records")
             if not student_df.empty:
@@ -450,8 +482,71 @@ elif menu == "🔐 Admin Control Panel":
                 
                 csv_data = student_df.to_csv(index=False).encode('utf-8')
                 st.download_button("📥 Download Full Student Database (students_db.csv)", data=csv_data, file_name="students_db.csv", mime="text/csv")
-                
+
+        # TAB 2: OVERDUE DUES & PENDING LIST (STUDENT-WISE)
         with adm_tab2:
+            st.subheader("🚨 Overdue Fee Dues & Pending Balances")
+            if not student_df.empty:
+                pending_list = []
+                total_pending_all = 0.0
+                
+                for idx, s in student_df.iterrows():
+                    sid = s["Student ID"]
+                    sname = s["Name"]
+                    course = s["Course"]
+                    mobile = s["Mobile No"]
+                    net = float(s["Net Fee"]) if s["Net Fee"] else 0.0
+                    
+                    paid_logs = fee_df[fee_df["Student ID"] == sid]
+                    total_paid = sum([float(amt) for amt in paid_logs["Amount Paid"] if amt])
+                    due = net - total_paid
+                    
+                    if due > 0:
+                        pending_list.append({
+                            "Student ID": sid,
+                            "Name": sname,
+                            "Course": course,
+                            "Mobile No": mobile,
+                            "Net Fee (₹)": f"{net:.2f}",
+                            "Total Paid (₹)": f"{total_paid:.2f}",
+                            "Pending Due (₹)": f"{due:.2f}"
+                        })
+                        total_pending_all += due
+                        
+                st.error(f"### 💸 Total Overdue Pending Market Due: ₹{total_pending_all:,.2f}")
+                
+                if pending_list:
+                    pdf_p = pd.DataFrame(pending_list)
+                    pdf_p.index = range(1, len(pdf_p) + 1)
+                    st.table(pdf_p)
+                else:
+                    st.success("🎉 All students have cleared their fees! Zero pending dues.")
+
+        # TAB 3: FEE COLLECTION & AUDIT LEDGER
+        with adm_tab3:
+            st.subheader("💰 Fee Collection & Financial Receipts Ledger")
+            if not fee_df.empty:
+                tot_coll = sum([float(a) for a in fee_df["Amount Paid"] if a])
+                st.metric("Total Center Fee Collections", f"₹{tot_coll:,.2f}")
+                
+                disp_fee = fee_df.copy()
+                disp_fee.index = range(1, len(disp_fee) + 1)
+                st.dataframe(disp_fee, use_container_width=True)
+            else:
+                st.info("No fee payment records found.")
+
+        # TAB 4: SFPC BENEFICIARIES TRACKER
+        with adm_tab4:
+            st.subheader("🎯 Sunday Practice Class (SFPC) History & Attendance")
+            if not sfpc_df.empty:
+                disp_sf = sfpc_df.copy()
+                disp_sf.index = range(1, len(disp_sf) + 1)
+                st.dataframe(disp_sf, use_container_width=True)
+            else:
+                st.info("No SFPC practice records logged yet.")
+
+        # TAB 5: QUICK UPDATER
+        with adm_tab5:
             st.subheader("⚡ Direct Bulk Fee & Attendance Overwrite")
             sel_st_up = st.selectbox("Select Student for Overwrite:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
             
@@ -490,10 +585,13 @@ elif menu == "🔐 Admin Control Panel":
                         st.success(f"🎉 Attendance Overwritten! Total: {new_tot_class} Days, Present: {new_pres_days} Days, Absent: {needed_absent} Days.")
                         st.rerun()
 
-        with adm_tab3:
+        # TAB 6: PUBLIC ENQUIRIES LOG
+        with adm_tab6:
             st.subheader("📩 Public Enquiries Submitted from Portal")
             if not enquiry_df.empty:
-                st.dataframe(enquiry_df, use_container_width=True)
+                disp_enq = enquiry_df.copy()
+                disp_enq.index = range(1, len(disp_enq) + 1)
+                st.dataframe(disp_enq, use_container_width=True)
             else:
                 st.info("No enquiries received yet.")
 
