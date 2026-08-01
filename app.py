@@ -6,10 +6,6 @@ import datetime
 # Page Configuration
 st.set_page_config(page_title="Soft Tech Computers & ZTC Portal", page_icon="💻", layout="wide")
 
-# Center Location Credentials
-STC_LAT = 26.683389
-STC_LON = 92.556680
-
 # Paths for CSV Files
 STUDENT_MASTER_FILE = "students_db.csv"
 FEE_LOG_FILE = "fees_db.csv"
@@ -52,11 +48,23 @@ teacher_df = load_data(TEACHERS_FILE, teacher_cols)
 enquiry_df = load_data(ENQUIRY_FILE, enquiry_cols)
 sfpc_df = load_data(SFPC_FILE, sfpc_cols)
 
+# Standard Course Fee Structure Reference
+COURSE_FEE_MAP = {
+    "DCA": "₹4,500",
+    "ADCA": "₹7,500",
+    "DTP": "₹3,500",
+    "Tally Prime": "₹4,000",
+    "Class 9 English Coaching": "₹600 / Month",
+    "Class 10 English Coaching": "₹700 / Month",
+    "Class 11 English Coaching": "₹800 / Month",
+    "Class 12 English Coaching": "₹900 / Month",
+    "Certificate Course": "₹2,500"
+}
+
 # Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
-    "🏠 Home & Public Enquiry",
-    "📱 Smart QR & Mobile Attendance",
+    "🏠 Public Dashboard & Enquiry",
     "📝 New Student Admission",
     "🔑 Student Login Portal",
     "🎯 Sunday Free Practice Class (SFPC)",
@@ -66,229 +74,195 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HOME & PUBLIC ENQUIRY
+# 1. PUBLIC DASHBOARD & SMART ENQUIRY DESK
 # ---------------------------------------------------------
-if menu == "🏠 Home & Public Enquiry":
+if menu == "🏠 Public Dashboard & Enquiry":
+    # Brand Header Logo Banner
     st.markdown("""
-        <div style="background-color:#1E3A8A; padding:20px; border-radius:12px; text-align:center; color:white;">
-            <h1 style="margin:0; font-size:32px;">💻 SOFT TECH COMPUTERS & ZTC</h1>
+        <div style="background-color:#1E3A8A; padding:22px; border-radius:12px; text-align:center; color:white;">
+            <h1 style="margin:0; font-size:34px;">💻 SOFT TECH COMPUTERS & ZTC</h1>
             <p style="margin:5px 0 0 0; font-size:16px;">Kamarchuburi, Thelamara, Sonitpur, Assam | Center Code: 4159</p>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # MARQUEE BANNER
-    st.markdown("""
-        <div style="background-color:#FEF3C7; border:1px solid #F59E0B; padding:8px 15px; border-radius:8px;">
+    # 🏆 STUDENT OF THE MONTH (AUTOMATIC QUALIFICATION FILTER: Attendance > 75% AND Fee Paid > 50%)
+    eligible_students = []
+    if not student_df.empty:
+        for idx, s in student_df.iterrows():
+            sid = s["Student ID"]
+            sname = s["Name"]
+            net = float(s["Net Fee"]) if s["Net Fee"] else 0.0
+            
+            # Attendance Calculate
+            s_att = att_df[att_df["Student ID"] == sid]
+            p_days = len(s_att[s_att["Status"] == "Present"])
+            a_days = len(s_att[s_att["Status"] == "Absent"])
+            tot_c = p_days + a_days
+            att_perc = (p_days / tot_c * 100) if tot_c > 0 else 0.0
+            
+            # Fee Calculate
+            p_logs = fee_df[fee_df["Student ID"] == sid]
+            tot_paid = sum([float(amt) for amt in p_logs["Amount Paid"] if amt])
+            fee_perc = (tot_paid / net * 100) if net > 0 else 0.0
+            
+            if att_perc >= 75.0 and fee_perc >= 50.0:
+                eligible_students.append(f"{sname} ({s['Course']}) - {att_perc:.0f}% Attd")
+
+    star_text = " | ".join(eligible_students) if eligible_students else "SOFT TECH COMPUTERS & ZTC ACADEMIC EXCELLENCE"
+    
+    st.markdown(f"""
+        <div style="background-color:#FEF3C7; border:1px solid #F59E0B; padding:10px 15px; border-radius:8px;">
             <marquee style="color:#B45309; font-weight:bold; font-size:16px;">
-                🏆 CONGRATULATIONS TO OUR STUDENT OF THE MONTH! WORK HARD & SHINE BRIGHT AT SOFT TECH COMPUTERS & ZTC! 🏆
+                🏆 STUDENT OF THE MONTH QUALIFIERS (75%+ Attendance & 50%+ Fee Cleared): {star_text} 🏆
             </marquee>
         </div>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # TWO QR SCANNERS
-    st.subheader("📲 Center Smart QR Scanners")
-    col_qr1, col_qr2 = st.columns(2)
-    with col_qr1:
+    col_p1, col_p2 = st.columns([1, 2])
+    
+    with col_p1:
+        st.subheader("📲 Portal Access Scanner")
         st.markdown("""
             <div style="border:2px dashed #2563EB; background-color:#EFF6FF; padding:20px; border-radius:12px; text-align:center;">
-                <h3 style="color:#1E3A8A; margin-top:0;">🌐 1. Portal Access QR</h3>
-                <p style="color:#475569; font-size:14px;">Scan to open Official Portal on Mobile Browser</p>
-                <div style="font-size:40px;">📱🔗</div>
+                <h3 style="color:#1E3A8A; margin-top:0;">🌐 Portal Scanner</h3>
+                <p style="color:#475569; font-size:13px;">Scan with Mobile Camera to access Portal</p>
+                <div style="font-size:50px;">📱🔗</div>
                 <p style="font-weight:bold; color:#2563EB; margin-bottom:0;">stcztc.streamlit.app</p>
             </div>
         """, unsafe_allow_html=True)
 
-    with col_qr2:
-        st.markdown("""
-            <div style="border:2px dashed #059669; background-color:#ECFDF5; padding:20px; border-radius:12px; text-align:center;">
-                <h3 style="color:#065F46; margin-top:0;">✅ 2. Quick Attendance QR</h3>
-                <p style="color:#475569; font-size:14px;">Scan Notice Board QR for Daily Touch Signature Attendance</p>
-                <div style="font-size:40px;">📲✍️</div>
-                <p style="font-weight:bold; color:#059669; margin-bottom:0;">Kamarchuburi Center (Lat: 26.683389)</p>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # PUBLIC ADMISSION ENQUIRY FORM
-    st.subheader("📝 Admission & Course Enquiry Desk")
-    with st.form("public_enquiry_form", clear_on_submit=True):
-        col_e1, col_e2 = st.columns(2)
-        with col_e1:
-            enq_name = st.text_input("Your Full Name*")
-            enq_mobile = st.text_input("Contact Mobile Number*")
-        with col_e2:
-            enq_course = st.selectbox("Course Interested In", ["DCA", "ADCA", "DTP", "Tally Prime", "Class 9-12 English Coaching", "Other Certificate Course"])
-            enq_addr = st.text_input("Village / Address")
-            
-        enq_sub = st.form_submit_button("Submit Enquiry")
-        if enq_sub:
-            if not enq_name or not enq_mobile:
-                st.error("Please enter Name and Mobile Number!")
-            else:
-                e_row = {
-                    "Date": str(datetime.date.today()),
-                    "Name": enq_name.upper(),
-                    "Mobile": enq_mobile,
-                    "Course Interested": enq_course,
-                    "Village/Address": enq_addr.upper(),
-                    "Status": "Pending"
-                }
-                enquiry_df = pd.concat([enquiry_df, pd.DataFrame([e_row])], ignore_index=True)
-                save_data(enquiry_df, ENQUIRY_FILE)
-                st.success("✅ Thank you! Your Enquiry has been submitted successfully.")
-
-# ---------------------------------------------------------
-# 2. SMART QR & MOBILE ATTENDANCE
-# ---------------------------------------------------------
-elif menu == "📱 Smart QR & Mobile Attendance":
-    st.header("📱 Smart Student QR & Mobile Display Signature Attendance")
-    st.write("Scan Notice Board QR code or enter Student ID below to mark daily attendance with Digital Touch Sign.")
-    
-    col_q1, col_q2 = st.columns([1, 2])
-    with col_q1:
-        st.markdown("""
-        <div style="border:2px dashed #1E3A8A; padding:15px; border-radius:10px; text-align:center; background:#EFF6FF;">
-            <h4 style="color:#1E3A8A; margin:0;">📍 Notice Board Scanner</h4>
-            <p style="font-size:12px; color:#475569;">Verified STC Geo-Location:<br><b>Lat: 26.683389 | Long: 92.556680</b></p>
-        </div>
-        """, unsafe_allow_html=True)
+    with col_p2:
+        st.subheader("📝 Course Fee Enquiry Desk")
+        st.write("Enter your details to reveal Course Fee and register your enquiry with Center Admin:")
         
-    with col_q2:
-        with st.form("student_qr_att_form", clear_on_submit=True):
-            s_id_input = st.text_input("Enter Student ID (e.g. STC26-001):").strip().upper()
-            touch_sign_name = st.text_input("Digital Touch Signature / Verification Name:")
-            loc_check = st.checkbox("Verify Present inside STC/ZTC Campus Location", value=True)
+        with st.form("public_enquiry_form", clear_on_submit=False):
+            e_name = st.text_input("Your Full Name*")
+            e_mobile = st.text_input("Contact Mobile Number*")
+            e_course = st.selectbox("Select Interested Course*", list(COURSE_FEE_MAP.keys()))
+            e_addr = st.text_input("Village / Address")
             
-            sub_att = st.form_submit_button("Submit Self Attendance")
-            if sub_att:
-                if not s_id_input:
-                    st.error("Please enter a valid Student ID!")
-                elif s_id_input not in student_df["Student ID"].values:
-                    st.error("Student ID not found in Master Registry!")
+            e_sub = st.form_submit_button("Submit & View Course Fee")
+            
+            if e_sub:
+                if not e_name or not e_mobile:
+                    st.error("Please enter Name and Mobile Number first!")
                 else:
-                    today_str = str(datetime.date.today())
-                    st_name = student_df[student_df["Student ID"] == s_id_input]["Name"].values[0]
-                    
-                    att_row = {
-                        "Student ID": s_id_input,
-                        "Date": today_str,
-                        "Status": "Present",
-                        "Sign_Mode": "Mobile Signature" if touch_sign_name else "QR Scan",
-                        "Location_Verified": "Yes (26.683389, 92.556680)" if loc_check else "Self"
+                    # Save Enquiry to Admin Database
+                    e_row = {
+                        "Date": str(datetime.date.today()),
+                        "Name": e_name.upper(),
+                        "Mobile": e_mobile,
+                        "Course Interested": e_course,
+                        "Village/Address": e_addr.upper(),
+                        "Status": "Enquired"
                     }
-                    att_df = pd.concat([att_df, pd.DataFrame([att_row])], ignore_index=True)
-                    save_data(att_df, ATTENDANCE_FILE)
+                    enquiry_df = pd.concat([enquiry_df, pd.DataFrame([e_row])], ignore_index=True)
+                    save_data(enquiry_df, ENQUIRY_FILE)
                     
                     st.balloons()
-                    st.success(f"🎉 Attendance Marked Successfully for **{st_name} ({s_id_input})** on {today_str}!")
+                    st.success(f"🎉 Thank you **{e_name}**! Your enquiry for **{e_course}** is received!")
+                    st.info(f"💡 **Estimated Course Fee for {e_course}:** **{COURSE_FEE_MAP.get(e_course, 'Contact Center')}**")
 
 # ---------------------------------------------------------
-# 3. NEW STUDENT ADMISSION (FORM RESET + MEMORY AUTO-FILL)
+# 2. NEW STUDENT ADMISSION (PASSWORD PROTECTED & AUTO-RESET)
 # ---------------------------------------------------------
 elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
-    st.write("💡 *Memory Auto-Fill Enabled: Previously saved Village, PO, PS and PIN Codes can be quick-selected!*")
     
-    vills_mem = [v for v in student_df["Vill Town"].unique() if str(v).strip() and str(v) != "nan"]
-    pos_mem = [p for p in student_df["PO"].unique() if str(p).strip() and str(p) != "nan"]
-    pss_mem = [ps for ps in student_df["PS"].unique() if str(ps).strip() and str(ps) != "nan"]
-    pins_mem = [pin for pin in student_df["PIN Code"].unique() if str(pin).strip() and str(pin) != "nan"]
-
-    col_m1, col_m2 = st.columns(2)
-    with col_m1:
-        sel_vill_mem = st.selectbox("🧠 Saved Village/Town Memory:", ["-- Type New or Select Saved --"] + vills_mem)
-    with col_m2:
-        sel_po_mem = st.selectbox("🧠 Saved PO Memory:", ["-- Type New or Select Saved --"] + pos_mem)
-
-    with st.form("admission_form_v2", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        with col1:
-            name = st.text_input("Student Name*")
-            fname = st.text_input("Father's Name*")
-            mname = st.text_input("Mother's Name*")
-            gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-            dob = st.date_input("Date of Birth", min_value=datetime.date(1990, 1, 1))
-            caste = st.selectbox("Caste", ["General", "OBC / MOBC", "ST", "SC", "Other"])
-            mobile = st.text_input("Mobile Number*")
-            
-        with col2:
-            vill_val = sel_vill_mem if sel_vill_mem != "-- Type New or Select Saved --" else ""
-            po_val = sel_po_mem if sel_po_mem != "-- Type New or Select Saved --" else ""
-            
-            vill = st.text_input("Village / Town*", value=vill_val)
-            po = st.text_input("Post Office", value=po_val)
-            ps = st.text_input("Police Station", value="THELAMARA" if not pss_mem else pss_mem[0])
-            pin = st.text_input("PIN Code", value="784149" if not pins_mem else pins_mem[0])
-            dist = st.text_input("District", value="Sonitpur")
-            
-            course = st.selectbox("Course Selected*", ["DCA", "ADCA", "DTP", "Tally Prime", "Certificate Course", "Class 9 English", "Class 10 English", "Class 11 English", "Class 12 English"])
-            duration = st.selectbox("Course Duration", ["1 Month", "3 Months", "6 Months", "12 Months"])
-            
-        col3, col4 = st.columns(2)
-        with col3:
-            session = st.text_input("Session", value=f"{datetime.date.today().year}-{datetime.date.today().year+1}")
-            join_date = st.date_input("Joining Date", value=datetime.date.today())
-            total_fee = st.number_input("Total Course Fee (₹)", min_value=0.0, step=100.0)
-            discount = st.number_input("Discount Allowed (₹)", min_value=0.0, step=50.0)
-            
-        with col4:
-            shift = st.selectbox("Shift Assigned", ["Morning (06:30 AM - 08:00 AM)", "Afternoon", "Evening"])
-            batch_time = st.text_input("Batch Timing", value="06:30 AM - 08:00 AM (90 Mins)")
-            
-        submitted = st.form_submit_button("Submit & Generate Student ID (Clears Form)")
+    # Security Lock: Requires Admin or Teacher Password
+    st.info("🔒 Security Lock: Entrance to Admission Form requires Staff Authorization.")
+    auth_pwd = st.text_input("Enter Admin / Teacher Password to unlock form:", type="password")
+    
+    if auth_pwd in ["zaan123", "stc4159", "teacher123"]:
+        st.success("Authorization Verified! Fill Student Details Below:")
         
-        if submitted:
-            if not name or not mobile:
-                st.error("Please fill in mandatory fields (Name and Mobile Number)!")
-            else:
-                year_code = str(datetime.date.today().year)[2:]
-                existing_ids = [sid for sid in student_df["Student ID"] if str(sid).startswith(f"STC{year_code}-")]
-                next_num = len(existing_ids) + 1
-                new_id = f"STC{year_code}-{next_num:03d}"
+        with st.form("admission_form_v3", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                name = st.text_input("Student Name*")
+                fname = st.text_input("Father's Name*")
+                mname = st.text_input("Mother's Name*")
+                gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+                dob = st.date_input("Date of Birth", min_value=datetime.date(1990, 1, 1))
+                caste = st.selectbox("Caste", ["General", "OBC / MOBC", "ST", "SC", "Other"])
+                mobile = st.text_input("Mobile Number*")
                 
-                net_fee = float(total_fee) - float(discount)
-                validity = join_date + datetime.timedelta(days=180 if "6" in duration else 365)
+            with col2:
+                vill = st.text_input("Village / Town*")
+                po = st.text_input("Post Office")
+                ps = st.text_input("Police Station", value="THELAMARA")
+                pin = st.text_input("PIN Code", value="784149")
+                dist = st.text_input("District", value="Sonitpur")
                 
-                new_row = {
-                    "Sl. No.": str(len(student_df) + 1),
-                    "Student ID": new_id,
-                    "Name": name.upper(),
-                    "Father Name": fname.upper(),
-                    "Mother Name": mname.upper(),
-                    "Gender": gender,
-                    "DOB": str(dob),
-                    "Caste": caste,
-                    "Mobile No": mobile,
-                    "Vill Town": vill.upper(),
-                    "PO": po.upper(),
-                    "PS": ps.upper(),
-                    "PIN Code": pin,
-                    "District": dist.upper(),
-                    "Full Address": f"{vill}, {po}, {ps}, {dist} - {pin}".upper(),
-                    "Course": course,
-                    "Duration": duration,
-                    "Session": session,
-                    "Join Date": str(join_date),
-                    "Validity Date": str(validity),
-                    "Total Fee": str(total_fee),
-                    "Discount": str(discount),
-                    "Net Fee": str(net_fee),
-                    "Shift": shift,
-                    "Batch Time": batch_time,
-                    "Status": "Active"
-                }
+                course = st.selectbox("Course Selected*", list(COURSE_FEE_MAP.keys()))
+                duration = st.selectbox("Course Duration", ["1 Month", "3 Months", "6 Months", "12 Months"])
                 
-                student_df = pd.concat([student_df, pd.DataFrame([new_row])], ignore_index=True)
-                save_data(student_df, STUDENT_MASTER_FILE)
-                st.success(f"🎉 Student Registered Successfully! ID Assigned: **{new_id}**. Form Reset Completed!")
+            col3, col4 = st.columns(2)
+            with col3:
+                session = st.text_input("Session", value=f"{datetime.date.today().year}-{datetime.date.today().year+1}")
+                join_date = st.date_input("Joining Date", value=datetime.date.today())
+                total_fee = st.number_input("Total Course Fee (₹)", min_value=0.0, step=100.0)
+                discount = st.number_input("Discount Allowed (₹)", min_value=0.0, step=50.0)
+                
+            with col4:
+                shift = st.selectbox("Shift Assigned", ["Morning", "Afternoon", "Evening"])
+                batch_time = st.text_input("Batch Timing", value="As Assigned")
+                
+            submitted = st.form_submit_button("Submit & Generate Roll ID (Clears Form Automatically)")
+            
+            if submitted:
+                if not name or not mobile:
+                    st.error("Please fill in mandatory fields (Name and Mobile Number)!")
+                else:
+                    year_code = str(datetime.date.today().year)[2:]
+                    existing_ids = [sid for sid in student_df["Student ID"] if str(sid).startswith(f"STC{year_code}-")]
+                    next_num = len(existing_ids) + 1
+                    new_id = f"STC{year_code}-{next_num:03d}"
+                    
+                    net_fee = float(total_fee) - float(discount)
+                    validity = join_date + datetime.timedelta(days=180 if "6" in duration else 365)
+                    
+                    new_row = {
+                        "Sl. No.": str(len(student_df) + 1),
+                        "Student ID": new_id,
+                        "Name": name.upper(),
+                        "Father Name": fname.upper(),
+                        "Mother Name": mname.upper(),
+                        "Gender": gender,
+                        "DOB": str(dob),
+                        "Caste": caste,
+                        "Mobile No": mobile,
+                        "Vill Town": vill.upper(),
+                        "PO": po.upper(),
+                        "PS": ps.upper(),
+                        "PIN Code": pin,
+                        "District": dist.upper(),
+                        "Full Address": f"{vill}, {po}, {ps}, {dist} - {pin}".upper(),
+                        "Course": course,
+                        "Duration": duration,
+                        "Session": session,
+                        "Join Date": str(join_date),
+                        "Validity Date": str(validity),
+                        "Total Fee": str(total_fee),
+                        "Discount": str(discount),
+                        "Net Fee": str(net_fee),
+                        "Shift": shift,
+                        "Batch Time": batch_time,
+                        "Status": "Active"
+                    }
+                    
+                    student_df = pd.concat([student_df, pd.DataFrame([new_row])], ignore_index=True)
+                    save_data(student_df, STUDENT_MASTER_FILE)
+                    st.success(f"🎉 Student Registered Successfully! Assigned Roll ID: **{new_id}**. Form Reset Completed!")
+    elif auth_pwd:
+        st.error("Incorrect Staff Password! Access Denied.")
 
 # ---------------------------------------------------------
-# 4. STUDENT LOGIN PORTAL
+# 3. STUDENT LOGIN PORTAL (FEE PAID & BALANCE DISPLAY)
 # ---------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -300,17 +274,21 @@ elif menu == "🔑 Student Login Portal":
             s = st_data.iloc[0]
             st.success(f"Welcome, **{s['Name']}**!")
             
-            col_a, col_b, col_c = st.columns(3)
-            col_a.metric("Course Enrolled", s["Course"])
-            col_b.metric("Shift & Batch", f"{s['Shift']} ({s['Batch Time']})")
-            
+            # Calculate Fees
             net = float(s["Net Fee"]) if s["Net Fee"] else 0.0
             paid_logs = fee_df[fee_df["Student ID"] == search_id]
             total_paid = sum([float(amt) for amt in paid_logs["Amount Paid"] if amt])
             due = net - total_paid
             
-            col_c.metric("Total Fee Due", f"₹{due:.2f}")
+            col_a, col_b, col_c, col_d = st.columns(4)
+            col_a.metric("Course Enrolled", s["Course"])
+            col_b.metric("Total Net Fee", f"₹{net:.2f}")
+            col_c.metric("Total Fee Paid Till Date", f"₹{total_paid:.2f}")
+            col_d.metric("Remaining Fee Balance Due", f"₹{due:.2f}", delta=f"-₹{due:.2f}" if due > 0 else "Cleared", delta_color="inverse")
             
+            st.markdown("---")
+            
+            # Attendance Log
             s_att = att_df[att_df["Student ID"] == search_id]
             p_days = len(s_att[s_att["Status"] == "Present"])
             a_days = len(s_att[s_att["Status"] == "Absent"])
@@ -319,61 +297,73 @@ elif menu == "🔑 Student Login Portal":
             
             st.write(f"### 📊 Attendance Performance: {p_days}/{tot_c} Days ({perc:.1f}%)")
             st.progress(perc / 100)
+            
+            # Receipts Ledger
+            st.write("### 🧾 Payment Receipts History")
+            if not paid_logs.empty:
+                disp_pl = paid_logs.copy()
+                disp_pl.index = range(1, len(disp_pl) + 1)
+                st.table(disp_pl)
+            else:
+                st.info("No fee payments recorded yet.")
         else:
             st.error("No record found for this Student ID.")
 
 # ---------------------------------------------------------
-# 5. SUNDAY PRACTICE CLASS (SFPC)
+# 4. SUNDAY PRACTICE CLASS (SFPC)
 # ---------------------------------------------------------
 elif menu == "🎯 Sunday Free Practice Class (SFPC)":
-    st.header("🎯 Sunday Free Practice Class (SFPC) Allocation")
-    st.info("Log attendance & machine allocations for students taking Sunday extra lab practice.")
+    st.header("🎯 Sunday Free Practice Class (SFPC) Portal")
     
-    with st.form("sfpc_form", clear_on_submit=True):
-        col_sf1, col_sf2 = st.columns(2)
-        with col_sf1:
-            sf_sid = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
-            sf_date = st.date_input("Practice Date", value=datetime.date.today())
-            sf_mc = st.selectbox("Assigned PC Lab Machine:", [f"Lab PC - {i:02d}" for i in range(1, 21)])
-        with col_sf2:
-            sf_topic = st.text_input("Practical Topic (e.g., Tally Entry / MS Word)")
-            sf_teacher = st.text_input("Teacher / Instructor Incharge", value="Center Admin")
-            
-        sf_sub = st.form_submit_button("Record SFPC Practice Session")
-        if sf_sub and sf_sid:
-            sid_code = sf_sid.split(" - ")[0]
-            s_name_val = sf_sid.split(" - ")[1]
-            sf_row = {
-                "Date": str(sf_date),
-                "Student ID": sid_code,
-                "Student Name": s_name_val,
-                "PC Machine No": sf_mc,
-                "Topic Practiced": sf_topic,
-                "Teacher Incharge": sf_teacher
-            }
-            sfpc_df = pd.concat([sfpc_df, pd.DataFrame([sf_row])], ignore_index=True)
-            save_data(sfpc_df, SFPC_FILE)
-            st.success(f"✅ SFPC Session Recorded for {s_name_val} on {sf_mc}!")
+    sfpc_tab1, sfpc_tab2 = st.tabs(["🔍 Student Self Practice Search", "📝 Record New SFPC Practice Session"])
+    
+    with sfpc_tab1:
+        st.subheader("Search Student SFPC History & PC Machine Allocation")
+        sf_search_id = st.text_input("Enter Student ID (e.g., STC26-001):", key="sf_search").strip().upper()
+        if sf_search_id:
+            s_sf_logs = sfpc_df[sfpc_df["Student ID"] == sf_search_id]
+            if not s_sf_logs.empty:
+                st.success(f"Found {len(s_sf_logs)} SFPC practice session records!")
+                disp_s_sf = s_sf_logs.copy()
+                disp_s_sf.index = range(1, len(disp_s_sf) + 1)
+                st.dataframe(disp_s_sf, use_container_width=True)
+            else:
+                st.info("No Sunday Practice session logged yet for this Student ID.")
+
+    with sfpc_tab2:
+        st.subheader("Log Student PC Allocation & Topic")
+        with st.form("sfpc_form", clear_on_submit=True):
+            col_sf1, col_sf2 = st.columns(2)
+            with col_sf1:
+                sf_sid = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+                sf_date = st.date_input("Practice Date", value=datetime.date.today())
+                sf_mc = st.selectbox("Assigned PC Lab Machine:", [f"Lab PC - {i:02d}" for i in range(1, 21)])
+            with col_sf2:
+                sf_topic = st.text_input("Practical Topic (e.g., Tally Prime / MS Word / Typing)")
+                sf_teacher = st.text_input("Instructor / Teacher Incharge", value="Center Instructor")
+                
+            sf_sub = st.form_submit_button("Record SFPC Practice Session")
+            if sf_sub and sf_sid:
+                sid_code = sf_sid.split(" - ")[0]
+                s_name_val = sf_sid.split(" - ")[1]
+                sf_row = {
+                    "Date": str(sf_date),
+                    "Student ID": sid_code,
+                    "Student Name": s_name_val,
+                    "PC Machine No": sf_mc,
+                    "Topic Practiced": sf_topic,
+                    "Teacher Incharge": sf_teacher
+                }
+                sfpc_df = pd.concat([sfpc_df, pd.DataFrame([sf_row])], ignore_index=True)
+                save_data(sfpc_df, SFPC_FILE)
+                st.success(f"✅ SFPC Session Recorded for {s_name_val} on {sf_mc}!")
 
 # ---------------------------------------------------------
-# 6. TEACHER PORTAL & FEE COUNTER
+# 5. TEACHER PORTAL & FEE COUNTER
 # ---------------------------------------------------------
 elif menu == "🔑 Teacher Portal & Fee Counter":
-    st.header("💳 Teacher Portal, Fee Counter & Faculty Attendance")
+    st.header("💳 Teacher Portal & Fee Payment Counter")
     
-    st.subheader("👨‍🏫 Teacher Punch-in & Late Warning Check")
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-        t_shift = st.selectbox("Select Teacher Shift:", ["Morning (06:30 AM)", "Afternoon (12:30 PM)", "Evening (03:30 PM)"])
-    with col_t2:
-        punch_time = st.time_input("Punch-in Time Check:", value=datetime.datetime.now().time())
-        
-    if "Morning" in t_shift and punch_time > datetime.time(6, 35):
-        st.error(f"⚠️ **You are Late!** Morning shift starts at 06:30 AM. Punch-in recorded at {punch_time.strftime('%I:%M %p')}. Please inform Director!")
-    elif "Morning" in t_shift:
-        st.success(f"✅ On Time Arrival! Morning shift punch-in recorded at {punch_time.strftime('%I:%M %p')}.")
-
-    st.markdown("---")
     tab1, tab2, tab3 = st.tabs(["💵 Deposit Fee", "📅 Daily Attendance Marking", "📋 Batch Bulk Attendance"])
     
     with tab1:
@@ -393,7 +383,7 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
             with st.form("pay_fee_form", clear_on_submit=True):
                 pay_amt = st.number_input("Amount to Deposit (₹)", min_value=1.0, max_value=max(due, 10000.0), step=100.0)
                 pay_mode = st.selectbox("Payment Mode", ["Cash", "UPI / Google Pay", "Bank Transfer", "Card"])
-                remarks = st.text_input("Receipt Remarks / Collector Note", value="Collected by Teacher/Counter")
+                remarks = st.text_input("Receipt Remarks / Note", value="Installment Payment")
                 
                 pay_sub = st.form_submit_button("Process Payment & Issue Receipt")
                 if pay_sub:
@@ -426,7 +416,7 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
 
     with tab3:
         st.subheader("Batch Wise Bulk Attendance")
-        sel_shift = st.selectbox("Filter Shift:", ["All", "Morning (06:30 AM - 08:00 AM)", "Afternoon", "Evening"])
+        sel_shift = st.selectbox("Filter Shift:", ["All", "Morning", "Afternoon", "Evening"])
         b_df = student_df if sel_shift == "All" else student_df[student_df["Shift"] == sel_shift]
         
         if not b_df.empty:
@@ -448,61 +438,32 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
                 st.success("✅ Bulk Attendance Recorded Successfully!")
 
 # ---------------------------------------------------------
-# 7. PARENTS LIVE TRACKER
+# 6. PARENTS LIVE TRACKER
 # ---------------------------------------------------------
 elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
     st.header("👨‍👩‍👧 Parents Live Performance Tracker")
 
 # ---------------------------------------------------------
-# 8. ADMIN CONTROL PANEL (FULLY RESTORED RICH TABS)
+# 7. ADMIN CONTROL PANEL
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
     pwd = st.text_input("Enter Director Admin Password", type="password")
-<<<<<<< HEAD
     
     if pwd == "zaan123":
         st.success("Access Granted. Welcome Director Sir!")
         
         adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6 = st.tabs([
             "📊 Master Student Registry",
-            "🚨 Smart Overdue Dues & Pending List",
-            "💰 Fee Collection & Audit Ledger",
-            "🎯 SFPC Beneficiaries Tracker",
+            "🚨 Smart Overdue Dues",
+            "💰 Fee Collection Ledger",
+            "👨‍🏫 Faculty Manager",
             "⚡ Quick Fee/Attendance Updater",
             "📩 Public Enquiries Log"
         ])
         
-        # TAB 1: MASTER REGISTRY
         with adm_tab1:
             st.subheader("Master Student Records")
-=======
-
-    if pwd == current_admin_pass:
-        st.success("Access Granted. Welcome Sir!")
-
-        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-            "📊 Master Student Registry", 
-            "💵 Quick Fee/Attendance Updater",
-            "✏️ Edit Student Details",
-            "👨‍🏫 Faculty Manager (Edit/Delete)",
-            "🚨 Smart Overdue Alerts",
-            "🔑 Credentials Ledger (Change Pass)",
-            "🧾 Fee Audit Log", 
-            "🔐 Security Settings"
-        ])
-
-        # TAB 1: ALL STUDENTS LIST
-        with tab1:
-            st.markdown(f"### Master Student Records ({len(student_df)} Total Students)")
-            st.dataframe(get_display_df(student_df), height=700, use_container_width=True)
-
-        # TAB 2: DIRECT QUICK FEE & BULK ATTENDANCE UPDATER
-        with tab2:
-            st.markdown("### ⚡ Direct Bulk Fee & Past Attendance Updater")
-            st.info("💡 **Use this for 6-month past record adjustment:** Enter total paid fee or add bulk past attended days in 1-click.")
-
->>>>>>> parent of cf1c4d4 (Update app.py)
             if not student_df.empty:
                 disp_df = student_df.copy()
                 disp_df["Sl. No."] = range(1, len(disp_df) + 1)
@@ -511,80 +472,44 @@ elif menu == "🔐 Admin Control Panel":
                 csv_data = student_df.to_csv(index=False).encode('utf-8')
                 st.download_button("📥 Download Full Student Database (students_db.csv)", data=csv_data, file_name="students_db.csv", mime="text/csv")
 
-        # TAB 2: OVERDUE DUES & PENDING LIST (STUDENT-WISE)
         with adm_tab2:
-            st.subheader("🚨 Overdue Fee Dues & Pending Balances")
+            st.subheader("🚨 Overdue Dues & Pending List")
             if not student_df.empty:
                 pending_list = []
                 total_pending_all = 0.0
-                
                 for idx, s in student_df.iterrows():
                     sid = s["Student ID"]
                     sname = s["Name"]
-                    course = s["Course"]
-                    mobile = s["Mobile No"]
                     net = float(s["Net Fee"]) if s["Net Fee"] else 0.0
-                    
-                    paid_logs = fee_df[fee_df["Student ID"] == sid]
-                    total_paid = sum([float(amt) for amt in paid_logs["Amount Paid"] if amt])
-                    due = net - total_paid
-                    
+                    p_logs = fee_df[fee_df["Student ID"] == sid]
+                    tot_paid = sum([float(amt) for amt in p_logs["Amount Paid"] if amt])
+                    due = net - tot_paid
                     if due > 0:
-                        pending_list.append({
-                            "Student ID": sid,
-                            "Name": sname,
-                            "Course": course,
-                            "Mobile No": mobile,
-                            "Net Fee (₹)": f"{net:.2f}",
-                            "Total Paid (₹)": f"{total_paid:.2f}",
-                            "Pending Due (₹)": f"{due:.2f}"
-                        })
+                        pending_list.append({"Student ID": sid, "Name": sname, "Course": s["Course"], "Mobile": s["Mobile No"], "Pending Due (₹)": f"{due:.2f}"})
                         total_pending_all += due
-                        
-                st.error(f"### 💸 Total Overdue Pending Market Due: ₹{total_pending_all:,.2f}")
-                
+                st.error(f"### Total Pending Market Due: ₹{total_pending_all:,.2f}")
                 if pending_list:
-                    pdf_p = pd.DataFrame(pending_list)
-                    pdf_p.index = range(1, len(pdf_p) + 1)
-                    st.table(pdf_p)
-                else:
-                    st.success("🎉 All students have cleared their fees! Zero pending dues.")
+                    st.table(pd.DataFrame(pending_list))
 
-        # TAB 3: FEE COLLECTION & AUDIT LEDGER
         with adm_tab3:
-            st.subheader("💰 Fee Collection & Financial Receipts Ledger")
+            st.subheader("💰 Total Fee Collections Ledger")
             if not fee_df.empty:
                 tot_coll = sum([float(a) for a in fee_df["Amount Paid"] if a])
                 st.metric("Total Center Fee Collections", f"₹{tot_coll:,.2f}")
-                
-                disp_fee = fee_df.copy()
-                disp_fee.index = range(1, len(disp_fee) + 1)
-                st.dataframe(disp_fee, use_container_width=True)
-            else:
-                st.info("No fee payment records found.")
+                st.dataframe(fee_df, use_container_width=True)
 
-        # TAB 4: SFPC BENEFICIARIES TRACKER
         with adm_tab4:
-            st.subheader("🎯 Sunday Practice Class (SFPC) History & Attendance")
-            if not sfpc_df.empty:
-                disp_sf = sfpc_df.copy()
-                disp_sf.index = range(1, len(disp_sf) + 1)
-                st.dataframe(disp_sf, use_container_width=True)
-            else:
-                st.info("No SFPC practice records logged yet.")
+            st.subheader("👨‍🏫 Faculty Manager")
+            st.dataframe(teacher_df, use_container_width=True)
 
-        # TAB 5: QUICK UPDATER
         with adm_tab5:
             st.subheader("⚡ Direct Bulk Fee & Attendance Overwrite")
             sel_st_up = st.selectbox("Select Student for Overwrite:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
-            
             if sel_st_up:
                 sel_id = sel_st_up.split(" - ")[0]
                 curr_p = len(att_df[(att_df["Student ID"] == sel_id) & (att_df["Status"] == "Present")])
                 curr_a = len(att_df[(att_df["Student ID"] == sel_id) & (att_df["Status"] == "Absent")])
                 curr_tot = curr_p + curr_a
-                
-                st.info(f"Current System Logs — **Total Class:** {curr_tot} Days | **Present:** {curr_p} Days | **Absent:** {curr_a} Days")
                 
                 col_att1, col_att2 = st.columns(2)
                 with col_att1:
@@ -599,47 +524,21 @@ elif menu == "🔐 Admin Control Panel":
                         att_df = att_df[att_df["Student ID"] != sel_id]
                         new_recs = []
                         today_s = str(datetime.date.today())
-                        
                         for _ in range(int(new_pres_days)):
                             new_recs.append({"Student ID": sel_id, "Date": today_s, "Status": "Present", "Sign_Mode": "Admin Overwrite", "Location_Verified": "Admin"})
-                            
                         needed_absent = int(new_tot_class) - int(new_pres_days)
                         for _ in range(needed_absent):
                             new_recs.append({"Student ID": sel_id, "Date": today_s, "Status": "Absent", "Sign_Mode": "Admin Overwrite", "Location_Verified": "Admin"})
-                            
                         new_att_df = pd.DataFrame(new_recs)
                         att_df = pd.concat([att_df, new_att_df], ignore_index=True)
                         save_data(att_df, ATTENDANCE_FILE)
-                        st.success(f"🎉 Attendance Overwritten! Total: {new_tot_class} Days, Present: {new_pres_days} Days, Absent: {needed_absent} Days.")
+                        st.success(f"🎉 Attendance Overwritten!")
                         st.rerun()
 
-        # TAB 6: PUBLIC ENQUIRIES LOG
         with adm_tab6:
             st.subheader("📩 Public Enquiries Submitted from Portal")
             if not enquiry_df.empty:
-                disp_enq = enquiry_df.copy()
-                disp_enq.index = range(1, len(disp_enq) + 1)
-                st.dataframe(disp_enq, use_container_width=True)
-            else:
-                st.info("No enquiries received yet.")
+                st.dataframe(enquiry_df, use_container_width=True)
 
-<<<<<<< HEAD
     elif pwd:
         st.error("Incorrect Admin Password!")
-=======
-        # TAB 8: SECURITY SETTINGS
-        with tab8:
-            st.markdown("### 🔐 Admin & Teacher Passcode Settings")
-            curr_adm_pwd = get_admin_password()
-            curr_t_pin = get_teacher_pin()
-
-            with st.form("security_update_form"):
-                new_admin_pass = st.text_input("New Admin Password", value=curr_adm_pwd, type="password")
-                new_teacher_pin = st.text_input("New Teacher PIN", value=curr_t_pin, type="password")
-
-                if st.form_submit_button("💾 Save Passcodes"):
-                    set_admin_password(new_admin_pass.strip())
-                    set_teacher_pin(new_teacher_pin.strip())
-                    st.success("✅ Security Passcodes Updated Successfully!")
-                    st.rerun()
->>>>>>> parent of cf1c4d4 (Update app.py)
