@@ -61,8 +61,7 @@ creds_df = load_data(CREDS_FILE, creds_cols)
 # Ensure Default Teachers
 if teacher_df.empty:
     teacher_df = pd.DataFrame([
-        {"Teacher ID": "TCH-01", "Name": "Chiranjeeb Hazarika", "Phone": "9282373221", "Qualification": "Director", "Designation": "Founder & Head", "Shift Assigned": "All"},
-        {"Teacher ID": "TCH-02", "Name": "Faculty Teacher 1", "Phone": "9800000000", "Qualification": "MCA", "Designation": "IT Instructor", "Shift Assigned": "Morning"}
+        {"Teacher ID": "TCH-01", "Name": "Chiranjeeb Hazarika", "Phone": "9282373221", "Qualification": "Director", "Designation": "Founder & Head", "Shift Assigned": "All"}
     ])
     save_data(teacher_df, TEACHERS_FILE)
 
@@ -85,7 +84,7 @@ COURSE_FEE_MAP = {
     "Certificate Course": "₹2,500"
 }
 
-# Navigation Menu (Parents Live Tracker Removed)
+# Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
     "🏠 Home & Public Dashboard",
@@ -97,22 +96,26 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HOME & PUBLIC DASHBOARD
+# 1. HOME & PUBLIC DASHBOARD (DP1 & DP2 FEATURED)
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
-    col_l1, col_l2 = st.columns([1, 4])
-    with col_l1:
-        st.image("https://raw.githubusercontent.com/zaan-hazarika/ztc-software/main/STC%20LOGO.jpeg", width=140)
-    with col_l2:
-        st.markdown("""
-            <div style="background-color:#1E3A8A; padding:15px; border-radius:12px; color:white;">
-                <h1 style="margin:0; font-size:30px;">💻 SOFT TECH COMPUTERS & ZTC</h1>
-                <h3 style="margin:2px 0; color:#FBBF24; font-size:16px;">MAKE YOURSELF DIGITAL | AN ISO CERTIFIED INSTITUTE</h3>
-                <p style="margin:0; font-size:13px;">Kamarchuburi, Thelamara, Sonitpur, Assam | Center Code: 4159</p>
-            </div>
-        """, unsafe_allow_html=True)
+    # BIG BOLD HIGH-TECH HEADER
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); padding:25px; border-radius:15px; text-align:center; color:white; border:2px solid #00F0FF; box-shadow:0 0 15px rgba(0,240,255,0.3);">
+            <h1 style="margin:0; font-size:42px; font-weight:900; color:#FFFFFF; letter-spacing:1px;">SOFT TECH COMPUTERS & ZTC</h1>
+            <h3 style="margin:8px 0; color:#FBBF24; font-size:22px; font-weight:bold;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h3>
+            <p style="margin:0; font-size:15px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149 | Center Code: 4159 | Phone: +91 9101026718</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # DISPLAY DP2 AND DP1 HERO IMAGES
+    st.image("https://raw.githubusercontent.com/zaan-hazarika/ztc-software/main/DP2.jpeg", use_column_width=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.image("https://raw.githubusercontent.com/zaan-hazarika/ztc-software/main/DP1.jpeg", use_column_width=True)
+    
+    st.markdown("---")
     
     col_p1, col_p2 = st.columns([1, 2])
     with col_p1:
@@ -233,7 +236,7 @@ elif menu == "📝 New Student Admission":
         st.error("Incorrect Password!")
 
 # ---------------------------------------------------------
-# 3. STUDENT LOGIN PORTAL (PASSWORD = MOBILE NUMBER)
+# 3. STUDENT LOGIN PORTAL (FIXED TYPE ERROR SAFEGUARDS)
 # ---------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -256,11 +259,14 @@ elif menu == "🔑 Student Login Portal":
             total_paid = sum([float(amt) for amt in paid_logs["Amount Paid"] if amt])
             due = net - total_paid
             
-            # Month calculation for Bill Alert
-            j_date = datetime.datetime.strptime(s["Join Date"], "%Y-%m-%d").date() if s["Join Date"] else datetime.date.today()
+            # Safe Date Parser
+            try:
+                j_date = datetime.datetime.strptime(str(s["Join Date"]), "%Y-%m-%d").date()
+            except Exception:
+                j_date = datetime.date.today()
+                
             months_active = max(1, (datetime.date.today().year - j_date.year) * 12 + datetime.date.today().month - j_date.month)
-            expected_bill = 999.0 + (months_active * 550.0) + 999.0  # Admission + Monthly + Exam
-            
+            expected_bill = 999.0 + (months_active * 550.0) + 999.0
             paid_percentage = (total_paid / expected_bill * 100) if expected_bill > 0 else 100.0
             
             col1, col2, col3, col4 = st.columns(4)
@@ -269,7 +275,6 @@ elif menu == "🔑 Student Login Portal":
             col3.metric("Total Paid", f"₹{total_paid:.2f}")
             col4.metric("Pending Balance Due", f"₹{due:.2f}")
             
-            # 🚨 50% FEE DEFAULTER HIGHLIGHT WARNING
             if paid_percentage < 50.0:
                 st.markdown(f"""
                     <div style="background-color:#FEE2E2; border:2px solid #EF4444; padding:15px; border-radius:10px; margin-top:10px;">
@@ -280,16 +285,48 @@ elif menu == "🔑 Student Login Portal":
             else:
                 st.success(f"✅ Fee Payment Status Good ({paid_percentage:.1f}% Paid)")
 
-            # 🤖 AI SMART ADVICE FOR STUDENT
+            # DIGITAL ID CARD
             st.markdown("---")
-            st.subheader("🤖 AI Smart Guidance Assistant")
-            s_att = att_df[att_df["Student ID"] == s_id_in]
-            p_days = len(s_att[s_att["Status"] == "Present"])
+            st.subheader("💳 Official Student Digital ID Card")
+            photo_p = s["Photo Path"] if s["Photo Path"] and os.path.exists(s["Photo Path"]) else None
             
-            if p_days > 20 and paid_percentage >= 50.0:
-                st.info("💡 **AI Advice:** Excellent Performance! You are maintaining strong attendance and regular fee payments. Keep up the great work!")
-            else:
-                st.warning("💡 **AI Advice:** Focus on attending all classes regularly and ensure timely monthly installment deposits to qualify for SFPC free lab access.")
+            id_card_html = f"""
+            <div style="background:#020B19; border:2px solid #00F0FF; border-radius:16px; padding:20px; color:white; font-family:'Arial', sans-serif; box-shadow:0 0 20px rgba(0,240,255,0.3); max-width:650px; margin:auto;">
+                <div style="text-align:center; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:10px; margin-bottom:15px;">
+                    <h2 style="margin:0; color:#00F0FF; font-size:24px; letter-spacing:1px; font-weight:800;">SOFT TECH COMPUTERS</h2>
+                    <p style="margin:4px 0 0 0; font-size:11px; color:#CBD5E1;">KAMARCHUBURI, THELAMARA, SONITPUR | CENTER CODE: 4159</p>
+                    <p style="margin:2px 0 0 0; font-size:11px; color:#22C55E; font-weight:bold;">ISO 9001:2015 CERTIFIED INSTITUTION</p>
+                </div>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+                    <div style="text-align:center; flex:1;">
+                        <div style="width:110px; height:110px; border-radius:50%; border:3px solid #00F0FF; box-shadow:0 0 15px #00F0FF; margin:auto; overflow:hidden; background:#1E293B;">
+                            <img src="{photo_p if photo_p else 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" style="width:100%; height:100%; object-fit:cover;">
+                        </div>
+                        <div style="margin-top:10px; background:rgba(0,240,255,0.1); border:1px solid #00F0FF; border-radius:20px; padding:4px 12px; display:inline-block; color:#00F0FF; font-weight:bold; font-size:12px;">ID: {s['Student ID']}</div>
+                    </div>
+                    <div style="flex:2; padding-left:20px;">
+                        <h2 style="margin:0 0 10px 0; color:#FFFFFF; font-size:22px; font-weight:bold;">{s['Name']}</h2>
+                        <p style="margin:4px 0; font-size:13px; color:#00F0FF;"><b>Course:</b> <span style="color:#FFFFFF;">{s['Course']}</span></p>
+                        <p style="margin:4px 0; font-size:13px; color:#00F0FF;"><b>Batch Time:</b> <span style="color:#FFFFFF;">{s['Batch Time']}</span></p>
+                        <p style="margin:4px 0; font-size:13px; color:#00F0FF;"><b>Validity:</b> <span style="color:#FFFFFF;">{s['Join Date']} to {s['Validity Date']}</span></p>
+                        <p style="margin:4px 0; font-size:13px; color:#00F0FF;"><b>Contact:</b> <span style="color:#FFFFFF;">+91 {s['Mobile No']}</span></p>
+                    </div>
+                </div>
+                <div style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:12px; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="text-align:center;">
+                        <div style="background:white; padding:4px 8px; border-radius:4px; display:inline-block;"><div style="font-family:'Courier New', monospace; font-weight:bold; color:black; letter-spacing:2px; font-size:14px;">|||||||||||||||||||||</div><div style="font-size:9px; color:black; font-weight:bold;">{s['Student ID']}</div></div>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="font-family:'Brush Script MT', cursive, sans-serif; color:#00F0FF; font-size:20px;">Chiranjeeb Hazarika</div>
+                        <div style="border-top:1px dashed #00F0FF; font-size:10px; color:#00F0FF; font-weight:bold;">DIRECTOR & FOUNDER</div>
+                    </div>
+                    <div style="background:white; padding:4px; border-radius:6px;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data={s['Student ID']}" style="width:45px; height:45px; display:block;">
+                    </div>
+                </div>
+            </div>
+            """
+            st.markdown(id_card_html, unsafe_allow_html=True)
                 
         else:
             st.error("Invalid Student Roll ID or Password (Mobile Number)!")
@@ -350,7 +387,6 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
     if t_pwd == TEACHER_PWD:
         st.success("Welcome Faculty Member!")
         
-        # EXACT IST TIME PUNCH (Asia/Kolkata)
         now_ist = datetime.datetime.now(IST)
         cur_time_str = now_ist.strftime("%I:%M %p")
         cur_date_str = now_ist.strftime("%Y-%m-%d")
@@ -422,7 +458,7 @@ elif menu == "🔑 Teacher Portal & Fee Counter":
                     st.success("✅ Class Attendance Recorded!")
 
 # ---------------------------------------------------------
-# 6. ADMIN CONTROL PANEL (ADD TEACHERS + EDIT DATA + DEFAULTERS)
+# 6. ADMIN CONTROL PANEL
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -440,7 +476,6 @@ elif menu == "🔐 Admin Control Panel":
             "🔑 Security & Passwords"
         ])
         
-        # TAB 1: MASTER REGISTRY & HIGHLIGHTED DEFAULTERS
         with adm_tab1:
             st.subheader("📊 Master Student Records with 50% Fee Defaulters")
             if not student_df.empty:
@@ -450,7 +485,11 @@ elif menu == "🔐 Admin Control Panel":
                     p_logs = fee_df[fee_df["Student ID"] == sid]
                     tot_paid = sum([float(amt) for amt in p_logs["Amount Paid"] if amt])
                     
-                    j_date = datetime.datetime.strptime(s["Join Date"], "%Y-%m-%d").date() if s["Join Date"] else datetime.date.today()
+                    try:
+                        j_date = datetime.datetime.strptime(str(s["Join Date"]), "%Y-%m-%d").date()
+                    except Exception:
+                        j_date = datetime.date.today()
+                        
                     m_act = max(1, (datetime.date.today().year - j_date.year) * 12 + datetime.date.today().month - j_date.month)
                     exp_bill = 999.0 + (m_act * 550.0) + 999.0
                     paid_p = (tot_paid / exp_bill * 100) if exp_bill > 0 else 100.0
@@ -464,7 +503,6 @@ elif menu == "🔐 Admin Control Panel":
                 
                 st.dataframe(student_df, use_container_width=True)
 
-        # TAB 2: EDIT STUDENT DATA & PASSWORDS
         with adm_tab2:
             st.subheader("✏️ Edit Student Profile & Credentials")
             if not student_df.empty:
@@ -497,7 +535,6 @@ elif menu == "🔐 Admin Control Panel":
                             st.success(f"✅ Updated Profile for {e_id}!")
                             st.rerun()
 
-        # TAB 3: ADD NEW TEACHER / FACULTY
         with adm_tab3:
             st.subheader("👨‍🏫 Add New Faculty / Teacher")
             with st.form("add_tch_form", clear_on_submit=True):
