@@ -459,6 +459,7 @@ elif menu == "👨‍👩‍👧 Parents Live Student Tracker":
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
     pwd = st.text_input("Enter Director Admin Password", type="password")
+<<<<<<< HEAD
     
     if pwd == "zaan123":
         st.success("Access Granted. Welcome Director Sir!")
@@ -475,6 +476,33 @@ elif menu == "🔐 Admin Control Panel":
         # TAB 1: MASTER REGISTRY
         with adm_tab1:
             st.subheader("Master Student Records")
+=======
+
+    if pwd == current_admin_pass:
+        st.success("Access Granted. Welcome Sir!")
+
+        tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+            "📊 Master Student Registry", 
+            "💵 Quick Fee/Attendance Updater",
+            "✏️ Edit Student Details",
+            "👨‍🏫 Faculty Manager (Edit/Delete)",
+            "🚨 Smart Overdue Alerts",
+            "🔑 Credentials Ledger (Change Pass)",
+            "🧾 Fee Audit Log", 
+            "🔐 Security Settings"
+        ])
+
+        # TAB 1: ALL STUDENTS LIST
+        with tab1:
+            st.markdown(f"### Master Student Records ({len(student_df)} Total Students)")
+            st.dataframe(get_display_df(student_df), height=700, use_container_width=True)
+
+        # TAB 2: DIRECT QUICK FEE & BULK ATTENDANCE UPDATER
+        with tab2:
+            st.markdown("### ⚡ Direct Bulk Fee & Past Attendance Updater")
+            st.info("💡 **Use this for 6-month past record adjustment:** Enter total paid fee or add bulk past attended days in 1-click.")
+
+>>>>>>> parent of cf1c4d4 (Update app.py)
             if not student_df.empty:
                 disp_df = student_df.copy()
                 disp_df["Sl. No."] = range(1, len(disp_df) + 1)
@@ -595,5 +623,23 @@ elif menu == "🔐 Admin Control Panel":
             else:
                 st.info("No enquiries received yet.")
 
+<<<<<<< HEAD
     elif pwd:
         st.error("Incorrect Admin Password!")
+=======
+        # TAB 8: SECURITY SETTINGS
+        with tab8:
+            st.markdown("### 🔐 Admin & Teacher Passcode Settings")
+            curr_adm_pwd = get_admin_password()
+            curr_t_pin = get_teacher_pin()
+
+            with st.form("security_update_form"):
+                new_admin_pass = st.text_input("New Admin Password", value=curr_adm_pwd, type="password")
+                new_teacher_pin = st.text_input("New Teacher PIN", value=curr_t_pin, type="password")
+
+                if st.form_submit_button("💾 Save Passcodes"):
+                    set_admin_password(new_admin_pass.strip())
+                    set_teacher_pin(new_teacher_pin.strip())
+                    st.success("✅ Security Passcodes Updated Successfully!")
+                    st.rerun()
+>>>>>>> parent of cf1c4d4 (Update app.py)
