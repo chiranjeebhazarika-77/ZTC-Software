@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import datetime
 import pytz
+import base64
 
 # Page Configuration
 st.set_page_config(page_title="Soft Tech Computers & ZTC Portal", page_icon="💻", layout="wide")
@@ -22,6 +23,14 @@ PHOTO_DIR = "student_photos"
 
 if not os.path.exists(PHOTO_DIR):
     os.makedirs(PHOTO_DIR)
+
+# Helper function to convert local image to base64 for HTML display
+def get_image_base64(path):
+    if os.path.exists(path):
+        with open(path, "rb") as image_file:
+            encoded = base64.b64encode(image_file.read()).decode()
+            return f"data:image/jpeg;base64,{encoded}"
+    return None
 
 # Safe Loader
 def load_data(file_path, columns):
@@ -96,25 +105,31 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HOME & PUBLIC DASHBOARD (DP1 & DP2 FEATURED)
+# 1. HOME & PUBLIC DASHBOARD
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
     # BIG BOLD HIGH-TECH HEADER
     st.markdown("""
         <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); padding:25px; border-radius:15px; text-align:center; color:white; border:2px solid #00F0FF; box-shadow:0 0 15px rgba(0,240,255,0.3);">
-            <h1 style="margin:0; font-size:42px; font-weight:900; color:#FFFFFF; letter-spacing:1px;">SOFT TECH COMPUTERS & ZTC</h1>
-            <h3 style="margin:8px 0; color:#FBBF24; font-size:22px; font-weight:bold;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h3>
-            <p style="margin:0; font-size:15px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149 | Center Code: 4159 | Phone: +91 9101026718</p>
+            <h1 style="margin:0; font-size:40px; font-weight:900; color:#FFFFFF; letter-spacing:1px;">SOFT TECH COMPUTERS & ZTC</h1>
+            <h3 style="margin:8px 0; color:#FBBF24; font-size:20px; font-weight:bold;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h3>
+            <p style="margin:0; font-size:14px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149 | Center Code: 4159 | Phone: +91 9101026718</p>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # DISPLAY DP2 AND DP1 HERO IMAGES
-    st.image("https://raw.githubusercontent.com/zaan-hazarika/ztc-software/main/DP2.jpeg", use_column_width=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.image("https://raw.githubusercontent.com/zaan-hazarika/ztc-software/main/DP1.jpeg", use_column_width=True)
+    # DISPLAY DP2 AND DP1 HERO BANNERS SAFELY
+    dp2_b64 = get_image_base64("DP2.jpeg") or get_image_base64("DP2.jpg")
+    dp1_b64 = get_image_base64("DP1.jpeg") or get_image_base64("DP1.jpg")
     
+    if dp2_b64:
+        st.markdown(f'<img src="{dp2_b64}" style="width:100%; border-radius:12px; border:1px solid #CBD5E1;">', unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+    if dp1_b64:
+        st.markdown(f'<img src="{dp1_b64}" style="width:100%; border-radius:12px; border:1px solid #CBD5E1;">', unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
+
     st.markdown("---")
     
     col_p1, col_p2 = st.columns([1, 2])
@@ -236,7 +251,7 @@ elif menu == "📝 New Student Admission":
         st.error("Incorrect Password!")
 
 # ---------------------------------------------------------
-# 3. STUDENT LOGIN PORTAL (FIXED TYPE ERROR SAFEGUARDS)
+# 3. STUDENT LOGIN PORTAL
 # ---------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -259,7 +274,6 @@ elif menu == "🔑 Student Login Portal":
             total_paid = sum([float(amt) for amt in paid_logs["Amount Paid"] if amt])
             due = net - total_paid
             
-            # Safe Date Parser
             try:
                 j_date = datetime.datetime.strptime(str(s["Join Date"]), "%Y-%m-%d").date()
             except Exception:
@@ -285,10 +299,11 @@ elif menu == "🔑 Student Login Portal":
             else:
                 st.success(f"✅ Fee Payment Status Good ({paid_percentage:.1f}% Paid)")
 
-            # DIGITAL ID CARD
+            # DIGITAL ID CARD RENDERING
             st.markdown("---")
             st.subheader("💳 Official Student Digital ID Card")
-            photo_p = s["Photo Path"] if s["Photo Path"] and os.path.exists(s["Photo Path"]) else None
+            
+            st_photo_b64 = get_image_base64(s["Photo Path"]) if s["Photo Path"] else None
             
             id_card_html = f"""
             <div style="background:#020B19; border:2px solid #00F0FF; border-radius:16px; padding:20px; color:white; font-family:'Arial', sans-serif; box-shadow:0 0 20px rgba(0,240,255,0.3); max-width:650px; margin:auto;">
@@ -300,7 +315,7 @@ elif menu == "🔑 Student Login Portal":
                 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
                     <div style="text-align:center; flex:1;">
                         <div style="width:110px; height:110px; border-radius:50%; border:3px solid #00F0FF; box-shadow:0 0 15px #00F0FF; margin:auto; overflow:hidden; background:#1E293B;">
-                            <img src="{photo_p if photo_p else 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" style="width:100%; height:100%; object-fit:cover;">
+                            <img src="{st_photo_b64 if st_photo_b64 else 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" style="width:100%; height:100%; object-fit:cover;">
                         </div>
                         <div style="margin-top:10px; background:rgba(0,240,255,0.1); border:1px solid #00F0FF; border-radius:20px; padding:4px 12px; display:inline-block; color:#00F0FF; font-weight:bold; font-size:12px;">ID: {s['Student ID']}</div>
                     </div>
