@@ -61,7 +61,7 @@ def save_data(df, file_path):
 
 # Columns definitions
 student_cols = ["Sl. No.", "Student ID", "Name", "Father Name", "Mother Name", "Gender", "DOB", "Caste", "Mobile No", "Vill Town", "PO", "PS", "PIN Code", "District", "Full Address", "Course", "Duration", "Days_Batch", "Session", "Join Date", "Validity Date", "Total Fee", "Discount", "Net Fee", "Shift", "Batch Time", "Photo Path", "Status"]
-fee_cols = ["Receipt No", "Student ID", "Date", "Amount Paid", "Payment Mode", "Remarks"]
+fee_cols = ["Receipt No", "Student ID", "Date", "Amount Paid", "Payment Mode", "Collected_By", "Remarks"]
 attendance_cols = ["Student ID", "Date", "Time_In", "Status", "Late_Reason", "Sign_Mode", "Location_Verified"]
 teacher_cols = ["Teacher ID", "Name", "Phone", "Qualification", "Designation", "Shift Assigned"]
 teacher_att_cols = ["Teacher ID", "Name", "Date", "Time_In", "Shift", "Status", "Late_Reason", "Absent_Reason", "Earning_Today"]
@@ -83,8 +83,23 @@ creds_df = load_data(CREDS_FILE, creds_cols)
 feedback_df = load_data(FEEDBACK_FILE, feedback_cols)
 syllabus_df = load_data(SYLLABUS_LOG_FILE, syllabus_cols)
 
-# Course Config & Dynamic Topics
+# Ensure Default Credentials
+if creds_df.empty:
+    creds_df = pd.DataFrame([
+        {"Role": "Admin", "Password": "zaan123"},
+        {"Role": "Teacher", "Password": "teacher123"}
+    ])
+    save_data(creds_df, CREDS_FILE)
+
+ADMIN_PWD = creds_df[creds_df["Role"] == "Admin"]["Password"].values[0] if "Admin" in creds_df["Role"].values else "zaan123"
+TEACHER_PWD = creds_df[creds_df["Role"] == "Teacher"]["Password"].values[0] if "Teacher" in creds_df["Role"].values else "teacher123"
+
+# Course Config (INCLUDES PGDCA & CERTIFICATE FLEXIBLE DURATION)
 COURSE_CONFIG = {
+    "PGDCA (Post Graduate Diploma in Computer Application)": {
+        "Months": 12, "Fee": "₹8,500 Total",
+        "Topics": ["Computer Fundamentals", "Operating System", "MS-Office", "Tally Prime with GST", "DBMS & SQL", "HTML/CSS Web Design", "Python / C Programming", "Internet & Cyber Security"]
+    },
     "ADCA (Advanced Diploma in Computer Application)": {
         "Months": 12, "Fee": "₹7,500 Total",
         "Topics": ["Paint", "Notepad", "Wordpad", "MS-Word", "MS-Excel", "MS-Powerpoint", "MS-Access", "HTML", "DHTML", "Tally Prime", "Photoshop", "Pagemaker", "Internet", "Python"]
@@ -101,14 +116,17 @@ COURSE_CONFIG = {
         "Months": 3, "Fee": "₹4,000 Total",
         "Topics": ["Accounting Basics", "Tally Prime Basics", "Inventory Management", "GST & TDS Calculation", "Payroll & Billing"]
     },
+    "Certificate Course in Computer Basics": {
+        "Months": 3, "Fee": "₹2,500 Total",
+        "Topics": ["Paint", "Notepad", "Wordpad", "MS-Word", "Internet"]
+    },
     "Class 9 English Coaching": {"Months": 12, "Fee": "₹600 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
     "Class 10 English Coaching": {"Months": 12, "Fee": "₹700 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
     "Class 11 English Coaching": {"Months": 12, "Fee": "₹800 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
-    "Class 12 English Coaching": {"Months": 12, "Fee": "₹900 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
-    "Certificate Course in Computer Basics": {"Months": 2, "Fee": "₹2,500 Total", "Topics": ["Paint", "Notepad", "Wordpad", "MS-Word", "Internet"]}
+    "Class 12 English Coaching": {"Months": 12, "Fee": "₹900 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]}
 }
 
-# Navigation Menu (CLEAN PUBLIC SIDEBAR)
+# Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
     "🏠 Home & Public Dashboard",
@@ -163,7 +181,7 @@ if menu == "🏠 Home & Public Dashboard":
     st.markdown("---")
 
     st.subheader("📚 Courses Offered & Duration")
-    pub_course_list = [{"Course Name": k, "Duration": f"{v['Months']} Months"} for k, v in COURSE_CONFIG.items()]
+    pub_course_list = [{"Course Name": k, "Duration": f"{v['Months']} Months" if "Certificate" not in k else "3 Months / 2 Months / 45 Days"} for k, v in COURSE_CONFIG.items()]
     pub_course_df = pd.DataFrame(pub_course_list)
     pub_course_df.index = range(1, len(pub_course_df) + 1)
     st.table(pub_course_df)
@@ -200,24 +218,8 @@ if menu == "🏠 Home & Public Dashboard":
                     st.balloons()
                     st.success(f"🎉 Thank you {e_name}! Course Fee for {e_course}: {revealed_fee}")
 
-    # 🤖 AI HELPDESK BOT FOR PUBLIC
-    with st.expander("🤖 Instant AI Helpdesk Assistant (Click to Ask Question)"):
-        user_q = st.text_input("Type your question here (e.g. timing, location, director, courses):")
-        if user_q:
-            q_lower = user_q.lower()
-            if "fee" in q_lower or "cost" in q_lower:
-                st.info("💡 Course fees vary from ₹2,500 to ₹7,500. Please fill out the Enquiry Form above to reveal exact fee!")
-            elif "timing" in q_lower or "time" in q_lower or "shift" in q_lower:
-                st.info("💡 Batches run in Morning (06:30 AM), Afternoon (04:00 PM), and Evening (05:30 PM).")
-            elif "director" in q_lower or "owner" in q_lower:
-                st.info("💡 Soft Tech Computers & ZTC is founded & directed by Chiranjeeb Hazarika (Zaan) Sir.")
-            elif "location" in q_lower or "address" in q_lower:
-                st.info("💡 Located at Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149.")
-            else:
-                st.info("💡 Welcome to STC & ZTC! You can contact office directly at +91 9101026718.")
-
 # ---------------------------------------------------------
-# 2. NEW STUDENT ADMISSION
+# 2. NEW STUDENT ADMISSION (CERTIFICATE FLEXIBLE DURATION)
 # ---------------------------------------------------------
 elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
@@ -245,6 +247,7 @@ elif menu == "📝 New Student Admission":
                 pin = st.text_input("PIN Code", value="784149")
                 dist = st.text_input("District", value="Sonitpur")
                 course = st.selectbox("Course Selected*", list(COURSE_CONFIG.keys()))
+                cert_dur = st.selectbox("Course Duration Option*", ["12 Months", "6 Months", "3 Months", "2 Months", "45 Days"])
                 days_batch = st.selectbox("Class Schedule Days*", ["MWF (Monday, Wednesday, Friday)", "TTS (Tuesday, Thursday, Saturday)", "Regular (Daily Classes)"])
                 
             col3, col4 = st.columns(2)
@@ -278,8 +281,9 @@ elif menu == "📝 New Student Admission":
                             f.write(photo_file.getbuffer())
                             
                     net_fee = float(total_fee) - float(discount)
-                    dur_months = COURSE_CONFIG[course]["Months"]
-                    validity_date = join_date + datetime.timedelta(days=dur_months * 30)
+                    
+                    days_add = 365 if "12" in cert_dur else (180 if "6" in cert_dur else (90 if "3" in cert_dur else (60 if "2" in cert_dur else 45)))
+                    validity_date = join_date + datetime.timedelta(days=days_add)
                     
                     new_row = {
                         "Sl. No.": str(len(student_df) + 1), "Student ID": new_id, "Name": name.upper(),
@@ -287,7 +291,7 @@ elif menu == "📝 New Student Admission":
                         "DOB": str(dob), "Caste": caste, "Mobile No": mobile, "Vill Town": vill.upper(),
                         "PO": po.upper(), "PS": ps.upper(), "PIN Code": pin, "District": dist.upper(),
                         "Full Address": f"{vill}, {po}, {ps}, {dist} - {pin}".upper(), "Course": course,
-                        "Duration": f"{dur_months} Months", "Days_Batch": days_batch, "Session": session,
+                        "Duration": cert_dur, "Days_Batch": days_batch, "Session": session,
                         "Join Date": str(join_date), "Validity Date": str(validity_date),
                         "Total Fee": str(total_fee), "Discount": str(discount), "Net Fee": str(net_fee),
                         "Shift": shift, "Batch Time": batch_time, "Photo Path": photo_path, "Status": "Active"
@@ -298,7 +302,7 @@ elif menu == "📝 New Student Admission":
                     st.success(f"🎉 Registered Successfully! Roll ID: {new_id} | End Date: {validity_date}")
 
 # ---------------------------------------------------------
-# 3. STUDENT LOGIN PORTAL (INCLUDES INSTALLMENT CARD & JOURNEY CIRCLE)
+# 3. STUDENT LOGIN PORTAL
 # ---------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -394,7 +398,6 @@ elif menu == "🔑 Student Login Portal":
             if st.button("🖨️ Direct Print ID Card"):
                 st.components.v1.html("<script>window.print();</script>", height=0)
 
-        # 💵 DIGITAL INSTALLMENT PASSBOOK CARD
         with st_tab2:
             st.subheader("💵 Student Fee Installment Record Passbook")
             net_f = float(s["Net Fee"]) if s["Net Fee"] else 0.0
@@ -410,13 +413,12 @@ elif menu == "🔑 Student Login Portal":
             st.markdown("---")
             st.write("📋 **Detailed Deposit Transactions History:**")
             if not st_paid_logs.empty:
-                disp_fee_df = st_paid_logs[["Receipt No", "Date", "Amount Paid", "Payment Mode", "Remarks"]].copy()
+                disp_fee_df = st_paid_logs[["Receipt No", "Date", "Amount Paid", "Payment Mode", "Collected_By", "Remarks"]].copy()
                 disp_fee_df.index = range(1, len(disp_fee_df) + 1)
                 st.table(disp_fee_df)
             else:
                 st.info("No installment payments logged yet.")
 
-        # 🔄 STUDENT ACADEMIC LIFECYCLE (STUDY CIRCLE MOVED HERE)
         with st_tab3:
             st.subheader("🔄 My Academic Journey & Status Tracker")
             st.markdown("""
@@ -437,7 +439,6 @@ elif menu == "🔑 Student Login Portal":
             st.progress(0.4)
             st.info("Current Active Status: **Stage 2: Topic-Wise Syllabus Learning**")
 
-        # ⏱️ LIVE IST PUNCH IN
         with st_tab4:
             st.subheader("⏱️ Live IST Attendance Punch-In")
             now_ist = datetime.datetime.now(IST)
@@ -458,7 +459,6 @@ elif menu == "🔑 Student Login Portal":
             else:
                 st.success(f"✅ Already Punched Today at {today_att.iloc[0]['Time_In']} IST!")
 
-        # 📖 SYLLABUS & FEEDBACK
         with st_tab5:
             st.subheader("📖 Course Modules & Star Feedback")
             st_course = s["Course"]
@@ -479,12 +479,10 @@ elif menu == "🔑 Student Login Portal":
                     st.success("✅ Feedback Sent Directly to Director Admin Desk!")
 
 # ---------------------------------------------------------
-# 4. SUNDAY PRACTICE CLASS (SFPC) - SECURE ROLL NUMBER SEARCH
+# 4. SUNDAY PRACTICE CLASS (SFPC)
 # ---------------------------------------------------------
 elif menu == "🎯 Sunday Free Practice Class (SFPC)":
     st.header("🎯 Sunday Free Practice Class (SFPC) Eligibility Portal")
-    st.info("🔒 Enter your Roll ID below to verify your private Sunday Lab Access status.")
-    
     check_id = st.text_input("Enter Student Roll ID (e.g. STC26-001):").strip().upper()
     if check_id:
         st_res = student_df[student_df["Student ID"] == check_id]
@@ -521,13 +519,19 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             st.error("Invalid Student Roll ID!")
 
 # ---------------------------------------------------------
-# 5. FEE COUNTER DESK
+# 5. FEE COUNTER DESK (TEACHER COLLECTION TRACKER)
 # ---------------------------------------------------------
 elif menu == "💵 Fee Counter Desk":
-    st.header("💵 Student Fee Collection Counter")
-    f_pwd = st.text_input("Enter Staff Password:", type="password")
+    st.header("💵 Student Fee Collection Counter Desk")
+    f_pwd = st.text_input("Enter Staff / Teacher Password:", type="password")
+    
     if f_pwd in [ADMIN_PWD, TEACHER_PWD]:
-        sel_sid = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+        col_st1, col_st2 = st.columns(2)
+        with col_st1:
+            collector_name = st.selectbox("Fee Collector Staff/Teacher Name:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Sir"])
+        with col_st2:
+            sel_sid = st.selectbox("Select Student ID:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+            
         if sel_sid:
             sid = sel_sid.split(" - ")[0]
             s_rec = student_df[student_df["Student ID"] == sid].iloc[0]
@@ -536,17 +540,18 @@ elif menu == "💵 Fee Counter Desk":
             net = float(s_rec["Net Fee"]) if s_rec["Net Fee"] else 0.0
             due = net - total_paid
             
-            st.write(f"**Net Fee:** ₹{net:.2f} | **Total Paid:** ₹{total_paid:.2f} | **Due:** :red[₹{due:.2f}]")
+            st.write(f"**Student:** {s_rec['Name']} | **Net Fee:** ₹{net:.2f} | **Paid:** ₹{total_paid:.2f} | **Due Balance:** :red[₹{due:.2f}]")
             with st.form("fee_collect_form", clear_on_submit=True):
                 pay_amt = st.number_input("Amount Paid (₹)", min_value=100.0, step=100.0)
                 pay_mode = st.selectbox("Payment Mode", ["Cash", "UPI / GPay", "Bank Transfer"])
-                remarks = st.text_input("Remarks", value="Monthly Installment")
-                if st.form_submit_button("Issue Receipt"):
+                remarks = st.text_input("Remarks / Installment Month", value="Installment Fee Deposit")
+                
+                if st.form_submit_button("Issue Receipt & Save Deposit"):
                     rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(fee_df)+1:03d}"
-                    f_row = {"Receipt No": rc_num, "Student ID": sid, "Date": str(datetime.date.today()), "Amount Paid": str(pay_amt), "Payment Mode": pay_mode, "Remarks": remarks}
+                    f_row = {"Receipt No": rc_num, "Student ID": sid, "Date": str(datetime.date.today()), "Amount Paid": str(pay_amt), "Payment Mode": pay_mode, "Collected_By": collector_name, "Remarks": remarks}
                     fee_df = pd.concat([fee_df, pd.DataFrame([f_row])], ignore_index=True)
                     save_data(fee_df, FEE_LOG_FILE)
-                    st.success(f"✅ Receipt Issued: {rc_num}")
+                    st.success(f"✅ Receipt Issued: {rc_num} (Logged Collected By: {collector_name})")
 
 # ---------------------------------------------------------
 # 6. TEACHER PORTAL & QR CODE SCANNER ATTENDANCE
@@ -612,7 +617,7 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
                     st.success("✅ Class Syllabus & Theory Record Saved!")
 
 # ---------------------------------------------------------
-# 7. ADMIN CONTROL PANEL
+# 7. ADMIN CONTROL PANEL (FINANCIALS + RED DEFAULTERS + BACKUP + PASSWORD CONTROL)
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -621,27 +626,99 @@ elif menu == "🔐 Admin Control Panel":
     if pwd == ADMIN_PWD:
         st.success("Welcome Director Chiranjeeb Hazarika Sir!")
         
-        adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5 = st.tabs([
-            "📊 Master Registry",
+        # FINANCIAL OVERVIEW METRICS
+        tot_coll = sum([float(a) for a in fee_df["Amount Paid"] if a]) if not fee_df.empty else 0.0
+        tot_students = len(student_df) if not student_df.empty else 0
+        tot_enq = len(enquiry_df) if not enquiry_df.empty else 0
+        
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Total Fee Collected Till Date", f"₹{tot_coll:.2f}")
+        c2.metric("Total Enrolled Students", str(tot_students))
+        c3.metric("Total Public Enquiries", str(tot_enq))
+        
+        st.markdown("---")
+        
+        adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6 = st.tabs([
+            "📊 Master Registry & Red Defaulters",
+            "💵 Fee Collections (Teacher Wise Log)",
             "👨‍🏫 Faculty Attendance & Salary",
             "⭐ Student Star Feedbacks",
-            "📩 Enquiries Ledger",
-            "📋 Attendance Logs"
+            "📥 Backup Database Download",
+            "🔑 Security & Password Reset"
         ])
         
+        # 📊 MASTER REGISTRY WITH RED OVERDUE HIGHLIGHT
         with adm_tab1:
-            st.dataframe(student_df, use_container_width=True)
-            
+            st.subheader("📊 Master Student Registry (Red Alert for Fee Overdue)")
+            if not student_df.empty:
+                # Add calculated Due column for display
+                master_display = student_df.copy()
+                dues_list = []
+                for idx, row in master_display.iterrows():
+                    sid = row["Student ID"]
+                    net_f = float(row["Net Fee"]) if row["Net Fee"] else 0.0
+                    paid = sum([float(amt) for amt in fee_df[fee_df["Student ID"] == sid]["Amount Paid"] if amt])
+                    dues_list.append(net_f - paid)
+                master_display["Balance Due (₹)"] = dues_list
+                
+                def highlight_overdue(val):
+                    color = 'background-color: #FEE2E2; color: #991B1B; font-weight: bold;' if float(val) > 0 else ''
+                    return color
+
+                st.dataframe(master_display.style.applymap(highlight_overdue, subset=['Balance Due (₹)']), use_container_width=True)
+
+        # 💵 FEE COLLECTIONS (TEACHER LOG)
         with adm_tab2:
+            st.subheader("💵 Fee Collections Logged by Teachers/Staff")
+            if not fee_df.empty:
+                st.dataframe(fee_df, use_container_width=True)
+            else:
+                st.info("No fee collections logged yet.")
+
+        with adm_tab3:
             st.subheader("👨‍🏫 Faculty Attendance, Late Reasons & Salary Ledger")
             st.dataframe(teacher_att_df, use_container_width=True)
             
-        with adm_tab3:
+        with adm_tab4:
             st.subheader("⭐ Student Star Ratings & Theory Review")
             st.dataframe(feedback_df, use_container_width=True)
             
-        with adm_tab4:
-            st.dataframe(enquiry_df, use_container_width=True)
-            
+        # 📥 DATABASE BACKUP DOWNLOAD
         with adm_tab5:
-            st.dataframe(att_df, use_container_width=True)
+            st.subheader("📥 Download Institute CSV Database Backups")
+            st.write("Click below to download local database copies:")
+            
+            col_b1, col_b2, col_b3 = st.columns(3)
+            with col_b1:
+                st.download_button("📥 Download Students Registry (CSV)", data=student_df.to_csv(index=False), file_name="students_db_backup.csv", mime="text/csv")
+            with col_b2:
+                st.download_button("📥 Download Fee Collections Log (CSV)", data=fee_df.to_csv(index=False), file_name="fees_db_backup.csv", mime="text/csv")
+            with col_b3:
+                st.download_button("📥 Download Attendance Logs (CSV)", data=att_df.to_csv(index=False), file_name="attendance_db_backup.csv", mime="text/csv")
+
+        # 🔑 SECURITY & PASSWORD RESET
+        with adm_tab6:
+            st.subheader("🔑 Central Password Control")
+            
+            col_p1, col_p2 = st.columns(2)
+            with col_p1:
+                new_admin_p = st.text_input("Change Director Admin Password:", value=ADMIN_PWD)
+                new_teach_p = st.text_input("Change Teacher Staff Password:", value=TEACHER_PWD)
+                if st.button("Update System Passwords"):
+                    new_creds = pd.DataFrame([
+                        {"Role": "Admin", "Password": new_admin_p},
+                        {"Role": "Teacher", "Password": new_teach_p}
+                    ])
+                    save_data(new_creds, CREDS_FILE)
+                    st.success("🎉 Director & Teacher Passwords Updated Successfully!")
+                    
+            with col_p2:
+                st.write("🔑 **Reset Student Login Password (Mobile No):**")
+                if not student_df.empty:
+                    rst_sid = st.selectbox("Select Student ID to Reset Password:", student_df["Student ID"] + " - " + student_df["Name"])
+                    new_mob_pwd = st.text_input("New Password (Mobile Number):")
+                    if st.button("Reset Student Password"):
+                        r_id = rst_sid.split(" - ")[0]
+                        student_df.loc[student_df["Student ID"] == r_id, "Mobile No"] = new_mob_pwd
+                        save_data(student_df, STUDENT_MASTER_FILE)
+                        st.success(f"✅ Reset Password for {r_id} to {new_mob_pwd}!")
