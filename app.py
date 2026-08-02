@@ -101,7 +101,7 @@ if creds_df.empty:
 ADMIN_PWD = creds_df[creds_df["Role"] == "Admin"]["Password"].values[0] if "Admin" in creds_df["Role"].values else "zaan123"
 TEACHER_PWD = creds_df[creds_df["Role"] == "Teacher"]["Password"].values[0] if "Teacher" in creds_df["Role"].values else "teacher123"
 
-# Course Structure with Auto Duration Months
+# Course Structure
 COURSE_CONFIG = {
     "DCA (Diploma in Computer Application)": {"Months": 6, "Fee": "₹4,500 Total"},
     "ADCA (Advanced Diploma in Computer Application)": {"Months": 12, "Fee": "₹7,500 Total"},
@@ -131,13 +131,13 @@ menu = st.sidebar.radio("Navigation Menu:", [
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
     logo_b64 = get_image_base64("logo")
-    logo_html = f'<img src="{logo_b64}" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid #00F0FF; box-shadow: 0 0 15px #00F0FF;">' if logo_b64 else '<div style="font-size:50px;">💻</div>'
+    logo_html = f'<img src="{logo_b64}" style="width: 110px; height: 110px; border-radius: 50%; border: 3px solid #00F0FF; box-shadow: 0 0 15px #00F0FF; object-fit: cover; flex-shrink: 0;">' if logo_b64 else '<div style="font-size:50px;">💻</div>'
 
-    # ULTRA-HIGH-TECH HEADER
+    # PERFECT FITTED LOGO HEADER
     st.markdown(f"""
         <div style="
             background: linear-gradient(135deg, #020B19 0%, #0F172A 50%, #1E3A8A 100%);
-            padding: 22px;
+            padding: 20px;
             border-radius: 18px;
             text-align: center;
             color: white;
@@ -147,9 +147,9 @@ if menu == "🏠 Home & Public Dashboard":
         ">
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
                 {logo_html}
-                <div>
-                    <h1 style="margin: 0; font-size: 36px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px;">SOFT TECH COMPUTERS & ZTC</h1>
-                    <h3 style="margin: 4px 0; color: #FBBF24; font-size: 18px; font-weight: 800;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h3>
+                <div style="text-align: center;">
+                    <h1 style="margin: 0; font-size: 34px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px;">SOFT TECH COMPUTERS & ZTC</h1>
+                    <h3 style="margin: 4px 0; color: #FBBF24; font-size: 17px; font-weight: 800;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h3>
                     <p style="margin: 0; font-size: 13px; color: #CBD5E1;">Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149 | Center Code: 4159 | Contact: +91 9101026718</p>
                 </div>
             </div>
@@ -227,7 +227,7 @@ if menu == "🏠 Home & Public Dashboard":
                     st.success(f"🎉 Thank you {e_name}! Course Fee for {e_course}: {revealed_fee}")
 
 # ---------------------------------------------------------
-# 2. NEW STUDENT ADMISSION (UNIQUE MOBILE + AUTO END DATE)
+# 2. NEW STUDENT ADMISSION
 # ---------------------------------------------------------
 elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
@@ -268,7 +268,6 @@ elif menu == "📝 New Student Admission":
                 batch_time = st.text_input("Batch Timing", value="90 Minutes Session")
                 
             if st.form_submit_button("Submit Admission"):
-                # UNIQUE MOBILE CHECK
                 existing_mobiles = student_df["Mobile No"].tolist() if not student_df.empty else []
                 
                 if not name or not mobile:
@@ -288,8 +287,6 @@ elif menu == "📝 New Student Admission":
                             f.write(photo_file.getbuffer())
                             
                     net_fee = float(total_fee) - float(discount)
-                    
-                    # AUTO CALCULATE COURSE END DATE
                     dur_months = COURSE_CONFIG[course]["Months"]
                     validity_date = join_date + datetime.timedelta(days=dur_months * 30)
                     
@@ -310,7 +307,7 @@ elif menu == "📝 New Student Admission":
                     st.success(f"🎉 Registered Successfully! Roll ID: {new_id} | End Date: {validity_date}")
 
 # ---------------------------------------------------------
-# 3. STUDENT LOGIN PORTAL (LOGOUT + IST PUNCH + FEEDBACK)
+# 3. STUDENT LOGIN PORTAL
 # ---------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -335,7 +332,6 @@ elif menu == "🔑 Student Login Portal":
             else:
                 st.error("Invalid Roll ID or Password!")
     else:
-        # LOGGED IN DASHBOARD
         s_id = st.session_state["logged_student_id"]
         s = student_df[student_df["Student ID"] == s_id].iloc[0]
         
@@ -348,7 +344,6 @@ elif menu == "🔑 Student Login Portal":
                 st.session_state["logged_student_id"] = ""
                 st.rerun()
 
-        # Tabs
         st_tab1, st_tab2, st_tab3, st_tab4 = st.tabs(["💳 Digital ID Card", "⏱️ Daily IST Punch-In", "📖 Topic Wise Learning", "📝 Feedback & Theory Review"])
         
         with st_tab1:
@@ -361,7 +356,7 @@ elif menu == "🔑 Student Login Portal":
                 </div>
                 <div style="display:flex; align-items:center; justify-content:space-between; margin:15px 0;">
                     <div style="text-align:center; flex:1;">
-                        <img src="{st_photo_b64 if st_photo_b64 else 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" style="width:100px; height:100px; border-radius:50%; border:2px solid #00F0FF;">
+                        <img src="{st_photo_b64 if st_photo_b64 else 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" style="width:100px; height:100px; border-radius:50%; border:2px solid #00F0FF; object-fit:cover;">
                         <div style="margin-top:5px; color:#00F0FF; font-weight:bold;">ID: {s['Student ID']}</div>
                     </div>
                     <div style="flex:2; padding-left:20px;">
@@ -383,7 +378,6 @@ elif menu == "🔑 Student Login Portal":
             
             st.info(f"Current IST Time: **{cur_time_str}** | Date: **{cur_date_str}**")
             
-            # Check today's punch
             today_att = att_df[(att_df["Student ID"] == s_id) & (att_df["Date"] == cur_date_str)]
             if today_att.empty:
                 if st.button("Click to Punch In Attendance Now"):
@@ -434,7 +428,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             st.error("Student Not Found!")
 
 # ---------------------------------------------------------
-# 5. FEE COUNTER DESK (SEPARATE MENU)
+# 5. FEE COUNTER DESK
 # ---------------------------------------------------------
 elif menu == "💵 Fee Counter Desk":
     st.header("💵 Student Fee Collection Counter")
@@ -462,7 +456,7 @@ elif menu == "💵 Fee Counter Desk":
                     st.success(f"✅ Receipt Issued: {rc_num}")
 
 # ---------------------------------------------------------
-# 6. TEACHER PORTAL & SALARY AUTOMATION (3 SESSIONS x 90 MINS = ₹230/DAY)
+# 6. TEACHER PORTAL & SALARY AUTOMATION
 # ---------------------------------------------------------
 elif menu == "🔑 Teacher Portal & Salary Desk":
     st.header("🔑 Faculty Attendance & Daily Salary Desk")
@@ -482,9 +476,7 @@ elif menu == "🔑 Teacher Portal & Salary Desk":
             absent_status = st.selectbox("Status Today:", ["Present & Teaching", "Absent (With Prior Info)", "Absent (Without Informing)"])
             
             if st.form_submit_button("Punch Self Attendance & Log Session"):
-                # Earning Rate: ₹230 for 3 Sessions = ₹76.66 per 90 Min Class
                 earning = 76.66 if "Present" in absent_status else 0.0
-                
                 t_row = {
                     "Teacher ID": "TCH-01", "Name": t_name_sel, "Date": cur_date_str,
                     "Time_In": cur_time_str, "Shift": t_shift, "Status": absent_status,
@@ -495,7 +487,6 @@ elif menu == "🔑 Teacher Portal & Salary Desk":
                 
                 st.success(f"✅ Punched at {cur_time_str} IST! Session Earnings: ₹{earning:.2f}")
 
-        # LOG SYLLABUS LESSON
         st.markdown("---")
         st.subheader("📖 Log Daily Syllabus & Theory Dictated")
         with st.form("syllabus_form", clear_on_submit=True):
