@@ -86,12 +86,17 @@ ADMIN_PWD = creds_df[creds_df["Role"] == "Admin"]["Password"].values[0] if "Admi
 TEACHER_PWD = creds_df[creds_df["Role"] == "Teacher"]["Password"].values[0] if "Teacher" in creds_df["Role"].values else "teacher123"
 
 # Course Fee Structure Reference
-COURSE_FEE_MAP = {
-    "DCA": "₹4,500", "ADCA": "₹7,500", "DTP": "₹3,500", "Tally Prime": "₹4,000",
-    "Class 9 English Coaching": "₹600 / Month", "Class 10 English Coaching": "₹700 / Month",
-    "Class 11 English Coaching": "₹800 / Month", "Class 12 English Coaching": "₹900 / Month",
-    "Certificate Course": "₹2,500"
-}
+COURSE_FEE_MAP = [
+    {"Course Name": "DCA (Diploma in Computer Application)", "Duration": "6 Months", "Fee Details": "₹4,500 Total"},
+    {"Course Name": "ADCA (Advanced Diploma in Computer Application)", "Duration": "12 Months", "Fee Details": "₹7,500 Total"},
+    {"Course Name": "DTP (Desktop Publishing)", "Duration": "3 Months", "Fee Details": "₹3,500 Total"},
+    {"Course Name": "Tally Prime with GST", "Duration": "3 Months", "Fee Details": "₹4,000 Total"},
+    {"Course Name": "Class 9 English Coaching", "Duration": "Academic Session", "Fee Details": "₹600 / Month"},
+    {"Course Name": "Class 10 English Coaching", "Duration": "Academic Session", "Fee Details": "₹700 / Month"},
+    {"Course Name": "Class 11 English Coaching", "Duration": "Academic Session", "Fee Details": "₹800 / Month"},
+    {"Course Name": "Class 12 English Coaching", "Duration": "Academic Session", "Fee Details": "₹900 / Month"},
+    {"Course Name": "Certificate Course in Computer Basics", "Duration": "1 to 2 Months", "Fee Details": "₹2,500 Total"}
+]
 
 # Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
@@ -105,54 +110,84 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HOME & PUBLIC DASHBOARD
+# 1. HIGH-TECH HOME & PUBLIC DASHBOARD
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
-    # BIG BOLD HIGH-TECH HEADER
+    # 1. ULTRA-HIGH-TECH HEADER WITH LOGO
     st.markdown("""
-        <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%); padding:25px; border-radius:15px; text-align:center; color:white; border:2px solid #00F0FF; box-shadow:0 0 15px rgba(0,240,255,0.3);">
-            <h1 style="margin:0; font-size:40px; font-weight:900; color:#FFFFFF; letter-spacing:1px;">SOFT TECH COMPUTERS & ZTC</h1>
-            <h3 style="margin:8px 0; color:#FBBF24; font-size:20px; font-weight:bold;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h3>
-            <p style="margin:0; font-size:14px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149 | Center Code: 4159 | Phone: +91 9101026718</p>
+        <div style="
+            background: linear-gradient(135deg, #020B19 0%, #0F172A 50%, #1E3A8A 100%);
+            padding: 25px;
+            border-radius: 18px;
+            text-align: center;
+            color: white;
+            border: 2px solid #00F0FF;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.4);
+            margin-bottom: 15px;
+        ">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                <img src="https://raw.githubusercontent.com/zaan-hazarika/ztc-software/main/STC%20LOGO.jpeg" style="width: 110px; height: 110px; border-radius: 50%; border: 3px solid #00F0FF; box-shadow: 0 0 15px #00F0FF;">
+                <div>
+                    <h1 style="margin: 0; font-size: 38px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px; text-transform: uppercase;">SOFT TECH COMPUTERS & ZTC</h1>
+                    <h3 style="margin: 5px 0; color: #FBBF24; font-size: 20px; font-weight: 800; letter-spacing: 0.5px;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h3>
+                    <p style="margin: 0; font-size: 14px; color: #CBD5E1;">Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149 | Center Code: 4159 | Contact: +91 9101026718</p>
+                </div>
+            </div>
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # DISPLAY DP2 AND DP1 HERO BANNERS SAFELY
+    # 2. SCROLLING MARQUEE BANNER
+    st.markdown("""
+        <div style="background-color: #FEF3C7; border: 1.5px solid #F59E0B; padding: 10px 15px; border-radius: 10px; margin-bottom: 25px;">
+            <marquee style="color: #B45309; font-weight: bold; font-size: 16px;">
+                🏆 STUDENT OF THE MONTH: CONGRATULATIONS TO OUR TOP PERFORMERS! WORK HARD & SHINE BRIGHT AT SOFT TECH COMPUTERS & ZTC! 🏆
+            </marquee>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # 3. FEATURED BANNERS (DP2 AND DP1 HERO SHOWCASE)
     dp2_b64 = get_image_base64("DP2.jpeg") or get_image_base64("DP2.jpg")
     dp1_b64 = get_image_base64("DP1.jpeg") or get_image_base64("DP1.jpg")
     
     if dp2_b64:
-        st.markdown(f'<img src="{dp2_b64}" style="width:100%; border-radius:12px; border:1px solid #CBD5E1;">', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f'<img src="{dp2_b64}" style="width:100%; border-radius:15px; border:2px solid #00F0FF; box-shadow:0 0 15px rgba(0,240,255,0.2); margin-bottom:20px;">', unsafe_allow_html=True)
     if dp1_b64:
-        st.markdown(f'<img src="{dp1_b64}" style="width:100%; border-radius:12px; border:1px solid #CBD5E1;">', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(f'<img src="{dp1_b64}" style="width:100%; border-radius:15px; border:2px solid #00F0FF; box-shadow:0 0 15px rgba(0,240,255,0.2); margin-bottom:25px;">', unsafe_allow_html=True)
 
     st.markdown("---")
+
+    # 4. OFFICIAL COURSE & FEE STRUCTURE TABLE
+    st.subheader("📚 Official Courses & Fee Structure")
+    st.write("Detailed Breakdown of Computer & Academic Programs Offered:")
     
+    fee_table_df = pd.DataFrame(COURSE_FEE_MAP)
+    fee_table_df.index = range(1, len(fee_table_df) + 1)
+    st.table(fee_table_df)
+
+    st.markdown("---")
+
+    # 5. SCANNER & SMART ENQUIRY DESK
     col_p1, col_p2 = st.columns([1, 2])
     with col_p1:
-        st.subheader("📲 Portal Access Scanner")
+        st.subheader("📲 Smart Portal Access QR")
         st.markdown("""
-            <div style="border:2px dashed #2563EB; background-color:#EFF6FF; padding:18px; border-radius:12px; text-align:center;">
-                <h3 style="color:#1E3A8A; margin-top:0;">🌐 Scan to Login</h3>
-                <p style="color:#475569; font-size:12px;">Direct Student Access QR Code</p>
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://stcztc.streamlit.app" style="width:130px; height:130px;">
-                <p style="font-weight:bold; color:#2563EB; margin-top:8px;">stcztc.streamlit.app</p>
+            <div style="border:2px dashed #2563EB; background-color:#EFF6FF; padding:20px; border-radius:14px; text-align:center;">
+                <h3 style="color:#1E3A8A; margin-top:0;">🌐 Scan to Enter Portal</h3>
+                <p style="color:#475569; font-size:13px;">Direct Mobile Access Scanner</p>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://stcztc.streamlit.app" style="width:140px; height:140px; border-radius:8px;">
+                <p style="font-weight:bold; color:#2563EB; margin-top:10px; font-size:15px;">stcztc.streamlit.app</p>
             </div>
         """, unsafe_allow_html=True)
 
     with col_p2:
-        st.subheader("📝 Course Fee Enquiry Desk")
+        st.subheader("📝 Course Enquiry & Registration Desk")
         with st.form("pub_enq_form", clear_on_submit=True):
             e_name = st.text_input("Your Full Name*")
             e_mobile = st.text_input("Contact Mobile Number*")
-            e_course = st.selectbox("Select Course*", list(COURSE_FEE_MAP.keys()))
+            e_course = st.selectbox("Select Interested Course*", [item["Course Name"] for item in COURSE_FEE_MAP])
             e_addr = st.text_input("Village / Address")
             
-            if st.form_submit_button("Submit & View Course Fee"):
+            if st.form_submit_button("Submit Admission Enquiry"):
                 if not e_name or not e_mobile:
                     st.error("Please enter Name and Mobile Number!")
                 else:
@@ -162,10 +197,10 @@ if menu == "🏠 Home & Public Dashboard":
                     
                     st.markdown("""
                         <div style="background-color:#DCFCE7; border:2px solid #22C55E; padding:15px; border-radius:10px;">
-                            <h4 style="color:#15803D; margin:0;">✅ Enquiry Registered Successfully!</h4>
-                            <p style="margin:5px 0 0 0;">Estimated Course Fee: <b>{}</b></p>
+                            <h4 style="color:#15803D; margin:0;">✅ Enquiry Submitted Successfully!</h4>
+                            <p style="margin:5px 0 0 0;">Our institute office will contact you shortly.</p>
                         </div>
-                    """.format(COURSE_FEE_MAP.get(e_course)), unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # 2. NEW STUDENT ADMISSION
@@ -195,7 +230,7 @@ elif menu == "📝 New Student Admission":
                 ps = st.text_input("Police Station", value="THELAMARA")
                 pin = st.text_input("PIN Code", value="784149")
                 dist = st.text_input("District", value="Sonitpur")
-                course = st.selectbox("Course Selected*", list(COURSE_FEE_MAP.keys()))
+                course = st.selectbox("Course Selected*", [item["Course Name"] for item in COURSE_FEE_MAP])
                 duration = st.selectbox("Course Duration", ["1 Month", "3 Months", "6 Months", "12 Months"])
                 
             col3, col4 = st.columns(2)
@@ -531,7 +566,7 @@ elif menu == "🔐 Admin Control Panel":
                         with col_e1:
                             e_name = st.text_input("Name", value=s_row["Name"])
                             e_mobile = st.text_input("Mobile No (Student Password)", value=s_row["Mobile No"])
-                            e_course = st.selectbox("Course", list(COURSE_FEE_MAP.keys()), index=0)
+                            e_course = st.selectbox("Course", [item["Course Name"] for item in COURSE_FEE_MAP], index=0)
                         with col_e2:
                             e_total_fee = st.text_input("Total Fee", value=s_row["Total Fee"])
                             e_discount = st.text_input("Discount", value=s_row["Discount"])
