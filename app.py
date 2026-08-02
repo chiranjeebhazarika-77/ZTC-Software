@@ -83,24 +83,6 @@ creds_df = load_data(CREDS_FILE, creds_cols)
 feedback_df = load_data(FEEDBACK_FILE, feedback_cols)
 syllabus_df = load_data(SYLLABUS_LOG_FILE, syllabus_cols)
 
-# Default Faculty
-if teacher_df.empty:
-    teacher_df = pd.DataFrame([
-        {"Teacher ID": "TCH-01", "Name": "Chiranjeeb Hazarika", "Phone": "9282373221", "Qualification": "Director", "Designation": "Founder & Head", "Shift Assigned": "All"}
-    ])
-    save_data(teacher_df, TEACHERS_FILE)
-
-# Default Passwords setup
-if creds_df.empty:
-    creds_df = pd.DataFrame([
-        {"Role": "Admin", "Password": "zaan123"},
-        {"Role": "Teacher", "Password": "teacher123"}
-    ])
-    save_data(creds_df, CREDS_FILE)
-
-ADMIN_PWD = creds_df[creds_df["Role"] == "Admin"]["Password"].values[0] if "Admin" in creds_df["Role"].values else "zaan123"
-TEACHER_PWD = creds_df[creds_df["Role"] == "Teacher"]["Password"].values[0] if "Teacher" in creds_df["Role"].values else "teacher123"
-
 # Course Config & Dynamic Topics
 COURSE_CONFIG = {
     "ADCA (Advanced Diploma in Computer Application)": {
@@ -126,13 +108,12 @@ COURSE_CONFIG = {
     "Certificate Course in Computer Basics": {"Months": 2, "Fee": "₹2,500 Total", "Topics": ["Paint", "Notepad", "Wordpad", "MS-Word", "Internet"]}
 }
 
-# Navigation Menu
+# Navigation Menu (CLEAN PUBLIC SIDEBAR)
 st.sidebar.title("💻 STC & ZTC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
     "🏠 Home & Public Dashboard",
     "📝 New Student Admission",
     "🔑 Student Login Portal",
-    "🔄 Student Journey (Study Circle)",
     "🎯 Sunday Free Practice Class (SFPC)",
     "💵 Fee Counter Desk",
     "🔑 Teacher Portal & QR Scanner",
@@ -140,17 +121,13 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HIGH-TECH HOME & PUBLIC DASHBOARD (DP2 BANNER HEADER)
+# 1. HIGH-TECH HOME & PUBLIC DASHBOARD
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
     dp2_b64 = get_image_base64("dp2")
-    logo_b64 = get_image_base64("logo")
-    
-    # DP2 HEADER BANNER WITHOUT TEXT HEADING
     if dp2_b64:
         st.markdown(f'<img src="{dp2_b64}" style="width:100%; max-height:280px; object-fit:contain; border-radius:15px; border:2px solid #00F0FF; box-shadow: 0 0 20px rgba(0, 240, 255, 0.3); margin-bottom:12px;">', unsafe_allow_html=True)
     
-    # HIGH-TECH ADDRESS & CONTACT BANNER
     st.markdown("""
         <div style="
             background: linear-gradient(135deg, #020B19 0%, #0F172A 50%, #1E3A8A 100%);
@@ -162,7 +139,6 @@ if menu == "🏠 Home & Public Dashboard":
         </div>
     """, unsafe_allow_html=True)
     
-    # SCROLLING MARQUEE BANNER
     st.markdown("""
         <div style="background-color: #FEF3C7; border: 1.5px solid #F59E0B; padding: 8px 15px; border-radius: 10px; margin-bottom: 20px;">
             <marquee style="color: #B45309; font-weight: bold; font-size: 15px;">
@@ -171,7 +147,6 @@ if menu == "🏠 Home & Public Dashboard":
         </div>
     """, unsafe_allow_html=True)
 
-    # TWO COLUMN ALIGNMENT FOR DP3 AND DP1
     dp3_b64 = get_image_base64("dp3")
     dp1_b64 = get_image_base64("dp1")
     
@@ -187,7 +162,6 @@ if menu == "🏠 Home & Public Dashboard":
 
     st.markdown("---")
 
-    # COURSES TABLE & ENQUIRY
     st.subheader("📚 Courses Offered & Duration")
     pub_course_list = [{"Course Name": k, "Duration": f"{v['Months']} Months"} for k, v in COURSE_CONFIG.items()]
     pub_course_df = pd.DataFrame(pub_course_list)
@@ -222,13 +196,28 @@ if menu == "🏠 Home & Public Dashboard":
                     e_row = {"Date": str(datetime.date.today()), "Name": e_name.upper(), "Mobile": e_mobile, "Course Interested": e_course, "Village/Address": e_addr.upper(), "Status": "Enquired"}
                     enquiry_df = pd.concat([enquiry_df, pd.DataFrame([e_row])], ignore_index=True)
                     save_data(enquiry_df, ENQUIRY_FILE)
-                    
                     revealed_fee = COURSE_CONFIG[e_course]["Fee"]
                     st.balloons()
                     st.success(f"🎉 Thank you {e_name}! Course Fee for {e_course}: {revealed_fee}")
 
+    # 🤖 AI HELPDESK BOT FOR PUBLIC
+    with st.expander("🤖 Instant AI Helpdesk Assistant (Click to Ask Question)"):
+        user_q = st.text_input("Type your question here (e.g. timing, location, director, courses):")
+        if user_q:
+            q_lower = user_q.lower()
+            if "fee" in q_lower or "cost" in q_lower:
+                st.info("💡 Course fees vary from ₹2,500 to ₹7,500. Please fill out the Enquiry Form above to reveal exact fee!")
+            elif "timing" in q_lower or "time" in q_lower or "shift" in q_lower:
+                st.info("💡 Batches run in Morning (06:30 AM), Afternoon (04:00 PM), and Evening (05:30 PM).")
+            elif "director" in q_lower or "owner" in q_lower:
+                st.info("💡 Soft Tech Computers & ZTC is founded & directed by Chiranjeeb Hazarika (Zaan) Sir.")
+            elif "location" in q_lower or "address" in q_lower:
+                st.info("💡 Located at Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149.")
+            else:
+                st.info("💡 Welcome to STC & ZTC! You can contact office directly at +91 9101026718.")
+
 # ---------------------------------------------------------
-# 2. NEW STUDENT ADMISSION (MWF / TTS / REGULAR DROPDOWN)
+# 2. NEW STUDENT ADMISSION
 # ---------------------------------------------------------
 elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
@@ -309,7 +298,7 @@ elif menu == "📝 New Student Admission":
                     st.success(f"🎉 Registered Successfully! Roll ID: {new_id} | End Date: {validity_date}")
 
 # ---------------------------------------------------------
-# 3. STUDENT LOGIN PORTAL (MODIFIED ID CARD + DYNAMIC SYLLABUS + LATE REASON + PRINT)
+# 3. STUDENT LOGIN PORTAL (INCLUDES INSTALLMENT CARD & JOURNEY CIRCLE)
 # ---------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -346,9 +335,14 @@ elif menu == "🔑 Student Login Portal":
                 st.session_state["logged_student_id"] = ""
                 st.rerun()
 
-        st_tab1, st_tab2, st_tab3, st_tab4 = st.tabs(["💳 Digital ID Card & Print", "⏱️ Live IST Punch-In", "📖 Topic Wise Syllabus", "⭐ Feedback & Theory Notes"])
+        st_tab1, st_tab2, st_tab3, st_tab4, st_tab5 = st.tabs([
+            "💳 Digital ID Card",
+            "💵 My Installment Passbook Card",
+            "🔄 My Academic Journey",
+            "⏱️ Live IST Punch-In",
+            "📖 Syllabus & Feedback"
+        ])
         
-        # 💳 MODIFIED DIGITAL ID CARD (TOP RIGHT LOGO, BOTTOM RIGHT QR, BOTTOM LEFT BARCODE)
         with st_tab1:
             st_photo_b64 = get_image_base64(s["Photo Path"]) if s["Photo Path"] else None
             logo_b64 = get_image_base64("logo")
@@ -397,11 +391,54 @@ elif menu == "🔑 Student Login Portal":
             st.markdown(id_card_html, unsafe_allow_html=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🖨️ Direct Print / Download PDF Card"):
+            if st.button("🖨️ Direct Print ID Card"):
                 st.components.v1.html("<script>window.print();</script>", height=0)
 
-        # ⏱️ LIVE IST PUNCH-IN WITH LATE REASON DROPDOWN
+        # 💵 DIGITAL INSTALLMENT PASSBOOK CARD
         with st_tab2:
+            st.subheader("💵 Student Fee Installment Record Passbook")
+            net_f = float(s["Net Fee"]) if s["Net Fee"] else 0.0
+            st_paid_logs = fee_df[fee_df["Student ID"] == s_id]
+            tot_p = sum([float(amt) for amt in st_paid_logs["Amount Paid"] if amt])
+            bal_due = net_f - tot_p
+            
+            col_m1, col_m2, col_m3 = st.columns(3)
+            col_m1.metric("Net Total Course Fee", f"₹{net_f:.2f}")
+            col_m2.metric("Total Deposit Paid", f"₹{tot_p:.2f}")
+            col_m3.metric("Remaining Balance Due", f"₹{bal_due:.2f}", delta="-Pending" if bal_due > 0 else "Fully Cleared")
+            
+            st.markdown("---")
+            st.write("📋 **Detailed Deposit Transactions History:**")
+            if not st_paid_logs.empty:
+                disp_fee_df = st_paid_logs[["Receipt No", "Date", "Amount Paid", "Payment Mode", "Remarks"]].copy()
+                disp_fee_df.index = range(1, len(disp_fee_df) + 1)
+                st.table(disp_fee_df)
+            else:
+                st.info("No installment payments logged yet.")
+
+        # 🔄 STUDENT ACADEMIC LIFECYCLE (STUDY CIRCLE MOVED HERE)
+        with st_tab3:
+            st.subheader("🔄 My Academic Journey & Status Tracker")
+            st.markdown("""
+                <div style="background:#F0F9FF; border:2px solid #0284C7; padding:15px; border-radius:12px;">
+                    <h4 style="color:#0369A1; margin-top:0;">📋 Official STC Academic Stages:</h4>
+                    <ol>
+                        <li><b>1. Admission Taken</b> — Completed</li>
+                        <li><b>2. Topic-Wise Syllabus Learning</b> — In Progress</li>
+                        <li><b>3. Registration Completed</b> — SARVA / Head Office Code</li>
+                        <li><b>4. Final Exam Form Fillup</b> — Form Submitted</li>
+                        <li><b>5. Admit Card Issued</b> — Generated</li>
+                        <li><b>6. Final Exam Conducted</b> — Exam Completed</li>
+                        <li><b>7. Certificate & Marksheet Issued</b> — Completed</li>
+                    </ol>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.progress(0.4)
+            st.info("Current Active Status: **Stage 2: Topic-Wise Syllabus Learning**")
+
+        # ⏱️ LIVE IST PUNCH IN
+        with st_tab4:
             st.subheader("⏱️ Live IST Attendance Punch-In")
             now_ist = datetime.datetime.now(IST)
             cur_time_str = now_ist.strftime("%I:%M:%S %p")
@@ -419,28 +456,16 @@ elif menu == "🔑 Student Login Portal":
                     st.success(f"✅ Attendance Punched at {cur_time_str} IST!")
                     st.rerun()
             else:
-                st.success(f"✅ Already Punched Today at {today_att.iloc[0]['Time_In']} IST ({today_att.iloc[0]['Late_Reason']})!")
+                st.success(f"✅ Already Punched Today at {today_att.iloc[0]['Time_In']} IST!")
 
-        # 📖 DYNAMIC COURSE SYLLABUS TOPICS
-        with st_tab3:
-            st.subheader("📖 Course Topics & Syllabus Covered")
+        # 📖 SYLLABUS & FEEDBACK
+        with st_tab5:
+            st.subheader("📖 Course Modules & Star Feedback")
             st_course = s["Course"]
             available_topics = COURSE_CONFIG.get(st_course, {}).get("Topics", ["General Computer Basics"])
+            st.info(f"Course Modules for {st_course}: " + ", ".join(available_topics))
             
-            st.write(f"**Official Curriculum Modules for {st_course}:**")
-            st.info(", ".join(available_topics))
-            
-            sel_topic = st.selectbox("Select Module to View Progress:", available_topics)
-            c_syllabus = syllabus_df[(syllabus_df["Course"] == st_course) & (syllabus_df["Topic Covered"] == sel_topic)]
-            if not c_syllabus.empty:
-                topic_details = c_syllabus.iloc[0]
-                st.success(f"✅ Covered on {topic_details['Date']} by {topic_details['Teacher Incharge']} | Theory Dictated: {topic_details['Theory Dictated']}")
-            else:
-                st.warning(f"⏳ Module '{sel_topic}' is upcoming in batch schedule.")
-
-        # ⭐ STAR RATING FEEDBACK & THEORY REVIEW
-        with st_tab4:
-            st.subheader("⭐ Class Feedback & Theory Review")
+            st.markdown("---")
             with st.form("st_feed_form", clear_on_submit=True):
                 tch_name = st.selectbox("Select Instructor:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director"])
                 th_written = st.radio("Did the teacher dictate Theory Notes today?", ["Yes, Theory Dictated", "No, Only Practical / Discussion"])
@@ -454,55 +479,18 @@ elif menu == "🔑 Student Login Portal":
                     st.success("✅ Feedback Sent Directly to Director Admin Desk!")
 
 # ---------------------------------------------------------
-# 4. STUDENT JOURNEY LIFECYCLE (STUDY CIRCLE MENU)
-# ---------------------------------------------------------
-elif menu == "🔄 Student Journey (Study Circle)":
-    st.header("🔄 Student Academic Journey (Study Circle Tracker)")
-    search_id = st.text_input("Enter Student Roll ID to Track Lifecycle:").strip().upper()
-    
-    if search_id:
-        st_match = student_df[student_df["Student ID"] == search_id]
-        if not st_match.empty:
-            s_rec = st_match.iloc[0]
-            st.subheader(f"Academic Roadmap for {s_rec['Name']} ({s_rec['Student ID']})")
-            
-            # 7-STEP LIFECYCLE STAGES
-            st.markdown("""
-                <div style="background:#F0F9FF; border:2px solid #0284C7; padding:15px; border-radius:12px;">
-                    <h4 style="color:#0369A1; margin-top:0;">📋 Official STC Lifecycle Stages:</h4>
-                    <ol>
-                        <li><b>1st Admission Taken</b> — Completed on Joining Date</li>
-                        <li><b>Topic-Wise Learning</b> — Ongoing Practical & Theory</li>
-                        <li><b>Registration Completed</b> — SARVA / Head Office Code Assigned</li>
-                        <li><b>Final Exam Form Fillup</b> — Form Submitted to Counter</li>
-                        <li><b>Admit Card Generated</b> — Issued by Head Office</li>
-                        <li><b>Final Exam Conducted</b> — Lab & Theory Exam Passed</li>
-                        <li><b>Certificate & Marksheet Issued</b> — Handed over after 1-2 Months</li>
-                    </ol>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            step_stage = st.slider("Current Lifecycle Progress Stage:", 1, 7, 3)
-            st.progress(step_stage / 7.0)
-            
-            stage_names = ["1. Admission", "2. Learning", "3. Registered", "4. Form Fillup", "5. Admit Card", "6. Exam Passed", "7. Certified"]
-            st.info(f"Current Status Stage: **{stage_names[step_stage-1]}**")
-
-# ---------------------------------------------------------
-# 5. SUNDAY FREE PRACTICE CLASS (SFPC) - STRICT CONDITIONS
+# 4. SUNDAY PRACTICE CLASS (SFPC) - SECURE ROLL NUMBER SEARCH
 # ---------------------------------------------------------
 elif menu == "🎯 Sunday Free Practice Class (SFPC)":
-    st.header("🎯 Sunday Free Practice Class (SFPC) Lab Portal")
-    st.markdown("> **Mandatory Conditions for Free Sunday Lab Access:**\n> 1. Admission Fee (₹999/-) + Monthly (₹550/month) **Over 50% Bill Cleared**.\n> 2. Minimum **75% Attendance Record**.")
+    st.header("🎯 Sunday Free Practice Class (SFPC) Eligibility Portal")
+    st.info("🔒 Enter your Roll ID below to verify your private Sunday Lab Access status.")
     
-    check_id = st.text_input("Enter Student Roll ID to Verify SFPC Eligibility:").strip().upper()
+    check_id = st.text_input("Enter Student Roll ID (e.g. STC26-001):").strip().upper()
     if check_id:
         st_res = student_df[student_df["Student ID"] == check_id]
         if not st_res.empty:
             s = st_res.iloc[0]
             
-            # CALCULATE BILL & CLEARANCE %
             try:
                 j_date = datetime.datetime.strptime(str(s["Join Date"]), "%Y-%m-%d").date()
             except Exception:
@@ -515,7 +503,6 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             tot_paid = sum([float(a) for a in p_logs["Amount Paid"] if a])
             fee_cleared_perc = (tot_paid / total_bill * 100) if total_bill > 0 else 100.0
             
-            # CALCULATE ATTENDANCE %
             s_att = att_df[att_df["Student ID"] == check_id]
             p_days = len(s_att[s_att["Status"] == "Present"])
             tot_classes = max(1, len(s_att))
@@ -527,12 +514,14 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             
             if fee_cleared_perc >= 50.0 and att_perc >= 75.0:
                 st.balloons()
-                st.success(f"🎉 **{s['Name']}** is FULLY ELIGIBLE for Sunday Free Practice Lab Access!")
+                st.success(f"🎉 Welcome **{s['Name']}**! You are ELIGIBLE for Sunday Practice Lab Access!")
             else:
-                st.error(f"❌ NOT ELIGIBLE for SFPC! Requires ≥50% Fee Clearance (Current: {fee_cleared_perc:.1f}%) AND ≥75% Attendance (Current: {att_perc:.1f}%).")
+                st.error(f"❌ NOT ELIGIBLE! Requires ≥50% Fee Clearance (Current: {fee_cleared_perc:.1f}%) AND ≥75% Attendance (Current: {att_perc:.1f}%).")
+        else:
+            st.error("Invalid Student Roll ID!")
 
 # ---------------------------------------------------------
-# 6. FEE COUNTER DESK
+# 5. FEE COUNTER DESK
 # ---------------------------------------------------------
 elif menu == "💵 Fee Counter Desk":
     st.header("💵 Student Fee Collection Counter")
@@ -560,7 +549,7 @@ elif menu == "💵 Fee Counter Desk":
                     st.success(f"✅ Receipt Issued: {rc_num}")
 
 # ---------------------------------------------------------
-# 7. TEACHER PORTAL & QR CODE SCANNER ATTENDANCE
+# 6. TEACHER PORTAL & QR CODE SCANNER ATTENDANCE
 # ---------------------------------------------------------
 elif menu == "🔑 Teacher Portal & QR Scanner":
     st.header("🔑 Faculty Portal & Student QR Attendance Desk")
@@ -573,10 +562,9 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
         
         st_tab1, st_tab2, st_tab3 = st.tabs(["📸 Scan Student QR Attendance", "⏱️ Self Attendance Punch", "📖 Log Class Syllabus"])
         
-        # 📸 QR CODE SCANNER ATTENDANCE FOR TEACHER
         with st_tab1:
             st.subheader("📸 Scan Student QR Code / Enter ID for Attendance")
-            qr_scanned_id = st.text_input("Scan QR Code or Type Roll ID (e.g. STC26-001):").strip().upper()
+            qr_scanned_id = st.text_input("Scan QR Code or Type Roll ID:").strip().upper()
             
             if qr_scanned_id:
                 st_data = student_df[student_df["Student ID"] == qr_scanned_id]
@@ -624,7 +612,7 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
                     st.success("✅ Class Syllabus & Theory Record Saved!")
 
 # ---------------------------------------------------------
-# 8. ADMIN CONTROL PANEL
+# 7. ADMIN CONTROL PANEL
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
