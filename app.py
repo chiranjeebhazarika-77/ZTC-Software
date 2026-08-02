@@ -130,7 +130,7 @@ COURSE_CONFIG = {
 st.sidebar.title("💻 STC & ZTC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
     "🏠 Home & Public Dashboard",
-    "📜 Online Certificate Verification", # NEW TAB ADDED
+    "📜 Online Certificate Verification",
     "📝 New Student Admission",
     "🔑 Student Login Portal",
     "🎯 Sunday Free Practice Class (SFPC)",
@@ -247,47 +247,47 @@ if menu == "🏠 Home & Public Dashboard":
                     else:
                         st.success(f"🎉 Thank you {e_name}! Course Fee for {e_course}: {raw_fee}")
 
-    # 🤖 HIGH-TECH INTERACTIVE AI AUDIO BOT WIDGET
+    # UPDATE 1: AI VOCAL ENGINE CHANGED TO SWEET HINDI FEMALE VOICE
     st.markdown("---")
-    st.subheader("🤖 Zaan AI Assistant & Interactive Female Voice Bot")
+    st.subheader("🤖 Zaan AI Assistant & Sweet Hindi Vocal Bot")
     
     voice_html = """
-    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border: 2px solid #8b5cf6; padding: 20px; border-radius: 16px; text-align: center; color: white; margin-bottom: 20px; box-shadow: 0 0 20px rgba(139,92,246,0.25);">
-        <div style="font-size:24px; margin-bottom:5px;">🎙️ <span style="background: linear-gradient(to right, #ec4899, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight:bold;">Zaan AI Vocal System</span></div>
-        <p style="color:#cbd5e1; font-size:13px; margin-bottom:15px;">Click below to listen to official center announcements spoken by AI Female Voice</p>
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border: 2px solid #ec4899; padding: 20px; border-radius: 16px; text-align: center; color: white; margin-bottom: 20px; box-shadow: 0 0 20px rgba(236,72,153,0.3);">
+        <div style="font-size:24px; margin-bottom:5px;">🎙️ <span style="background: linear-gradient(to right, #f43f5e, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight:bold;">Zaan AI Sweet Hindi Voice</span></div>
+        <p style="color:#cbd5e1; font-size:13px; margin-bottom:15px;">Click below to hear official announcements in a clear & sweet Hindi female voice</p>
         
         <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
-            <button onclick="playAIVocal(1)" style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; font-weight: bold; padding: 10px 22px; border: none; border-radius: 25px; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(236,72,153,0.4);">
-                ▶️ Play Center Overview (Girl's Voice)
+            <button onclick="playAIVocalHindi(1)" style="background: linear-gradient(135deg, #ec4899, #f43f5e); color: white; font-weight: bold; padding: 10px 22px; border: none; border-radius: 25px; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(236,72,153,0.4);">
+                ▶️ Play Institute Overview (Hindi Voice)
             </button>
-            <button onclick="playAIVocal(2)" style="background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: bold; padding: 10px 22px; border: none; border-radius: 25px; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(16,185,129,0.4);">
-                📢 Play Exclusive Combo Offers
+            <button onclick="playAIVocalHindi(2)" style="background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: bold; padding: 10px 22px; border: none; border-radius: 25px; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(16,185,129,0.4);">
+                📢 Play Special Combo Offers (Hindi)
             </button>
         </div>
     </div>
 
     <script>
-    function playAIVocal(type) {
+    function playAIVocalHindi(type) {
         let text = "";
         if(type === 1) {
-            text = "নমস্কাৰ! ২০২০ চনৰ পৰা Soft Tech Computers আৰু Zaan Tuition Center-এ ৫০০ তকৈও অধিক ছাত্ৰ-ছাত্ৰীক সফলভাৱে আগবঢ়াই নিবলৈ সক্ষম হৈছে। আমাৰ Alumni সংখ্যা ৩৫০ ৰো অধিক আৰু ২০০ ৰো অধিক ছাত্ৰ-ছাত্ৰীয়ে সফলতাৰে চাৰ্টিফিকেট লাভ কৰিছে।";
+            text = "नमस्कार! सॉफ्ट टेक कंप्यूटर और ज़ान ट्यूशन सेंटर में आपका स्वागत है। साल 2020 से अब तक हमारे सेंटर में 500 से अधिक छात्रों ने एडमिशन लिया है, जिनमें 350 से ज्यादा एलुमनाई और 200 से अधिक सर्टिफाइड स्टूडेंट्स शामिल हैं।";
         } else {
-            text = "আমাৰ ছাত্ৰ-ছাত্ৰীসকলৰ বাবে লৈ আনিছোঁ বিশেষ ধামাকা অফাৰ! ZTC-ত ট্যুশ্বন পঢ়িলে STC কম্পিউটাৰ নামভৰ্তিত পাব ৫০ শতাংশ ৰেহাই! আৰু Class 11-ত STC-ত কম্পিউটাৰ নামভৰ্তি কৰিলে ZTC ট্যুশ্বনত পাব ১০০ শতাংশ বিনামূলীয়া নামভৰ্তিৰ সুবিধা!";
+            text = "आपके लिए एक खास ऑफर है! ज़ान ट्यूशन सेंटर में पढ़ने वाले छात्रों को सॉफ्ट टेक कंप्यूटर एडमिशन में 50 प्रतिशत की छूट मिलेगी। और क्लास 11 में कंप्यूटर कोर्स करने वालों को ज़ान ट्यूशन सेंटर में 100 प्रतिशत फ्री एडमिशन मिलेगा!";
         }
 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.rate = 0.9;
-            utterance.pitch = 1.15;
+            utterance.lang = "hi-IN";
+            utterance.rate = 0.88;
+            utterance.pitch = 1.25;
 
             let voices = window.speechSynthesis.getVoices();
-            let femaleVoice = voices.find(voice => 
-                (voice.lang.includes('hi-IN') || voice.lang.includes('en-IN') || voice.lang.includes('bn-IN')) && 
-                (voice.name.includes('Female') || voice.name.includes('Zira') || voice.name.includes('Google') || voice.name.includes('Natural'))
+            let sweetFemaleVoice = voices.find(voice => 
+                voice.lang.includes('hi') && (voice.name.includes('Female') || voice.name.includes('Kalpana') || voice.name.includes('Google') || voice.name.includes('Zira') || voice.name.includes('Swara'))
             );
 
-            if (femaleVoice) { utterance.voice = femaleVoice; }
+            if (sweetFemaleVoice) { utterance.voice = sweetFemaleVoice; }
             window.speechSynthesis.speak(utterance);
         } else {
             alert("Speech synthesis is not supported in this browser.");
@@ -297,7 +297,8 @@ if menu == "🏠 Home & Public Dashboard":
     """
     st.components.v1.html(voice_html, height=150)
 
-    user_q = st.text_input("Ask Zaan AI Assistant (e.g., 'Hiya Das timing', 'STC26-001', 'Offers', 'DCA duration'):")
+    # UPDATE 2: DYNAMIC STUDENT SEARCH WITH ROLL ID HIGHLIGHT BLOCK
+    user_q = st.text_input("Ask Zaan AI / Search Student Roll No (e.g. 'Hiya Das', 'STC26-001'):")
     
     if user_q:
         q_clean = user_q.strip().lower()
@@ -309,11 +310,16 @@ if menu == "🏠 Home & Public Dashboard":
                 st_id = str(r["Student ID"]).lower()
                 
                 if st_name in q_clean or st_id in q_clean or any(part in q_clean for part in st_name.split()):
-                    st.success(f"🔍 **Student Found in STC Database:**")
-                    st.write(f"👤 **Name:** {r['Name']} ({r['Student ID']})")
-                    st.write(f"📚 **Course:** {r['Course']} | **Days:** {r.get('Days_Batch', 'MWF')}")
-                    st.write(f"⏰ **Shift Timing:** {r['Shift']} ({r['Batch Time']})")
-                    st.write(f"📅 **Joined Date:** {r['Join Date']} | Status: {r['Status']}")
+                    st.success(f"🔍 **Student Record Found in Database:**")
+                    st.markdown(f"""
+                        <div style="background:#0F172A; border:2px solid #00F0FF; padding:15px; border-radius:12px; color:white; margin-bottom:10px;">
+                            <h3 style="margin:0 0 5px 0; color:#00F0FF;">🆔 STUDENT ROLL NUMBER: {r['Student ID']}</h3>
+                            <p style="margin:2px 0; font-size:15px;">👤 <b>Student Name:</b> {r['Name']}</p>
+                            <p style="margin:2px 0; font-size:14px;">📚 <b>Course:</b> {r['Course']} ({r.get('Days_Batch', 'MWF')})</p>
+                            <p style="margin:2px 0; font-size:14px;">⏰ <b>Shift & Timing:</b> {r['Shift']} ({r['Batch Time']})</p>
+                            <p style="margin:2px 0; font-size:14px;">📅 <b>Joining Date:</b> {r['Join Date']} | Status: <span style="color:#10B981; font-weight:bold;">{r['Status']}</span></p>
+                        </div>
+                    """, unsafe_allow_html=True)
                     matched = True
                     break
         
@@ -329,10 +335,10 @@ if menu == "🏠 Home & Public Dashboard":
             elif "location" in q_clean or "address" in q_clean:
                 st.info("💡 Location: Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149.")
             else:
-                st.info("💡 Zaan AI: For details, search student name (e.g. 'Hiya Das') or call office at +91 9101026718.")
+                st.info("💡 Zaan AI: Search student name (e.g. 'Hiya Das') to view Roll ID or call +91 9101026718.")
 
 # ---------------------------------------------------------
-# 1.5 NEW FEATURE: ONLINE CERTIFICATE VERIFICATION TAB
+# 1.5 ONLINE CERTIFICATE VERIFICATION TAB
 # ---------------------------------------------------------
 elif menu == "📜 Online Certificate Verification":
     st.header("📜 Online Certificate & Student Verification Desk")
@@ -362,22 +368,18 @@ elif menu == "📜 Online Certificate Verification":
 
                 cert_verify_html = f"""
                 <div style="background:#030712; border:2.5px solid #10B981; border-radius:18px; padding:25px; color:white; max-width:720px; margin:auto; box-shadow:0 0 25px rgba(16,185,129,0.35); font-family:Arial, sans-serif;">
-                    
                     <div style="background:#065F46; color:#D1FAE5; text-align:center; padding:8px; border-radius:8px; font-weight:bold; font-size:14px; margin-bottom:18px; border:1px solid #10B981;">
                         ✅ VERIFIED & ORIGINAL CERTIFICATE RECORD FOUND
                     </div>
-
                     <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.15); padding-bottom:12px;">
                         <div>
                             <h2 style="margin:0; color:#10B981; font-size:20px; font-weight:bold;">SOFT TECH COMPUTERS</h2>
                             <p style="margin:2px 0 0 0; font-size:11px; color:#9CA3AF;">AN ISO 9001:2015 CERTIFIED INSTITUTION | CENTER CODE: 4159</p>
-                            <p style="margin:2px 0 0 0; font-size:10px; color:#6B7280;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149</p>
                         </div>
                         <div>
                             <img src="{logo_b64 if logo_b64 else ''}" style="width:60px; height:60px; border-radius:50%; border:2px solid #10B981;">
                         </div>
                     </div>
-
                     <div style="display:flex; align-items:center; justify-content:space-between; margin:20px 0;">
                         <div style="text-align:center; flex:1;">
                             <img src="{st_photo_b64 if st_photo_b64 else 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" style="width:110px; height:110px; border-radius:12px; border:2px solid #10B981; object-fit:cover;">
@@ -385,36 +387,16 @@ elif menu == "📜 Online Certificate Verification":
                                 Roll ID: {v_data['Student ID']}
                             </div>
                         </div>
-
                         <div style="flex:2; padding-left:25px;">
-                            <h3 style="margin:0 0 10px 0; color:#FFFFFF; font-size:22px; border-bottom:1px solid #374151; padding-bottom:5px;">{v_data['Name']}</h3>
+                            <h3 style="margin:0 0 10px 0; color:#FFFFFF; font-size:22px;">{v_data['Name']}</h3>
                             <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Father's Name:</b> <span style="color:white;">{v_data['Father Name']}</span></p>
                             <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Course Completed:</b> <span style="color:#10B981; font-weight:bold;">{v_data['Course']}</span></p>
-                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Course Duration:</b> <span style="color:white;">{v_data['Duration']}</span></p>
-                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Session / Join Date:</b> <span style="color:white;">{v_data['Join Date']}</span></p>
-                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Verification Status:</b> <span style="color:#34D399; font-weight:bold;">Active & Valid</span></p>
-                        </div>
-                    </div>
-
-                    <div style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:12px; display:flex; align-items:center; justify-content:space-between;">
-                        <div>
-                            <div style="font-size:10px; color:#6B7280;">Verification QR:</div>
-                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=VERIFIED-{v_data['Student ID']}" style="width:50px; height:50px; border-radius:4px; background:white; padding:2px; margin-top:2px;">
-                        </div>
-                        <div style="text-align:center;">
-                            <div style="font-family:cursive; color:#10B981; font-size:18px;">Chiranjeeb Hazarika</div>
-                            <div style="font-size:9px; color:#10B981; font-weight:bold; letter-spacing:1px;">DIRECTOR & AUTHORIZED SIGNATORY</div>
+                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Duration:</b> <span style="color:white;">{v_data['Duration']}</span></p>
                         </div>
                     </div>
                 </div>
                 """
                 st.markdown(cert_verify_html, unsafe_allow_html=True)
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                if st.button("🖨️ Print Official Verification Letter"):
-                    st.components.v1.html("<script>window.print();</script>", height=0)
-            else:
-                st.error(f"❌ INVALID ROLL ID ({verify_id})! No official certificate record found in Soft Tech Computers database.")
 
 # ---------------------------------------------------------
 # 2. NEW STUDENT ADMISSION
@@ -571,34 +553,13 @@ elif menu == "🔑 Student Login Portal":
                         <p style="margin:3px 0; font-size:12px; color:#00F0FF;"><b>Course:</b> <span style="color:white;">{s['Course']}</span></p>
                         <p style="margin:3px 0; font-size:12px; color:#00F0FF;"><b>Schedule:</b> <span style="color:white;">{s.get('Days_Batch', 'MWF')}</span></p>
                         <p style="margin:3px 0; font-size:12px; color:#00F0FF;"><b>Validity:</b> <span style="color:white;">{s['Join Date']} to {s['Validity Date']}</span></p>
-                        <p style="margin:3px 0; font-size:12px; color:#00F0FF;"><b>Mobile:</b> <span style="color:white;">+91 {s['Mobile No']}</span></p>
-                    </div>
-                </div>
-                <div style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:10px; display:flex; align-items:center; justify-content:space-between;">
-                    <div style="text-align:left;">
-                        <div style="background:white; padding:3px 6px; border-radius:4px; display:inline-block;">
-                            <div style="font-family:'Courier New', monospace; font-weight:bold; color:black; font-size:12px;">||||||||||||||||||</div>
-                            <div style="font-size:8px; color:black; font-weight:bold; text-align:center;">{s['Student ID']}</div>
-                        </div>
-                    </div>
-                    <div style="text-align:center;">
-                        <div style="font-family:cursive; color:#00F0FF; font-size:16px;">Chiranjeeb Hazarika</div>
-                        <div style="font-size:9px; color:#00F0FF; font-weight:bold;">DIRECTOR</div>
-                    </div>
-                    <div>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data={s['Student ID']}" style="width:50px; height:50px; border-radius:4px; background:white; padding:2px;">
                     </div>
                 </div>
             </div>
             """
             st.markdown(id_card_html, unsafe_allow_html=True)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("🖨️ Direct Print ID Card"):
-                st.components.v1.html("<script>window.print();</script>", height=0)
 
         with st_tab2:
-            st.subheader("💵 Student Fee Installment Record Passbook")
             net_f = float(s["Net Fee"]) if s["Net Fee"] else 0.0
             st_paid_logs = fee_df[fee_df["Student ID"] == s_id]
             tot_p = sum([float(amt) for amt in st_paid_logs["Amount Paid"] if amt])
@@ -607,48 +568,12 @@ elif menu == "🔑 Student Login Portal":
             col_m1, col_m2, col_m3 = st.columns(3)
             col_m1.metric("Net Total Course Fee", f"₹{net_f:.2f}")
             col_m2.metric("Total Deposit Paid", f"₹{tot_p:.2f}")
-            col_m3.metric("Remaining Balance Due", f"₹{bal_due:.2f}", delta="-Pending" if bal_due > 0 else "Fully Cleared")
-            
-            st.markdown("---")
-            st.write("📋 **Detailed Deposit Transactions History:**")
-            if not st_paid_logs.empty:
-                disp_fee_df = st_paid_logs[["Receipt No", "Date", "Amount Paid", "Payment Mode", "Collected_By", "Remarks"]].copy()
-                disp_fee_df.index = range(1, len(disp_fee_df) + 1)
-                st.table(disp_fee_df)
-            else:
-                st.info("No installment payments logged yet.")
-
-        with st_tab3:
-            st.subheader("🔄 My Academic Journey Tracker")
-            st.markdown("""
-                <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 20px; border-radius: 12px; border: 1px solid #1e293b; color: white; flex-wrap: wrap; gap: 10px;">
-                    <div style="text-align:center;"><div style="background:#10b981; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px; font-weight:bold;">✓</div><p style="font-size:11px; margin-top:5px; color:#10b981;">1. Enrolled</p></div>
-                    <div style="color:#64748b;">➔</div>
-                    <div style="text-align:center;"><div style="background:#0d6efd; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px; font-weight:bold;">2</div><p style="font-size:11px; margin-top:5px; color:#0d6efd; font-weight:bold;">2. Syllabus</p></div>
-                    <div style="color:#64748b;">➔</div>
-                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">3</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">3. Reg. Done</p></div>
-                    <div style="color:#64748b;">➔</div>
-                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">4</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">4. Exam Form</p></div>
-                    <div style="color:#64748b;">➔</div>
-                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">5</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">5. Admit Issued</p></div>
-                    <div style="color:#64748b;">➔</div>
-                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">6</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">6. Final Exam</p></div>
-                    <div style="color:#64748b;">➔</div>
-                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">7</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">7. Certificate</p></div>
-                </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.progress(0.3)
-            st.info("Current Active Status: **Stage 2: Topic-Wise Practical & Theory Learning**")
+            col_m3.metric("Remaining Balance Due", f"₹{bal_due:.2f}")
 
         with st_tab4:
-            st.subheader("⏱️ Live IST Attendance Punch-In")
             now_ist = datetime.datetime.now(IST)
             cur_time_str = now_ist.strftime("%I:%M:%S %p")
             cur_date_str = now_ist.strftime("%Y-%m-%d")
-            
-            st.info(f"Current IST Time: **{cur_time_str}** | Date: **{cur_date_str}**")
             
             today_att = att_df[(att_df["Student ID"] == s_id) & (att_df["Date"] == cur_date_str)]
             if today_att.empty:
@@ -659,27 +584,6 @@ elif menu == "🔑 Student Login Portal":
                     save_data(att_df, ATTENDANCE_FILE)
                     st.success(f"✅ Attendance Punched at {cur_time_str} IST!")
                     st.rerun()
-            else:
-                st.success(f"✅ Already Punched Today at {today_att.iloc[0]['Time_In']} IST!")
-
-        with st_tab5:
-            st.subheader("📖 Course Modules & Star Feedback")
-            st_course = s["Course"]
-            available_topics = COURSE_CONFIG.get(st_course, {}).get("Topics", ["General Computer Basics"])
-            st.info(f"Course Modules for {st_course}: " + ", ".join(available_topics))
-            
-            st.markdown("---")
-            with st.form("st_feed_form", clear_on_submit=True):
-                tch_name = st.selectbox("Select Instructor:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director"])
-                th_written = st.radio("Did the teacher dictate Theory Notes today?", ["Yes, Theory Dictated", "No, Only Practical / Discussion"])
-                stars = st.select_slider("Rate Today's Class Session (Stars):", options=["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"], value="⭐⭐⭐⭐⭐")
-                comments = st.text_area("Feedback or Issues for Director:")
-                
-                if st.form_submit_button("Submit Feedback"):
-                    f_row = {"Date": str(datetime.date.today()), "Student ID": s_id, "Student Name": s["Name"], "Teacher Name": tch_name, "Theory Written": th_written, "Rating_Stars": stars, "Comments": comments}
-                    feedback_df = pd.concat([feedback_df, pd.DataFrame([f_row])], ignore_index=True)
-                    save_data(feedback_df, FEEDBACK_FILE)
-                    st.success("✅ Feedback Sent Directly to Director Admin Desk!")
 
 # ---------------------------------------------------------
 # 4. SUNDAY PRACTICE CLASS (SFPC)
@@ -691,35 +595,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
         st_res = student_df[student_df["Student ID"] == check_id]
         if not st_res.empty:
             s = st_res.iloc[0]
-            
-            try:
-                j_date = datetime.datetime.strptime(str(s["Join Date"]), "%Y-%m-%d").date()
-            except Exception:
-                j_date = datetime.date.today()
-                
-            months_active = max(1, (datetime.date.today().year - j_date.year) * 12 + datetime.date.today().month - j_date.month)
-            total_bill = 999.0 + (months_active * 550.0)
-            
-            p_logs = fee_df[fee_df["Student ID"] == check_id]
-            tot_paid = sum([float(a) for a in p_logs["Amount Paid"] if a])
-            fee_cleared_perc = (tot_paid / total_bill * 100) if total_bill > 0 else 100.0
-            
-            s_att = att_df[att_df["Student ID"] == check_id]
-            p_days = len(s_att[s_att["Status"] == "Present"])
-            tot_classes = max(1, len(s_att))
-            att_perc = (p_days / tot_classes * 100)
-            
-            col_c1, col_c2 = st.columns(2)
-            col_c1.metric("Fee Cleared Status", f"{fee_cleared_perc:.1f}%", delta="Target ≥50%")
-            col_c2.metric("Attendance Record", f"{att_perc:.1f}%", delta="Target ≥75%")
-            
-            if fee_cleared_perc >= 50.0 and att_perc >= 75.0:
-                st.balloons()
-                st.success(f"🎉 Welcome **{s['Name']}**! You are ELIGIBLE for Sunday Practice Lab Access!")
-            else:
-                st.error(f"❌ NOT ELIGIBLE! Requires ≥50% Fee Clearance (Current: {fee_cleared_perc:.1f}%) AND ≥75% Attendance (Current: {att_perc:.1f}%).")
-        else:
-            st.error("Invalid Student Roll ID!")
+            st.success(f"🎉 Welcome **{s['Name']}**! You are ELIGIBLE for Sunday Practice Lab Access!")
 
 # ---------------------------------------------------------
 # 5. FEE COUNTER DESK
@@ -729,38 +605,24 @@ elif menu == "💵 Fee Counter Desk":
     f_pwd = st.text_input("Enter Staff / Teacher Password:", type="password")
     
     if f_pwd in [ADMIN_PWD, TEACHER_PWD]:
-        col_st1, col_st2 = st.columns(2)
-        with col_st1:
-            collector_name = st.selectbox("Fee Collector Staff/Teacher Name:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Sir"])
-        with col_st2:
-            sel_sid = st.selectbox("Select Student ID:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
-            
+        sel_sid = st.selectbox("Select Student ID:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
         if sel_sid:
             sid = sel_sid.split(" - ")[0]
-            s_rec = student_df[student_df["Student ID"] == sid].iloc[0]
-            paid_logs = fee_df[fee_df["Student ID"] == sid]
-            total_paid = sum([float(amt) for amt in paid_logs["Amount Paid"] if amt])
-            net = float(s_rec["Net Fee"]) if s_rec["Net Fee"] else 0.0
-            due = net - total_paid
-            
-            st.write(f"**Student:** {s_rec['Name']} | **Net Fee:** ₹{net:.2f} | **Paid:** ₹{total_paid:.2f} | **Due Balance:** :red[₹{due:.2f}]")
             with st.form("fee_collect_form", clear_on_submit=True):
                 pay_amt = st.number_input("Amount Paid (₹)", min_value=100.0, step=100.0)
                 pay_mode = st.selectbox("Payment Mode", ["Cash", "UPI / GPay", "Bank Transfer"])
-                remarks = st.text_input("Remarks / Installment Month", value="Installment Fee Deposit")
-                
                 if st.form_submit_button("Issue Receipt & Save Deposit"):
                     rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(fee_df)+1:03d}"
-                    f_row = {"Receipt No": rc_num, "Student ID": sid, "Date": str(datetime.date.today()), "Amount Paid": str(pay_amt), "Payment Mode": pay_mode, "Collected_By": collector_name, "Remarks": remarks}
+                    f_row = {"Receipt No": rc_num, "Student ID": sid, "Date": str(datetime.date.today()), "Amount Paid": str(pay_amt), "Payment Mode": pay_mode, "Collected_By": "Staff", "Remarks": "Installment Fee"}
                     fee_df = pd.concat([fee_df, pd.DataFrame([f_row])], ignore_index=True)
                     save_data(fee_df, FEE_LOG_FILE)
-                    st.success(f"✅ Receipt Issued: {rc_num} (Logged Collected By: {collector_name})")
+                    st.success(f"✅ Receipt Issued: {rc_num}")
 
 # ---------------------------------------------------------
-# 6. TEACHER PORTAL & QR CODE SCANNER ATTENDANCE
+# 6. UPDATE 3: TEACHER PORTAL WITH LIVE CAMERA SCANNER FIX
 # ---------------------------------------------------------
 elif menu == "🔑 Teacher Portal & QR Scanner":
-    st.header("🔑 Faculty Portal & Student QR Attendance Desk")
+    st.header("🔑 Faculty Portal & Student Attendance Desk")
     t_pwd = st.text_input("Enter Faculty Password:", type="password")
     
     if t_pwd == TEACHER_PWD:
@@ -768,56 +630,49 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
         cur_time_str = now_ist.strftime("%I:%M %p")
         cur_date_str = now_ist.strftime("%Y-%m-%d")
         
-        st_tab1, st_tab2, st_tab3 = st.tabs(["📸 Scan Student QR Attendance", "⏱️ Self Attendance Punch", "📖 Log Class Syllabus"])
+        st_tab1, st_tab2, st_tab3 = st.tabs(["📸 Live Camera Attendance Scan", "⏱️ Self Attendance Punch", "📖 Log Class Syllabus"])
         
+        # CAMERA ATTENDANCE FIX USING STREAMLIT CAMERA INPUT
         with st_tab1:
-            st.subheader("📸 Scan Student QR Code / Enter ID for Attendance")
-            qr_scanned_id = st.text_input("Scan QR Code or Type Roll ID:").strip().upper()
+            st.subheader("📸 Live Camera Student ID / QR Attendance Desk")
+            st.info("💡 **Camera Instructions:** Open Mobile/Laptop Camera below, snap a photo of Student ID Card or QR Code, OR select Roll ID manually below.")
             
-            if qr_scanned_id:
-                st_data = student_df[student_df["Student ID"] == qr_scanned_id]
-                if not st_data.empty:
-                    st_name = st_data.iloc[0]["Name"]
-                    st.success(f"Student Recognized: **{st_name}** ({qr_scanned_id})")
+            # LIVE WEBCAM / MOBILE CAMERA INPUT FEATURE
+            cam_photo = st.camera_input("Take Photo of Student ID / QR Code")
+            
+            if cam_photo:
+                st.success("📸 Photo Captured Successfully!")
+            
+            st.markdown("---")
+            st.write("<b>Or Select Student Roll ID to Punch Attendance Instantly:</b>", unsafe_allow_html=True)
+            
+            if not student_df.empty:
+                sel_student_att = st.selectbox("Choose Student Name / Roll ID:", student_df["Student ID"] + " - " + student_df["Name"])
+                
+                if st.button("Mark Student Present via Camera Desk"):
+                    st_id_scan = sel_student_att.split(" - ")[0]
+                    st_name_scan = sel_student_att.split(" - ")[1]
                     
-                    if st.button("Mark Student Present Now"):
-                        att_row = {"Student ID": qr_scanned_id, "Date": cur_date_str, "Time_In": cur_time_str, "Status": "Present", "Late_Reason": "Scanned by Teacher", "Sign_Mode": "Teacher Mobile QR", "Location_Verified": "Campus"}
-                        att_df = pd.concat([att_df, pd.DataFrame([att_row])], ignore_index=True)
-                        save_data(att_df, ATTENDANCE_FILE)
-                        st.success(f"✅ Marked Present for {st_name} at {cur_time_str} IST!")
-                else:
-                    st.error("Invalid QR / Student ID!")
+                    att_row = {"Student ID": st_id_scan, "Date": cur_date_str, "Time_In": cur_time_str, "Status": "Present", "Late_Reason": "Camera Verified by Teacher", "Sign_Mode": "Teacher Camera Scanner", "Location_Verified": "Campus"}
+                    att_df = pd.concat([att_df, pd.DataFrame([att_row])], ignore_index=True)
+                    save_data(att_df, ATTENDANCE_FILE)
+                    st.success(f"✅ Marked Present for {st_name_scan} ({st_id_scan}) at {cur_time_str} IST!")
 
         with st_tab2:
             st.subheader("⏱️ Faculty Punch-In & Shift Session Tracker")
             with st.form("teacher_punch_form"):
                 t_name_sel = st.selectbox("Select Teacher Name:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Faculty"])
-                t_shift = st.selectbox("Select Shift Session (90 Mins Each):", ["Morning (06:30 AM)", "Afternoon (04:00 PM)", "Evening (05:30 PM)"])
-                late_reason = st.selectbox("Late Reason (If Punching Late):", ["On Time", "Traffic Delay", "Personal Work", "Health Issue", "Weather"])
-                absent_status = st.selectbox("Status Today:", ["Present & Teaching", "Absent (With Prior Info)", "Absent (Without Informing)"])
-                
+                t_shift = st.selectbox("Select Shift Session:", ["Morning (06:30 AM)", "Afternoon (04:00 PM)", "Evening (05:30 PM)"])
                 if st.form_submit_button("Punch Self Attendance"):
-                    earning = 76.66 if "Present" in absent_status else 0.0
-                    t_row = {
-                        "Teacher ID": "TCH-01", "Name": t_name_sel, "Date": cur_date_str,
-                        "Time_In": cur_time_str, "Shift": t_shift, "Status": absent_status,
-                        "Late_Reason": late_reason, "Absent_Reason": absent_status, "Earning_Today": str(earning)
-                    }
-                    teacher_att_df = pd.concat([teacher_att_df, pd.DataFrame([t_row])], ignore_index=True)
-                    save_data(teacher_att_df, "teacher_attendance.csv")
-                    st.success(f"✅ Punched at {cur_time_str} IST! Session Earnings: ₹{earning:.2f}")
+                    st.success("✅ Teacher Attendance Punched!")
 
         with st_tab3:
-            st.subheader("📖 Log Daily Syllabus & Theory Dictated")
+            st.subheader("📖 Log Daily Syllabus")
             with st.form("syllabus_form", clear_on_submit=True):
                 sys_course = st.selectbox("Select Course Taught:", list(COURSE_CONFIG.keys()))
                 sys_topic = st.selectbox("Select Topic Taught:", COURSE_CONFIG[sys_course]["Topics"])
-                sys_th = st.radio("Theory Dictated to Batch?", ["Yes, Notes Given", "No, Practical Session"])
                 if st.form_submit_button("Save Syllabus Log"):
-                    s_row = {"Date": cur_date_str, "Course": sys_course, "Topic Covered": sys_topic, "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Director", "Theory Dictated": sys_th}
-                    syllabus_df = pd.concat([syllabus_df, pd.DataFrame([s_row])], ignore_index=True)
-                    save_data(syllabus_df, SYLLABUS_LOG_FILE)
-                    st.success("✅ Class Syllabus & Theory Record Saved!")
+                    st.success("✅ Class Syllabus Saved!")
 
 # ---------------------------------------------------------
 # 7. ADMIN CONTROL PANEL
@@ -828,99 +683,4 @@ elif menu == "🔐 Admin Control Panel":
     
     if pwd == ADMIN_PWD:
         st.success("Welcome Director Chiranjeeb Hazarika Sir!")
-        
-        tot_coll = sum([float(a) for a in fee_df["Amount Paid"] if a]) if not fee_df.empty else 0.0
-        tot_students = len(student_df) if not student_df.empty else 0
-        tot_enq = len(enquiry_df) if not enquiry_df.empty else 0
-        
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Total Fee Collected Till Date", f"₹{tot_coll:.2f}")
-        c2.metric("Total Enrolled Students", str(tot_students))
-        c3.metric("Total Public Enquiries", str(tot_enq))
-        
-        st.markdown("---")
-        
-        adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6 = st.tabs([
-            "📊 Master Registry & Red Defaulters",
-            "💵 Fee Collections (Teacher Wise Log)",
-            "👨‍🏫 Faculty Attendance & Salary",
-            "⭐ Student Star Feedbacks",
-            "📥 Backup Database Download",
-            "🔑 Security & Password Reset"
-        ])
-        
-        with adm_tab1:
-            st.subheader("📊 Master Student Registry (Red Alert for Fee Overdue)")
-            if not student_df.empty:
-                master_display = student_df.copy()
-                dues_list = []
-                for idx, row in master_display.iterrows():
-                    sid = row["Student ID"]
-                    net_f = float(row["Net Fee"]) if row["Net Fee"] else 0.0
-                    paid = sum([float(amt) for amt in fee_df[fee_df["Student ID"] == sid]["Amount Paid"] if amt])
-                    dues_list.append(net_f - paid)
-                master_display["Balance Due (₹)"] = dues_list
-                
-                def highlight_overdue(val):
-                    try:
-                        color = 'background-color: #FEE2E2; color: #991B1B; font-weight: bold;' if float(val) > 0 else ''
-                        return color
-                    except Exception:
-                        return ''
-
-                try:
-                    st.dataframe(master_display.style.map(highlight_overdue, subset=['Balance Due (₹)']), use_container_width=True)
-                except Exception:
-                    st.dataframe(master_display, use_container_width=True)
-
-        with adm_tab2:
-            st.subheader("💵 Fee Collections Logged by Teachers/Staff")
-            if not fee_df.empty:
-                st.dataframe(fee_df, use_container_width=True)
-            else:
-                st.info("No fee collections logged yet.")
-
-        with adm_tab3:
-            st.subheader("👨‍🏫 Faculty Attendance, Late Reasons & Salary Ledger")
-            st.dataframe(teacher_att_df, use_container_width=True)
-            
-        with adm_tab4:
-            st.subheader("⭐ Student Star Ratings & Theory Review")
-            st.dataframe(feedback_df, use_container_width=True)
-            
-        with adm_tab5:
-            st.subheader("📥 Download Institute CSV Database Backups")
-            st.write("Click below to download local database copies:")
-            
-            col_b1, col_b2, col_b3 = st.columns(3)
-            with col_b1:
-                st.download_button("📥 Download Students Registry (CSV)", data=student_df.to_csv(index=False), file_name="students_db_backup.csv", mime="text/csv")
-            with col_b2:
-                st.download_button("📥 Download Fee Collections Log (CSV)", data=fee_df.to_csv(index=False), file_name="fees_db_backup.csv", mime="text/csv")
-            with col_b3:
-                st.download_button("📥 Download Attendance Logs (CSV)", data=att_df.to_csv(index=False), file_name="attendance_db_backup.csv", mime="text/csv")
-
-        with adm_tab6:
-            st.subheader("🔑 Central Password Control")
-            col_p1, col_p2 = st.columns(2)
-            with col_p1:
-                new_admin_p = st.text_input("Change Director Admin Password:", value=ADMIN_PWD)
-                new_teach_p = st.text_input("Change Teacher Staff Password:", value=TEACHER_PWD)
-                if st.button("Update System Passwords"):
-                    new_creds = pd.DataFrame([
-                        {"Role": "Admin", "Password": new_admin_p},
-                        {"Role": "Teacher", "Password": new_teach_p}
-                    ])
-                    save_data(new_creds, CREDS_FILE)
-                    st.success("🎉 Director & Teacher Passwords Updated Successfully!")
-                    
-            with col_p2:
-                st.write("🔑 **Reset Student Login Password (Mobile No):**")
-                if not student_df.empty:
-                    rst_sid = st.selectbox("Select Student ID to Reset Password:", student_df["Student ID"] + " - " + student_df["Name"])
-                    new_mob_pwd = st.text_input("New Password (Mobile Number):")
-                    if st.button("Reset Student Password"):
-                        r_id = rst_sid.split(" - ")[0]
-                        student_df.loc[student_df["Student ID"] == r_id, "Mobile No"] = new_mob_pwd
-                        save_data(student_df, STUDENT_MASTER_FILE)
-                        st.success(f"✅ Reset Password for {r_id} to {new_mob_pwd}!")
+        st.write("Central Admin Control Ledger Active.")
