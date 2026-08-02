@@ -94,7 +94,7 @@ if creds_df.empty:
 ADMIN_PWD = creds_df[creds_df["Role"] == "Admin"]["Password"].values[0] if "Admin" in creds_df["Role"].values else "zaan123"
 TEACHER_PWD = creds_df[creds_df["Role"] == "Teacher"]["Password"].values[0] if "Teacher" in creds_df["Role"].values else "teacher123"
 
-# Course Config (INCLUDES PGDCA & CERTIFICATE FLEXIBLE DURATION)
+# Course Config
 COURSE_CONFIG = {
     "PGDCA (Post Graduate Diploma in Computer Application)": {
         "Months": 12, "Fee": "₹8,500 Total",
@@ -139,7 +139,7 @@ menu = st.sidebar.radio("Navigation Menu:", [
 ])
 
 # ---------------------------------------------------------
-# 1. HIGH-TECH HOME & PUBLIC DASHBOARD
+# 1. HIGH-TECH ENTERPRISE PUBLIC DASHBOARD
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
     dp2_b64 = get_image_base64("dp2")
@@ -150,15 +150,22 @@ if menu == "🏠 Home & Public Dashboard":
         <div style="
             background: linear-gradient(135deg, #020B19 0%, #0F172A 50%, #1E3A8A 100%);
             padding: 12px 20px; border-radius: 12px; text-align: center; color: white;
-            border: 1.5px solid #00F0FF; box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); margin-bottom: 20px;
+            border: 1.5px solid #00F0FF; box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); margin-bottom: 15px;
         ">
             <h4 style="margin:0; color:#FBBF24; font-size:15px; font-weight:bold;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h4>
             <p style="margin:4px 0 0 0; font-size:13px; color:#CBD5E1;">Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149 | Center Code: 4159 | Contact: +91 9101026718</p>
         </div>
     """, unsafe_allow_html=True)
     
+    # REAL-TIME ENTERPRISE STATS
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    col_m1.metric("Govt & ISO Certified", "100% Valid")
+    col_m2.metric("Digital Lab Workstations", "20+ High-End PCs")
+    col_m3.metric("Enrolled Alumni", f"{len(student_df)}+ Students")
+    col_m4.metric("Practice Classes", "Free SFPC Sundays")
+
     st.markdown("""
-        <div style="background-color: #FEF3C7; border: 1.5px solid #F59E0B; padding: 8px 15px; border-radius: 10px; margin-bottom: 20px;">
+        <div style="background-color: #FEF3C7; border: 1.5px solid #F59E0B; padding: 8px 15px; border-radius: 10px; margin: 15px 0;">
             <marquee style="color: #B45309; font-weight: bold; font-size: 15px;">
                 🏆 STUDENT OF THE MONTH: CONGRATULATIONS TO OUR TOP PERFORMERS! WORK HARD & SHINE BRIGHT AT SOFT TECH COMPUTERS & ZTC! 🏆
             </marquee>
@@ -218,8 +225,44 @@ if menu == "🏠 Home & Public Dashboard":
                     st.balloons()
                     st.success(f"🎉 Thank you {e_name}! Course Fee for {e_course}: {revealed_fee}")
 
+    # 🤖 ULTRA-SMART DYNAMIC AI BOT (ZAAN AI ASSISTANT)
+    st.markdown("---")
+    st.subheader("🤖 Zaan AI Smart Assistant (Live Database Search)")
+    user_q = st.text_input("Ask Zaan AI Assistant (e.g., 'Hiya Das r timing', 'STC26-001 timing', 'DCA duration', 'Director name'):")
+    
+    if user_q:
+        q_clean = user_q.strip().lower()
+        matched = False
+        
+        # Search Student in Database by Name or Roll ID
+        if not student_df.empty:
+            for idx, r in student_df.iterrows():
+                st_name = str(r["Name"]).lower()
+                st_id = str(r["Student ID"]).lower()
+                
+                if st_name in q_clean or st_id in q_clean or any(part in q_clean for part in st_name.split()):
+                    st.success(f"🔍 **Student Found in STC Database:**")
+                    st.write(f"👤 **Name:** {r['Name']} ({r['Student ID']})")
+                    st.write(f"📚 **Course:** {r['Course']} | **Days:** {r.get('Days_Batch', 'MWF')}")
+                    st.write(f"⏰ **Shift Timing:** {r['Shift']} ({r['Batch Time']})")
+                    st.write(f"📅 **Joined Date:** {r['Join Date']} | Status: {r['Status']}")
+                    matched = True
+                    break
+        
+        if not matched:
+            if "fee" in q_clean or "cost" in q_clean:
+                st.info("💡 Course fees vary from ₹2,500 to ₹8,500. Please fill the Enquiry Form above to reveal fee!")
+            elif "timing" in q_clean or "time" in q_clean or "shift" in q_clean:
+                st.info("💡 Shifts: Morning (06:30 AM), Afternoon (04:00 PM), Evening (05:30 PM).")
+            elif "director" in q_clean or "zaan" in q_clean:
+                st.info("💡 Soft Tech Computers & ZTC is founded & directed by Chiranjeeb Hazarika (Zaan) Sir.")
+            elif "location" in q_clean or "address" in q_clean:
+                st.info("💡 Location: Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149.")
+            else:
+                st.info("💡 Zaan AI: For details, search student name (e.g. 'Hiya Das') or call office at +91 9101026718.")
+
 # ---------------------------------------------------------
-# 2. NEW STUDENT ADMISSION (CERTIFICATE FLEXIBLE DURATION)
+# 2. NEW STUDENT ADMISSION
 # ---------------------------------------------------------
 elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
@@ -281,7 +324,6 @@ elif menu == "📝 New Student Admission":
                             f.write(photo_file.getbuffer())
                             
                     net_fee = float(total_fee) - float(discount)
-                    
                     days_add = 365 if "12" in cert_dur else (180 if "6" in cert_dur else (90 if "3" in cert_dur else (60 if "2" in cert_dur else 45)))
                     validity_date = join_date + datetime.timedelta(days=days_add)
                     
@@ -519,7 +561,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             st.error("Invalid Student Roll ID!")
 
 # ---------------------------------------------------------
-# 5. FEE COUNTER DESK (TEACHER COLLECTION TRACKER)
+# 5. FEE COUNTER DESK
 # ---------------------------------------------------------
 elif menu == "💵 Fee Counter Desk":
     st.header("💵 Student Fee Collection Counter Desk")
@@ -617,7 +659,7 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
                     st.success("✅ Class Syllabus & Theory Record Saved!")
 
 # ---------------------------------------------------------
-# 7. ADMIN CONTROL PANEL (FINANCIALS + RED DEFAULTERS + BACKUP + PASSWORD CONTROL)
+# 7. ADMIN CONTROL PANEL (FIXED STYLER MAP & ZERO ERRORS)
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -647,11 +689,10 @@ elif menu == "🔐 Admin Control Panel":
             "🔑 Security & Password Reset"
         ])
         
-        # 📊 MASTER REGISTRY WITH RED OVERDUE HIGHLIGHT
+        # 📊 MASTER REGISTRY WITH FIXED STYLER.MAP (NO ATTRIBUTE ERROR)
         with adm_tab1:
             st.subheader("📊 Master Student Registry (Red Alert for Fee Overdue)")
             if not student_df.empty:
-                # Add calculated Due column for display
                 master_display = student_df.copy()
                 dues_list = []
                 for idx, row in master_display.iterrows():
@@ -662,12 +703,18 @@ elif menu == "🔐 Admin Control Panel":
                 master_display["Balance Due (₹)"] = dues_list
                 
                 def highlight_overdue(val):
-                    color = 'background-color: #FEE2E2; color: #991B1B; font-weight: bold;' if float(val) > 0 else ''
-                    return color
+                    try:
+                        color = 'background-color: #FEE2E2; color: #991B1B; font-weight: bold;' if float(val) > 0 else ''
+                        return color
+                    except Exception:
+                        return ''
 
-                st.dataframe(master_display.style.applymap(highlight_overdue, subset=['Balance Due (₹)']), use_container_width=True)
+                # Fixed for Streamlit 1.30+ using .map instead of deprecated .applymap
+                try:
+                    st.dataframe(master_display.style.map(highlight_overdue, subset=['Balance Due (₹)']), use_container_width=True)
+                except Exception:
+                    st.dataframe(master_display, use_container_width=True)
 
-        # 💵 FEE COLLECTIONS (TEACHER LOG)
         with adm_tab2:
             st.subheader("💵 Fee Collections Logged by Teachers/Staff")
             if not fee_df.empty:
@@ -683,7 +730,6 @@ elif menu == "🔐 Admin Control Panel":
             st.subheader("⭐ Student Star Ratings & Theory Review")
             st.dataframe(feedback_df, use_container_width=True)
             
-        # 📥 DATABASE BACKUP DOWNLOAD
         with adm_tab5:
             st.subheader("📥 Download Institute CSV Database Backups")
             st.write("Click below to download local database copies:")
@@ -696,10 +742,8 @@ elif menu == "🔐 Admin Control Panel":
             with col_b3:
                 st.download_button("📥 Download Attendance Logs (CSV)", data=att_df.to_csv(index=False), file_name="attendance_db_backup.csv", mime="text/csv")
 
-        # 🔑 SECURITY & PASSWORD RESET
         with adm_tab6:
             st.subheader("🔑 Central Password Control")
-            
             col_p1, col_p2 = st.columns(2)
             with col_p1:
                 new_admin_p = st.text_input("Change Director Admin Password:", value=ADMIN_PWD)
