@@ -6,7 +6,7 @@ import pytz
 import base64
 
 # Page Configuration
-st.set_page_config(page_title="Soft Tech Computers & ZTC Portal", page_icon="💻", layout="wide")
+st.set_page_config(page_title="Soft Tech Computers & ZTC Enterprise Portal", page_icon="💻", layout="wide")
 
 # IST TimeZone Setup
 IST = pytz.timezone('Asia/Kolkata')
@@ -65,7 +65,7 @@ fee_cols = ["Receipt No", "Student ID", "Date", "Amount Paid", "Payment Mode", "
 attendance_cols = ["Student ID", "Date", "Time_In", "Status", "Late_Reason", "Sign_Mode", "Location_Verified"]
 teacher_cols = ["Teacher ID", "Name", "Phone", "Qualification", "Designation", "Shift Assigned"]
 teacher_att_cols = ["Teacher ID", "Name", "Date", "Time_In", "Shift", "Status", "Late_Reason", "Absent_Reason", "Earning_Today"]
-enquiry_cols = ["Date", "Name", "Mobile", "Course Interested", "Village/Address", "Status"]
+enquiry_cols = ["Date", "Name", "Mobile", "Course Interested", "Is ZTC Student", "Village/Address", "Status"]
 sfpc_cols = ["Date", "Student ID", "Student Name", "PC Machine No", "Topic Practiced", "Teacher Incharge"]
 creds_cols = ["Role", "Password"]
 feedback_cols = ["Date", "Student ID", "Student Name", "Teacher Name", "Theory Written", "Rating_Stars", "Comments"]
@@ -97,39 +97,40 @@ TEACHER_PWD = creds_df[creds_df["Role"] == "Teacher"]["Password"].values[0] if "
 # Course Config
 COURSE_CONFIG = {
     "PGDCA (Post Graduate Diploma in Computer Application)": {
-        "Months": 12, "Fee": "₹8,500 Total",
+        "Months": 12, "FeeNum": 8500, "FeeStr": "₹8,500 Total",
         "Topics": ["Computer Fundamentals", "Operating System", "MS-Office", "Tally Prime with GST", "DBMS & SQL", "HTML/CSS Web Design", "Python / C Programming", "Internet & Cyber Security"]
     },
     "ADCA (Advanced Diploma in Computer Application)": {
-        "Months": 12, "Fee": "₹7,500 Total",
+        "Months": 12, "FeeNum": 7500, "FeeStr": "₹7,500 Total",
         "Topics": ["Paint", "Notepad", "Wordpad", "MS-Word", "MS-Excel", "MS-Powerpoint", "MS-Access", "HTML", "DHTML", "Tally Prime", "Photoshop", "Pagemaker", "Internet", "Python"]
     },
     "DCA (Diploma in Computer Application)": {
-        "Months": 6, "Fee": "₹4,500 Total",
+        "Months": 6, "FeeNum": 4500, "FeeStr": "₹4,500 Total",
         "Topics": ["Paint", "Notepad", "Wordpad", "MS-Word", "MS-Excel", "MS-Powerpoint", "MS-Access", "HTML", "Tally", "Internet"]
     },
     "DTP (Desktop Publishing)": {
-        "Months": 3, "Fee": "₹3,500 Total",
+        "Months": 3, "FeeNum": 3500, "FeeStr": "₹3,500 Total",
         "Topics": ["MS-Word", "Photoshop", "Pagemaker", "CorelDraw", "Assamese Typesetting", "Internet"]
     },
     "Tally Prime with GST": {
-        "Months": 3, "Fee": "₹4,000 Total",
+        "Months": 3, "FeeNum": 4000, "FeeStr": "₹4,000 Total",
         "Topics": ["Accounting Basics", "Tally Prime Basics", "Inventory Management", "GST & TDS Calculation", "Payroll & Billing"]
     },
     "Certificate Course in Computer Basics": {
-        "Months": 3, "Fee": "₹2,500 Total",
+        "Months": 3, "FeeNum": 2500, "FeeStr": "₹2,500 Total",
         "Topics": ["Paint", "Notepad", "Wordpad", "MS-Word", "Internet"]
     },
-    "Class 9 English Coaching": {"Months": 12, "Fee": "₹600 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
-    "Class 10 English Coaching": {"Months": 12, "Fee": "₹700 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
-    "Class 11 English Coaching": {"Months": 12, "Fee": "₹800 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
-    "Class 12 English Coaching": {"Months": 12, "Fee": "₹900 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]}
+    "Class 9 English Coaching": {"Months": 12, "FeeNum": 600, "FeeStr": "₹600 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
+    "Class 10 English Coaching": {"Months": 12, "FeeNum": 700, "FeeStr": "₹700 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
+    "Class 11 English Coaching": {"Months": 12, "FeeNum": 800, "FeeStr": "₹800 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]},
+    "Class 12 English Coaching": {"Months": 12, "FeeNum": 900, "FeeStr": "₹900 / Month", "Topics": ["Grammar", "Literature prose", "Poetry", "Writing Skills"]}
 }
 
 # Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
 menu = st.sidebar.radio("Navigation Menu:", [
     "🏠 Home & Public Dashboard",
+    "📜 Online Certificate Verification", # NEW TAB ADDED
     "📝 New Student Admission",
     "🔑 Student Login Portal",
     "🎯 Sunday Free Practice Class (SFPC)",
@@ -157,33 +158,31 @@ if menu == "🏠 Home & Public Dashboard":
         </div>
     """, unsafe_allow_html=True)
     
-    # REAL-TIME UPDATED STATS (SINCE 2020 & 450+ ALUMNI)
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
     col_m1.metric("Est. Year", "Since 2020")
     col_m2.metric("Total Enrolled", "500+ Students")
-    col_m3.metric("Alumni Network", "450+ Students")
+    col_m3.metric("Alumni Network", "350+ Students")
     col_m4.metric("Certified Graduates", "200+ Certified")
 
     st.markdown("""
         <div style="background-color: #FEF3C7; border: 1.5px solid #F59E0B; padding: 8px 15px; border-radius: 10px; margin: 15px 0;">
             <marquee style="color: #B45309; font-weight: bold; font-size: 15px;">
-                🏆 SPECIAL OFFER: ZTC Tution Students Get 50% OFF on STC Admission! | Class 11 STC Computer Students Get 100% FREE Admission at ZTC! 🏆
+                🏆 SPECIAL OFFER: ZTC Tuition Students Get 50% OFF on STC Admission! | Class 11 STC Computer Students Get 100% FREE Admission at ZTC! 🏆
             </marquee>
         </div>
     """, unsafe_allow_html=True)
 
-    # EXCLUSIVE COMBO OFFERS CARD
     st.markdown("""
         <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
-            <div style="flex: 1; min-width: 280px; background: #EFF6FF; border: 2px solid #2563EB; border-radius: 12px; padding: 15px;">
-                <span style="background:#2563EB; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold;">ZTC SPECIAL</span>
-                <h4 style="color:#1E3A8A; margin:8px 0 4px 0;">ZTC Tuition ➔ STC Computer</h4>
-                <p style="margin:0; font-size:14px; color:#1E293B;"><b>50% DISCOUNT</b> on STC Computer Course Admission Fee for all ZTC Tuition Students!</p>
+            <div style="flex: 1; min-width: 280px; background: linear-gradient(135deg, #EFF6FF, #DBEAFE); border: 2px solid #2563EB; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(37,99,235,0.15);">
+                <span style="background:#2563EB; color:white; padding:4px 12px; border-radius:12px; font-size:11px; font-weight:bold; letter-spacing:0.5px;">ZTC SPECIAL OFFER</span>
+                <h4 style="color:#1E3A8A; margin:10px 0 4px 0; font-size:16px;">ZTC Tuition ➔ STC Computer</h4>
+                <p style="margin:0; font-size:14px; color:#1E293B;">Get <b style="color:#2563EB; font-size:16px;">50% DISCOUNT</b> on STC Computer Course Admission Fee for all ZTC Tuition Students!</p>
             </div>
-            <div style="flex: 1; min-width: 280px; background: #ECFDF5; border: 2px solid #10B981; border-radius: 12px; padding: 15px;">
-                <span style="background:#10B981; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold;">CLASS 11 MEGA OFFER</span>
-                <h4 style="color:#065F46; margin:8px 0 4px 0;">Class 11 STC ➔ ZTC Tuition</h4>
-                <p style="margin:0; font-size:14px; color:#1E293B;">Get <b>100% FREE Admission</b> at ZTC Tuition when enrolled in STC Computer Class 11!</p>
+            <div style="flex: 1; min-width: 280px; background: linear-gradient(135deg, #ECFDF5, #D1FAE5); border: 2px solid #10B981; border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(16,185,129,0.15);">
+                <span style="background:#10B981; color:white; padding:4px 12px; border-radius:12px; font-size:11px; font-weight:bold; letter-spacing:0.5px;">CLASS 11 MEGA OFFER</span>
+                <h4 style="color:#065F46; margin:10px 0 4px 0; font-size:16px;">Class 11 STC ➔ ZTC Tuition</h4>
+                <p style="margin:0; font-size:14px; color:#1E293B;">Get <b style="color:#10B981; font-size:16px;">100% FREE Admission Fee</b> at ZTC Tuition when enrolled in STC Computer Class 11!</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -223,46 +222,64 @@ if menu == "🏠 Home & Public Dashboard":
         """, unsafe_allow_html=True)
 
     with col_p2:
-        st.subheader("📝 Course Enquiry Desk")
+        st.subheader("📝 Smart Course Enquiry Desk (With Discount Estimator)")
         with st.form("pub_enq_form", clear_on_submit=False):
             e_name = st.text_input("Your Full Name*")
             e_mobile = st.text_input("Contact Mobile Number*")
             e_course = st.selectbox("Select Interested Course*", list(COURSE_CONFIG.keys()))
+            is_ztc = st.checkbox("I am currently a ZTC Tuition Student (Get 50% STC Admission Discount!)")
             e_addr = st.text_input("Village / Address")
             
-            if st.form_submit_button("Submit & Reveal Course Fee"):
+            if st.form_submit_button("Submit & Reveal Discounted Fee"):
                 if not e_name or not e_mobile:
                     st.error("Please enter Name and Mobile Number!")
                 else:
-                    e_row = {"Date": str(datetime.date.today()), "Name": e_name.upper(), "Mobile": e_mobile, "Course Interested": e_course, "Village/Address": e_addr.upper(), "Status": "Enquired"}
+                    e_row = {"Date": str(datetime.date.today()), "Name": e_name.upper(), "Mobile": e_mobile, "Course Interested": e_course, "Is ZTC Student": "Yes" if is_ztc else "No", "Village/Address": e_addr.upper(), "Status": "Enquired"}
                     enquiry_df = pd.concat([enquiry_df, pd.DataFrame([e_row])], ignore_index=True)
                     save_data(enquiry_df, ENQUIRY_FILE)
-                    revealed_fee = COURSE_CONFIG[e_course]["Fee"]
+                    
+                    raw_fee = COURSE_CONFIG[e_course]["FeeStr"]
                     st.balloons()
-                    st.success(f"🎉 Thank you {e_name}! Course Fee for {e_course}: {revealed_fee}")
+                    if is_ztc and "Coaching" not in e_course:
+                        st.success(f"🎉 Thank you {e_name}! Standard Fee: {raw_fee} | **ZTC Special Offer Applied: 50% DISCOUNT on Admission!**")
+                    elif "Class 11" in e_course:
+                        st.success(f"🎉 Thank you {e_name}! Fee: {raw_fee} | **Class 11 Special Offer: 100% FREE Admission at ZTC Tuition!**")
+                    else:
+                        st.success(f"🎉 Thank you {e_name}! Course Fee for {e_course}: {raw_fee}")
 
-    # 🤖 SMART ZAAN AI ASSISTANT WITH FEMALE VOCAL (GIRLS VOICE) ANNOUNCEMENT
+    # 🤖 HIGH-TECH INTERACTIVE AI AUDIO BOT WIDGET
     st.markdown("---")
-    st.subheader("🤖 Zaan AI Assistant & Vocal Voice System")
+    st.subheader("🤖 Zaan AI Assistant & Interactive Female Voice Bot")
     
-    # HTML + JS Female Vocal Announcement System
     voice_html = """
-    <div style="background: linear-gradient(135deg, #8B5CF6, #EC4899); padding: 15px; border-radius: 12px; text-align: center; color: white; margin-bottom: 20px;">
-        <h4 style="margin:0 0 10px 0; color:#FFF;">🔊 Listen Official Announcement (Zaan AI Female Vocal)</h4>
-        <button onclick="playAIVocal()" style="background: #FFFFFF; color: #8B5CF6; font-weight: bold; padding: 10px 20px; border: none; border-radius: 25px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-            ▶️ Play Voice Announcement
-        </button>
+    <div style="background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); border: 2px solid #8b5cf6; padding: 20px; border-radius: 16px; text-align: center; color: white; margin-bottom: 20px; box-shadow: 0 0 20px rgba(139,92,246,0.25);">
+        <div style="font-size:24px; margin-bottom:5px;">🎙️ <span style="background: linear-gradient(to right, #ec4899, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight:bold;">Zaan AI Vocal System</span></div>
+        <p style="color:#cbd5e1; font-size:13px; margin-bottom:15px;">Click below to listen to official center announcements spoken by AI Female Voice</p>
+        
+        <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+            <button onclick="playAIVocal(1)" style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; font-weight: bold; padding: 10px 22px; border: none; border-radius: 25px; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(236,72,153,0.4);">
+                ▶️ Play Center Overview (Girl's Voice)
+            </button>
+            <button onclick="playAIVocal(2)" style="background: linear-gradient(135deg, #10b981, #059669); color: white; font-weight: bold; padding: 10px 22px; border: none; border-radius: 25px; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(16,185,129,0.4);">
+                📢 Play Exclusive Combo Offers
+            </button>
+        </div>
     </div>
 
     <script>
-    function playAIVocal() {
-        const announcementText = "নমস্কাৰ! ২০২০ চনৰ পৰা Soft Tech Computers আৰু Zaan Tuition Center-এ ৫০০ তকৈও অধিক ছাত্ৰ-ছাত্ৰীক সফলভাৱে আগবঢ়াই নিবলৈ সক্ষম হৈছে। আমাৰ Alumni সংখ্যা ৪৫০ ৰো অধিক আৰু ২০০ ৰো অধিক ছাত্ৰ-ছাত্ৰীয়ে সফলতাৰে চাৰ্টিফিকেট লাভ কৰিছে। এতিয়া আমাৰ বিশেষ অফাৰ! ZTC-ত ট্যুশ্বন পঢ়িলে STC কম্পিউটাৰ নামভৰ্তিত পাব ৫০ শতাংশ ৰেহাই! আৰু Class 11-ত STC-ত কম্পিউটাৰ নামভৰ্তি কৰিলে ZTC ট্যুশ্বনত পাব ১০০ শতাংশ বিনামূলীয়া নামভৰ্তিৰ সুবিধা!";
+    function playAIVocal(type) {
+        let text = "";
+        if(type === 1) {
+            text = "নমস্কাৰ! ২০২০ চনৰ পৰা Soft Tech Computers আৰু Zaan Tuition Center-এ ৫০০ তকৈও অধিক ছাত্ৰ-ছাত্ৰীক সফলভাৱে আগবঢ়াই নিবলৈ সক্ষম হৈছে। আমাৰ Alumni সংখ্যা ৩৫০ ৰো অধিক আৰু ২০০ ৰো অধিক ছাত্ৰ-ছাত্ৰীয়ে সফলতাৰে চাৰ্টিফিকেট লাভ কৰিছে।";
+        } else {
+            text = "আমাৰ ছাত্ৰ-ছাত্ৰীসকলৰ বাবে লৈ আনিছোঁ বিশেষ ধামাকা অফাৰ! ZTC-ত ট্যুশ্বন পঢ়িলে STC কম্পিউটাৰ নামভৰ্তিত পাব ৫০ শতাংশ ৰেহাই! আৰু Class 11-ত STC-ত কম্পিউটাৰ নামভৰ্তি কৰিলে ZTC ট্যুশ্বনত পাব ১০০ শতাংশ বিনামূলীয়া নামভৰ্তিৰ সুবিধা!";
+        }
 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(announcementText);
+            const utterance = new SpeechSynthesisUtterance(text);
             utterance.rate = 0.9;
-            utterance.pitch = 1.15; // Adjusted for clear Female voice tone
+            utterance.pitch = 1.15;
 
             let voices = window.speechSynthesis.getVoices();
             let femaleVoice = voices.find(voice => 
@@ -270,10 +287,7 @@ if menu == "🏠 Home & Public Dashboard":
                 (voice.name.includes('Female') || voice.name.includes('Zira') || voice.name.includes('Google') || voice.name.includes('Natural'))
             );
 
-            if (femaleVoice) {
-                utterance.voice = femaleVoice;
-            }
-
+            if (femaleVoice) { utterance.voice = femaleVoice; }
             window.speechSynthesis.speak(utterance);
         } else {
             alert("Speech synthesis is not supported in this browser.");
@@ -281,7 +295,7 @@ if menu == "🏠 Home & Public Dashboard":
     }
     </script>
     """
-    st.components.v1.html(voice_html, height=100)
+    st.components.v1.html(voice_html, height=150)
 
     user_q = st.text_input("Ask Zaan AI Assistant (e.g., 'Hiya Das timing', 'STC26-001', 'Offers', 'DCA duration'):")
     
@@ -289,7 +303,6 @@ if menu == "🏠 Home & Public Dashboard":
         q_clean = user_q.strip().lower()
         matched = False
         
-        # Search Student in Database
         if not student_df.empty:
             for idx, r in student_df.iterrows():
                 st_name = str(r["Name"]).lower()
@@ -319,6 +332,91 @@ if menu == "🏠 Home & Public Dashboard":
                 st.info("💡 Zaan AI: For details, search student name (e.g. 'Hiya Das') or call office at +91 9101026718.")
 
 # ---------------------------------------------------------
+# 1.5 NEW FEATURE: ONLINE CERTIFICATE VERIFICATION TAB
+# ---------------------------------------------------------
+elif menu == "📜 Online Certificate Verification":
+    st.header("📜 Online Certificate & Student Verification Desk")
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #0F172A, #1E3A8A); padding: 15px 20px; border-radius: 12px; color: white; border: 1.5px solid #00F0FF; margin-bottom: 20px;">
+            <h4 style="margin:0; color:#00F0FF;">🔍 Official Verification Portal | Soft Tech Computers (Center Code: 4159)</h4>
+            <p style="margin:5px 0 0 0; font-size:13px; color:#CBD5E1;">Enter Student Roll ID below to verify the authenticity of Certificates issued by Soft Tech Computers.</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    v_col1, v_col2 = st.columns([2, 1])
+    with v_col1:
+        verify_id = st.text_input("Enter Student Roll ID (e.g., STC26-001):").strip().upper()
+    with v_col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        verify_btn = st.button("🔍 Verify Certificate Authenticity")
+
+    if verify_id or verify_btn:
+        if verify_id:
+            v_match = student_df[student_df["Student ID"] == verify_id]
+            if not v_match.empty:
+                v_data = v_match.iloc[0]
+                st.balloons()
+                
+                st_photo_b64 = get_image_base64(v_data["Photo Path"]) if v_data["Photo Path"] else None
+                logo_b64 = get_image_base64("logo")
+
+                cert_verify_html = f"""
+                <div style="background:#030712; border:2.5px solid #10B981; border-radius:18px; padding:25px; color:white; max-width:720px; margin:auto; box-shadow:0 0 25px rgba(16,185,129,0.35); font-family:Arial, sans-serif;">
+                    
+                    <div style="background:#065F46; color:#D1FAE5; text-align:center; padding:8px; border-radius:8px; font-weight:bold; font-size:14px; margin-bottom:18px; border:1px solid #10B981;">
+                        ✅ VERIFIED & ORIGINAL CERTIFICATE RECORD FOUND
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.15); padding-bottom:12px;">
+                        <div>
+                            <h2 style="margin:0; color:#10B981; font-size:20px; font-weight:bold;">SOFT TECH COMPUTERS</h2>
+                            <p style="margin:2px 0 0 0; font-size:11px; color:#9CA3AF;">AN ISO 9001:2015 CERTIFIED INSTITUTION | CENTER CODE: 4159</p>
+                            <p style="margin:2px 0 0 0; font-size:10px; color:#6B7280;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149</p>
+                        </div>
+                        <div>
+                            <img src="{logo_b64 if logo_b64 else ''}" style="width:60px; height:60px; border-radius:50%; border:2px solid #10B981;">
+                        </div>
+                    </div>
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin:20px 0;">
+                        <div style="text-align:center; flex:1;">
+                            <img src="{st_photo_b64 if st_photo_b64 else 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'}" style="width:110px; height:110px; border-radius:12px; border:2px solid #10B981; object-fit:cover;">
+                            <div style="margin-top:8px; background:#064E3B; color:#A7F3D0; font-weight:bold; font-size:12px; padding:3px 8px; border-radius:6px; display:inline-block;">
+                                Roll ID: {v_data['Student ID']}
+                            </div>
+                        </div>
+
+                        <div style="flex:2; padding-left:25px;">
+                            <h3 style="margin:0 0 10px 0; color:#FFFFFF; font-size:22px; border-bottom:1px solid #374151; padding-bottom:5px;">{v_data['Name']}</h3>
+                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Father's Name:</b> <span style="color:white;">{v_data['Father Name']}</span></p>
+                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Course Completed:</b> <span style="color:#10B981; font-weight:bold;">{v_data['Course']}</span></p>
+                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Course Duration:</b> <span style="color:white;">{v_data['Duration']}</span></p>
+                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Session / Join Date:</b> <span style="color:white;">{v_data['Join Date']}</span></p>
+                            <p style="margin:4px 0; font-size:13px; color:#9CA3AF;"><b>Verification Status:</b> <span style="color:#34D399; font-weight:bold;">Active & Valid</span></p>
+                        </div>
+                    </div>
+
+                    <div style="border-top:1px dashed rgba(255,255,255,0.2); padding-top:12px; display:flex; align-items:center; justify-content:space-between;">
+                        <div>
+                            <div style="font-size:10px; color:#6B7280;">Verification QR:</div>
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=VERIFIED-{v_data['Student ID']}" style="width:50px; height:50px; border-radius:4px; background:white; padding:2px; margin-top:2px;">
+                        </div>
+                        <div style="text-align:center;">
+                            <div style="font-family:cursive; color:#10B981; font-size:18px;">Chiranjeeb Hazarika</div>
+                            <div style="font-size:9px; color:#10B981; font-weight:bold; letter-spacing:1px;">DIRECTOR & AUTHORIZED SIGNATORY</div>
+                        </div>
+                    </div>
+                </div>
+                """
+                st.markdown(cert_verify_html, unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("🖨️ Print Official Verification Letter"):
+                    st.components.v1.html("<script>window.print();</script>", height=0)
+            else:
+                st.error(f"❌ INVALID ROLL ID ({verify_id})! No official certificate record found in Soft Tech Computers database.")
+
+# ---------------------------------------------------------
 # 2. NEW STUDENT ADMISSION
 # ---------------------------------------------------------
 elif menu == "📝 New Student Admission":
@@ -327,6 +425,12 @@ elif menu == "📝 New Student Admission":
     
     if auth_pwd in [ADMIN_PWD, TEACHER_PWD]:
         st.success("Authorized Access Granted!")
+        
+        year_code = str(datetime.date.today().year)[2:]
+        existing_ids = [sid for sid in student_df["Student ID"] if str(sid).startswith(f"STC{year_code}-")] if not student_df.empty else []
+        next_id_preview = f"STC{year_code}-{len(existing_ids)+1:03d}"
+        
+        st.info(f"⚡ **System Auto-Generated Next Roll ID:** `{next_id_preview}`")
         
         with st.form("add_student_form", clear_on_submit=True):
             col1, col2 = st.columns(2)
@@ -369,11 +473,7 @@ elif menu == "📝 New Student Admission":
                 elif mobile in existing_mobiles:
                     st.error("🚨 THIS MOBILE NUMBER IS ALREADY REGISTERED WITH STC!")
                 else:
-                    year_code = str(datetime.date.today().year)[2:]
-                    existing_ids = [sid for sid in student_df["Student ID"] if str(sid).startswith(f"STC{year_code}-")]
-                    next_num = len(existing_ids) + 1
-                    new_id = f"STC{year_code}-{next_num:03d}"
-                    
+                    new_id = next_id_preview
                     photo_path = ""
                     if photo_file is not None:
                         photo_path = os.path.join(PHOTO_DIR, f"{new_id}.png")
@@ -519,24 +619,28 @@ elif menu == "🔑 Student Login Portal":
                 st.info("No installment payments logged yet.")
 
         with st_tab3:
-            st.subheader("🔄 My Academic Journey & Status Tracker")
+            st.subheader("🔄 My Academic Journey Tracker")
             st.markdown("""
-                <div style="background:#F0F9FF; border:2px solid #0284C7; padding:15px; border-radius:12px;">
-                    <h4 style="color:#0369A1; margin-top:0;">📋 Official STC Academic Stages:</h4>
-                    <ol>
-                        <li><b>1. Admission Taken</b> — Completed</li>
-                        <li><b>2. Topic-Wise Syllabus Learning</b> — In Progress</li>
-                        <li><b>3. Registration Completed</b> — SARVA / Head Office Code</li>
-                        <li><b>4. Final Exam Form Fillup</b> — Form Submitted</li>
-                        <li><b>5. Admit Card Issued</b> — Generated</li>
-                        <li><b>6. Final Exam Conducted</b> — Exam Completed</li>
-                        <li><b>7. Certificate & Marksheet Issued</b> — Completed</li>
-                    </ol>
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 20px; border-radius: 12px; border: 1px solid #1e293b; color: white; flex-wrap: wrap; gap: 10px;">
+                    <div style="text-align:center;"><div style="background:#10b981; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px; font-weight:bold;">✓</div><p style="font-size:11px; margin-top:5px; color:#10b981;">1. Enrolled</p></div>
+                    <div style="color:#64748b;">➔</div>
+                    <div style="text-align:center;"><div style="background:#0d6efd; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px; font-weight:bold;">2</div><p style="font-size:11px; margin-top:5px; color:#0d6efd; font-weight:bold;">2. Syllabus</p></div>
+                    <div style="color:#64748b;">➔</div>
+                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">3</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">3. Reg. Done</p></div>
+                    <div style="color:#64748b;">➔</div>
+                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">4</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">4. Exam Form</p></div>
+                    <div style="color:#64748b;">➔</div>
+                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">5</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">5. Admit Issued</p></div>
+                    <div style="color:#64748b;">➔</div>
+                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">6</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">6. Final Exam</p></div>
+                    <div style="color:#64748b;">➔</div>
+                    <div style="text-align:center;"><div style="background:#334155; width:35px; height:35px; border-radius:50%; margin:auto; line-height:35px;">7</div><p style="font-size:11px; margin-top:5px; color:#94a3b8;">7. Certificate</p></div>
                 </div>
             """, unsafe_allow_html=True)
+            
             st.markdown("<br>", unsafe_allow_html=True)
-            st.progress(0.4)
-            st.info("Current Active Status: **Stage 2: Topic-Wise Syllabus Learning**")
+            st.progress(0.3)
+            st.info("Current Active Status: **Stage 2: Topic-Wise Practical & Theory Learning**")
 
         with st_tab4:
             st.subheader("⏱️ Live IST Attendance Punch-In")
