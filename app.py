@@ -21,15 +21,24 @@ SFPC_FILE = "sfpc_db.csv"
 CREDS_FILE = "creds_db.csv"
 PHOTO_DIR = "student_photos"
 
-if not os.path.exists(PHOTO_DIR):
-    os.makedirs(PHOTO_DIR)
+# SAFE DIRECTORY CREATION
+os.makedirs(PHOTO_DIR, exist_ok=True)
 
-# Helper function to convert local image to base64 for HTML display
-def get_image_base64(path):
-    if os.path.exists(path):
-        with open(path, "rb") as image_file:
-            encoded = base64.b64encode(image_file.read()).decode()
-            return f"data:image/jpeg;base64,{encoded}"
+# Helper function to convert local image to base64 safely based on folder contents
+def get_image_base64(file_name):
+    # Try exact match, png, jpg, jpeg extensions
+    extensions = ['', '.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG']
+    for ext in extensions:
+        p = f"{file_name}{ext}"
+        if os.path.exists(p):
+            try:
+                with open(p, "rb") as image_file:
+                    encoded = base64.b64encode(image_file.read()).decode()
+                    is_png = 'png' in p.lower()
+                    mime_type = 'image/png' if is_png else 'image/jpeg'
+                    return f"data:{mime_type};base64,{encoded}"
+            except Exception:
+                pass
     return None
 
 # Safe Loader
@@ -85,18 +94,18 @@ if creds_df.empty:
 ADMIN_PWD = creds_df[creds_df["Role"] == "Admin"]["Password"].values[0] if "Admin" in creds_df["Role"].values else "zaan123"
 TEACHER_PWD = creds_df[creds_df["Role"] == "Teacher"]["Password"].values[0] if "Teacher" in creds_df["Role"].values else "teacher123"
 
-# Course Fee Structure Reference
-COURSE_FEE_MAP = [
-    {"Course Name": "DCA (Diploma in Computer Application)", "Duration": "6 Months", "Fee Details": "₹4,500 Total"},
-    {"Course Name": "ADCA (Advanced Diploma in Computer Application)", "Duration": "12 Months", "Fee Details": "₹7,500 Total"},
-    {"Course Name": "DTP (Desktop Publishing)", "Duration": "3 Months", "Fee Details": "₹3,500 Total"},
-    {"Course Name": "Tally Prime with GST", "Duration": "3 Months", "Fee Details": "₹4,000 Total"},
-    {"Course Name": "Class 9 English Coaching", "Duration": "Academic Session", "Fee Details": "₹600 / Month"},
-    {"Course Name": "Class 10 English Coaching", "Duration": "Academic Session", "Fee Details": "₹700 / Month"},
-    {"Course Name": "Class 11 English Coaching", "Duration": "Academic Session", "Fee Details": "₹800 / Month"},
-    {"Course Name": "Class 12 English Coaching", "Duration": "Academic Session", "Fee Details": "₹900 / Month"},
-    {"Course Name": "Certificate Course in Computer Basics", "Duration": "1 to 2 Months", "Fee Details": "₹2,500 Total"}
-]
+# Course Mapping (Hidden Fee for Public View)
+COURSE_FEE_MAP = {
+    "DCA (Diploma in Computer Application)": {"Duration": "6 Months", "Fee": "₹4,500 Total"},
+    "ADCA (Advanced Diploma in Computer Application)": {"Duration": "12 Months", "Fee": "₹7,500 Total"},
+    "DTP (Desktop Publishing)": {"Duration": "3 Months", "Fee": "₹3,500 Total"},
+    "Tally Prime with GST": {"Duration": "3 Months", "Fee": "₹4,000 Total"},
+    "Class 9 English Coaching": {"Duration": "Academic Session", "Fee": "₹600 / Month"},
+    "Class 10 English Coaching": {"Duration": "Academic Session", "Fee": "₹700 / Month"},
+    "Class 11 English Coaching": {"Duration": "Academic Session", "Fee": "₹800 / Month"},
+    "Class 12 English Coaching": {"Duration": "Academic Session", "Fee": "₹900 / Month"},
+    "Certificate Course in Computer Basics": {"Duration": "1 to 2 Months", "Fee": "₹2,500 Total"}
+}
 
 # Navigation Menu
 st.sidebar.title("💻 STC & ZTC Portal")
@@ -113,8 +122,12 @@ menu = st.sidebar.radio("Navigation Menu:", [
 # 1. HIGH-TECH HOME & PUBLIC DASHBOARD
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
+    # Base64 Logo Check (Matching logo.jpg)
+    logo_b64 = get_image_base64("logo")
+    logo_html = f'<img src="{logo_b64}" style="width: 110px; height: 110px; border-radius: 50%; border: 3px solid #00F0FF; box-shadow: 0 0 15px #00F0FF;">' if logo_b64 else '<div style="font-size:50px;">💻</div>'
+
     # 1. ULTRA-HIGH-TECH HEADER WITH LOGO
-    st.markdown("""
+    st.markdown(f"""
         <div style="
             background: linear-gradient(135deg, #020B19 0%, #0F172A 50%, #1E3A8A 100%);
             padding: 25px;
@@ -126,7 +139,7 @@ if menu == "🏠 Home & Public Dashboard":
             margin-bottom: 15px;
         ">
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
-                <img src="https://raw.githubusercontent.com/zaan-hazarika/ztc-software/main/STC%20LOGO.jpeg" style="width: 110px; height: 110px; border-radius: 50%; border: 3px solid #00F0FF; box-shadow: 0 0 15px #00F0FF;">
+                {logo_html}
                 <div>
                     <h1 style="margin: 0; font-size: 38px; font-weight: 900; color: #FFFFFF; letter-spacing: 1px; text-transform: uppercase;">SOFT TECH COMPUTERS & ZTC</h1>
                     <h3 style="margin: 5px 0; color: #FBBF24; font-size: 20px; font-weight: 800; letter-spacing: 0.5px;">MAKE YOURSELF DIGITAL | AN ISO 9001:2015 CERTIFIED INSTITUTION</h3>
@@ -145,24 +158,32 @@ if menu == "🏠 Home & Public Dashboard":
         </div>
     """, unsafe_allow_html=True)
 
-    # 3. FEATURED BANNERS (DP2 AND DP1 HERO SHOWCASE)
-    dp2_b64 = get_image_base64("DP2.jpeg") or get_image_base64("DP2.jpg")
-    dp1_b64 = get_image_base64("DP1.jpeg") or get_image_base64("DP1.jpg")
+    # 3. FEATURED BANNERS (dp2.png, dp3.png & dp1.png SHOWCASE)
+    dp2_b64 = get_image_base64("dp2")
+    dp1_b64 = get_image_base64("dp1")
+    dp3_b64 = get_image_base64("dp3")
     
     if dp2_b64:
         st.markdown(f'<img src="{dp2_b64}" style="width:100%; border-radius:15px; border:2px solid #00F0FF; box-shadow:0 0 15px rgba(0,240,255,0.2); margin-bottom:20px;">', unsafe_allow_html=True)
+    
+    if dp3_b64:
+        st.markdown('<h3 style="color:#1E3A8A; margin-top:10px;">🛠️ Key Software & Technologies Taught</h3>', unsafe_allow_html=True)
+        st.markdown(f'<img src="{dp3_b64}" style="width:100%; border-radius:15px; border:2px solid #2563EB; box-shadow:0 0 15px rgba(37,99,235,0.2); margin-bottom:20px;">', unsafe_allow_html=True)
+
     if dp1_b64:
+        st.markdown('<h3 style="color:#1E3A8A; margin-top:10px;">📜 Director\'s Message</h3>', unsafe_allow_html=True)
         st.markdown(f'<img src="{dp1_b64}" style="width:100%; border-radius:15px; border:2px solid #00F0FF; box-shadow:0 0 15px rgba(0,240,255,0.2); margin-bottom:25px;">', unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # 4. OFFICIAL COURSE & FEE STRUCTURE TABLE
-    st.subheader("📚 Official Courses & Fee Structure")
-    st.write("Detailed Breakdown of Computer & Academic Programs Offered:")
+    # 4. OFFICIAL COURSES LIST (WITHOUT PUBLIC FEE DISPLAY)
+    st.subheader("📚 Courses Offered & Duration")
+    st.write("Browse our academic and computer programs (Enquire below to get fee details):")
     
-    fee_table_df = pd.DataFrame(COURSE_FEE_MAP)
-    fee_table_df.index = range(1, len(fee_table_df) + 1)
-    st.table(fee_table_df)
+    pub_course_list = [{"Course Name": k, "Duration": v["Duration"]} for k, v in COURSE_FEE_MAP.items()]
+    pub_course_df = pd.DataFrame(pub_course_list)
+    pub_course_df.index = range(1, len(pub_course_df) + 1)
+    st.table(pub_course_df)
 
     st.markdown("---")
 
@@ -180,14 +201,14 @@ if menu == "🏠 Home & Public Dashboard":
         """, unsafe_allow_html=True)
 
     with col_p2:
-        st.subheader("📝 Course Enquiry & Registration Desk")
-        with st.form("pub_enq_form", clear_on_submit=True):
+        st.subheader("📝 Course Enquiry & Fee Reveal Desk")
+        with st.form("pub_enq_form", clear_on_submit=False):
             e_name = st.text_input("Your Full Name*")
             e_mobile = st.text_input("Contact Mobile Number*")
-            e_course = st.selectbox("Select Interested Course*", [item["Course Name"] for item in COURSE_FEE_MAP])
+            e_course = st.selectbox("Select Interested Course*", list(COURSE_FEE_MAP.keys()))
             e_addr = st.text_input("Village / Address")
             
-            if st.form_submit_button("Submit Admission Enquiry"):
+            if st.form_submit_button("Submit & Reveal Course Fee"):
                 if not e_name or not e_mobile:
                     st.error("Please enter Name and Mobile Number!")
                 else:
@@ -195,10 +216,12 @@ if menu == "🏠 Home & Public Dashboard":
                     enquiry_df = pd.concat([enquiry_df, pd.DataFrame([e_row])], ignore_index=True)
                     save_data(enquiry_df, ENQUIRY_FILE)
                     
-                    st.markdown("""
+                    revealed_fee = COURSE_FEE_MAP[e_course]["Fee"]
+                    st.balloons()
+                    st.markdown(f"""
                         <div style="background-color:#DCFCE7; border:2px solid #22C55E; padding:15px; border-radius:10px;">
-                            <h4 style="color:#15803D; margin:0;">✅ Enquiry Submitted Successfully!</h4>
-                            <p style="margin:5px 0 0 0;">Our institute office will contact you shortly.</p>
+                            <h4 style="color:#15803D; margin:0;">🎉 Thank you {e_name}! Enquiry Registered Successfully!</h4>
+                            <p style="margin:5px 0 0 0; font-size:16px;">Estimated Course Fee for <b>{e_course}</b>: <b style="color:#2563EB;">{revealed_fee}</b></p>
                         </div>
                     """, unsafe_allow_html=True)
 
@@ -230,7 +253,7 @@ elif menu == "📝 New Student Admission":
                 ps = st.text_input("Police Station", value="THELAMARA")
                 pin = st.text_input("PIN Code", value="784149")
                 dist = st.text_input("District", value="Sonitpur")
-                course = st.selectbox("Course Selected*", [item["Course Name"] for item in COURSE_FEE_MAP])
+                course = st.selectbox("Course Selected*", list(COURSE_FEE_MAP.keys()))
                 duration = st.selectbox("Course Duration", ["1 Month", "3 Months", "6 Months", "12 Months"])
                 
             col3, col4 = st.columns(2)
@@ -566,7 +589,7 @@ elif menu == "🔐 Admin Control Panel":
                         with col_e1:
                             e_name = st.text_input("Name", value=s_row["Name"])
                             e_mobile = st.text_input("Mobile No (Student Password)", value=s_row["Mobile No"])
-                            e_course = st.selectbox("Course", [item["Course Name"] for item in COURSE_FEE_MAP], index=0)
+                            e_course = st.selectbox("Course", list(COURSE_FEE_MAP.keys()), index=0)
                         with col_e2:
                             e_total_fee = st.text_input("Total Fee", value=s_row["Total Fee"])
                             e_discount = st.text_input("Discount", value=s_row["Discount"])
