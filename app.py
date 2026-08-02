@@ -157,18 +157,34 @@ if menu == "🏠 Home & Public Dashboard":
         </div>
     """, unsafe_allow_html=True)
     
-    # REAL-TIME ENTERPRISE STATS
+    # REAL-TIME UPDATED STATS (SINCE 2020 & 450+ ALUMNI)
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-    col_m1.metric("Govt & ISO Certified", "100% Valid")
-    col_m2.metric("Digital Lab Workstations", "20+ High-End PCs")
-    col_m3.metric("Enrolled Alumni", f"{len(student_df)}+ Students")
-    col_m4.metric("Practice Classes", "Free SFPC Sundays")
+    col_m1.metric("Est. Year", "Since 2020")
+    col_m2.metric("Total Enrolled", "500+ Students")
+    col_m3.metric("Alumni Network", "450+ Students")
+    col_m4.metric("Certified Graduates", "200+ Certified")
 
     st.markdown("""
         <div style="background-color: #FEF3C7; border: 1.5px solid #F59E0B; padding: 8px 15px; border-radius: 10px; margin: 15px 0;">
             <marquee style="color: #B45309; font-weight: bold; font-size: 15px;">
-                🏆 STUDENT OF THE MONTH: CONGRATULATIONS TO OUR TOP PERFORMERS! WORK HARD & SHINE BRIGHT AT SOFT TECH COMPUTERS & ZTC! 🏆
+                🏆 SPECIAL OFFER: ZTC Tution Students Get 50% OFF on STC Admission! | Class 11 STC Computer Students Get 100% FREE Admission at ZTC! 🏆
             </marquee>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # EXCLUSIVE COMBO OFFERS CARD
+    st.markdown("""
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div style="flex: 1; min-width: 280px; background: #EFF6FF; border: 2px solid #2563EB; border-radius: 12px; padding: 15px;">
+                <span style="background:#2563EB; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold;">ZTC SPECIAL</span>
+                <h4 style="color:#1E3A8A; margin:8px 0 4px 0;">ZTC Tuition ➔ STC Computer</h4>
+                <p style="margin:0; font-size:14px; color:#1E293B;"><b>50% DISCOUNT</b> on STC Computer Course Admission Fee for all ZTC Tuition Students!</p>
+            </div>
+            <div style="flex: 1; min-width: 280px; background: #ECFDF5; border: 2px solid #10B981; border-radius: 12px; padding: 15px;">
+                <span style="background:#10B981; color:white; padding:3px 10px; border-radius:12px; font-size:12px; font-weight:bold;">CLASS 11 MEGA OFFER</span>
+                <h4 style="color:#065F46; margin:8px 0 4px 0;">Class 11 STC ➔ ZTC Tuition</h4>
+                <p style="margin:0; font-size:14px; color:#1E293B;">Get <b>100% FREE Admission</b> at ZTC Tuition when enrolled in STC Computer Class 11!</p>
+            </div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -225,16 +241,55 @@ if menu == "🏠 Home & Public Dashboard":
                     st.balloons()
                     st.success(f"🎉 Thank you {e_name}! Course Fee for {e_course}: {revealed_fee}")
 
-    # 🤖 ULTRA-SMART DYNAMIC AI BOT (ZAAN AI ASSISTANT)
+    # 🤖 SMART ZAAN AI ASSISTANT WITH FEMALE VOCAL (GIRLS VOICE) ANNOUNCEMENT
     st.markdown("---")
-    st.subheader("🤖 Zaan AI Smart Assistant (Live Database Search)")
-    user_q = st.text_input("Ask Zaan AI Assistant (e.g., 'Hiya Das r timing', 'STC26-001 timing', 'DCA duration', 'Director name'):")
+    st.subheader("🤖 Zaan AI Assistant & Vocal Voice System")
+    
+    # HTML + JS Female Vocal Announcement System
+    voice_html = """
+    <div style="background: linear-gradient(135deg, #8B5CF6, #EC4899); padding: 15px; border-radius: 12px; text-align: center; color: white; margin-bottom: 20px;">
+        <h4 style="margin:0 0 10px 0; color:#FFF;">🔊 Listen Official Announcement (Zaan AI Female Vocal)</h4>
+        <button onclick="playAIVocal()" style="background: #FFFFFF; color: #8B5CF6; font-weight: bold; padding: 10px 20px; border: none; border-radius: 25px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+            ▶️ Play Voice Announcement
+        </button>
+    </div>
+
+    <script>
+    function playAIVocal() {
+        const announcementText = "নমস্কাৰ! ২০২০ চনৰ পৰা Soft Tech Computers আৰু Zaan Tuition Center-এ ৫০০ তকৈও অধিক ছাত্ৰ-ছাত্ৰীক সফলভাৱে আগবঢ়াই নিবলৈ সক্ষম হৈছে। আমাৰ Alumni সংখ্যা ৪৫০ ৰো অধিক আৰু ২০০ ৰো অধিক ছাত্ৰ-ছাত্ৰীয়ে সফলতাৰে চাৰ্টিফিকেট লাভ কৰিছে। এতিয়া আমাৰ বিশেষ অফাৰ! ZTC-ত ট্যুশ্বন পঢ়িলে STC কম্পিউটাৰ নামভৰ্তিত পাব ৫০ শতাংশ ৰেহাই! আৰু Class 11-ত STC-ত কম্পিউটাৰ নামভৰ্তি কৰিলে ZTC ট্যুশ্বনত পাব ১০০ শতাংশ বিনামূলীয়া নামভৰ্তিৰ সুবিধা!";
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(announcementText);
+            utterance.rate = 0.9;
+            utterance.pitch = 1.15; // Adjusted for clear Female voice tone
+
+            let voices = window.speechSynthesis.getVoices();
+            let femaleVoice = voices.find(voice => 
+                (voice.lang.includes('hi-IN') || voice.lang.includes('en-IN') || voice.lang.includes('bn-IN')) && 
+                (voice.name.includes('Female') || voice.name.includes('Zira') || voice.name.includes('Google') || voice.name.includes('Natural'))
+            );
+
+            if (femaleVoice) {
+                utterance.voice = femaleVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        } else {
+            alert("Speech synthesis is not supported in this browser.");
+        }
+    }
+    </script>
+    """
+    st.components.v1.html(voice_html, height=100)
+
+    user_q = st.text_input("Ask Zaan AI Assistant (e.g., 'Hiya Das timing', 'STC26-001', 'Offers', 'DCA duration'):")
     
     if user_q:
         q_clean = user_q.strip().lower()
         matched = False
         
-        # Search Student in Database by Name or Roll ID
+        # Search Student in Database
         if not student_df.empty:
             for idx, r in student_df.iterrows():
                 st_name = str(r["Name"]).lower()
@@ -250,7 +305,9 @@ if menu == "🏠 Home & Public Dashboard":
                     break
         
         if not matched:
-            if "fee" in q_clean or "cost" in q_clean:
+            if "offer" in q_clean or "discount" in q_clean:
+                st.info("💡 Offers: 1) ZTC Students get 50% OFF on STC Admission. 2) Class 11 STC Computer Students get 100% FREE Admission Fee at ZTC!")
+            elif "fee" in q_clean or "cost" in q_clean:
                 st.info("💡 Course fees vary from ₹2,500 to ₹8,500. Please fill the Enquiry Form above to reveal fee!")
             elif "timing" in q_clean or "time" in q_clean or "shift" in q_clean:
                 st.info("💡 Shifts: Morning (06:30 AM), Afternoon (04:00 PM), Evening (05:30 PM).")
@@ -659,7 +716,7 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
                     st.success("✅ Class Syllabus & Theory Record Saved!")
 
 # ---------------------------------------------------------
-# 7. ADMIN CONTROL PANEL (FIXED STYLER MAP & ZERO ERRORS)
+# 7. ADMIN CONTROL PANEL
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -668,7 +725,6 @@ elif menu == "🔐 Admin Control Panel":
     if pwd == ADMIN_PWD:
         st.success("Welcome Director Chiranjeeb Hazarika Sir!")
         
-        # FINANCIAL OVERVIEW METRICS
         tot_coll = sum([float(a) for a in fee_df["Amount Paid"] if a]) if not fee_df.empty else 0.0
         tot_students = len(student_df) if not student_df.empty else 0
         tot_enq = len(enquiry_df) if not enquiry_df.empty else 0
@@ -689,7 +745,6 @@ elif menu == "🔐 Admin Control Panel":
             "🔑 Security & Password Reset"
         ])
         
-        # 📊 MASTER REGISTRY WITH FIXED STYLER.MAP (NO ATTRIBUTE ERROR)
         with adm_tab1:
             st.subheader("📊 Master Student Registry (Red Alert for Fee Overdue)")
             if not student_df.empty:
@@ -709,7 +764,6 @@ elif menu == "🔐 Admin Control Panel":
                     except Exception:
                         return ''
 
-                # Fixed for Streamlit 1.30+ using .map instead of deprecated .applymap
                 try:
                     st.dataframe(master_display.style.map(highlight_overdue, subset=['Balance Due (₹)']), use_container_width=True)
                 except Exception:
