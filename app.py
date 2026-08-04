@@ -165,7 +165,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 1. PUBLIC DASHBOARD (ENQUIRY FORM IN PLACE OF DP1)
+# 1. PUBLIC DASHBOARD (WITH ENQUIRY FORM & REVEALED FEE)
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
     dp2_b64 = get_image_base64("dp2")
@@ -193,7 +193,6 @@ if menu == "🏠 Home & Public Dashboard":
             st.markdown('<h4 style="color:#1E3A8A; margin:0 0 8px 0;">🛠️ Key Technologies Taught</h4>', unsafe_allow_html=True)
             st.markdown(f'<img src="{dp3_b64}" style="width:100%; border-radius:12px; border:2px solid #2563EB; box-shadow:0 0 10px rgba(37,99,235,0.2);">', unsafe_allow_html=True)
     
-    # DP1 REMOVED & REPLACED WITH PUBLIC ENQUIRY DESK
     with col_img2:
         st.markdown('<h4 style="color:#1E3A8A; margin:0 0 8px 0;">📝 Course Enquiry Desk</h4>', unsafe_allow_html=True)
         with st.form("pub_enq_form", clear_on_submit=False):
@@ -213,11 +212,10 @@ if menu == "🏠 Home & Public Dashboard":
                     
                     raw_fee = COURSE_CONFIG[e_course]["FeeStr"]
                     st.balloons()
-                    st.success(f"🎉 Thank you {e_name}! Standard Course Fee Structure for {e_course}: {raw_fee}")
+                    st.success(f"🎉 Thank you {e_name}! Course Fee Structure for {e_course}: {raw_fee}")
 
     st.markdown("---")
 
-    # SMALL COMPACT STUDENT OF THE MONTH BADGE
     top_student_name, top_student_id = "N/A", "N/A"
     if not att_df.empty and not student_df.empty:
         pres_counts = att_df[att_df["Status"] == "Present"]["Student ID"].value_counts()
@@ -258,7 +256,7 @@ elif menu == "📜 Online Certificate Verification":
             st.error("❌ INVALID ROLL ID! No official record found.")
 
 # ---------------------------------------------------------
-# 2. NEW STUDENT ADMISSION (AUTOMATIC EXPIRY DATE & CLEAR FORM)
+# 2. NEW STUDENT ADMISSION (AUTOMATIC EXPIRY DATE)
 # ---------------------------------------------------------
 elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
@@ -276,7 +274,6 @@ elif menu == "📝 New Student Admission":
             cert_dur = st.selectbox("Course Duration Option*", ["12 Months", "6 Months", "3 Months", "2 Months", "45 Days"])
             join_date = st.date_input("Admission / Joining Date*", value=datetime.date.today())
             
-            # AUTOMATIC EXPIRY DATE CALCULATION
             months_to_add = 12 if "12" in cert_dur else (6 if "6" in cert_dur else (3 if "3" in cert_dur else (2 if "2" in cert_dur else 1)))
             auto_expiry = join_date + datetime.timedelta(days=months_to_add*30)
             st.success(f"📅 **Calculated Course Completion Date:** {auto_expiry.strftime('%d-%B-%Y')}")
@@ -498,7 +495,7 @@ elif menu == "💵 Fee Counter Desk":
                     st.success(f"✅ Receipt Issued: {rc_num}")
 
 # ---------------------------------------------------------
-# 6. TEACHER PORTAL & LIVE CAMERA QR SCANNER
+# 6. TEACHER PORTAL & CLASS MANAGEMENT (RESET TO CAMERA SCAN)
 # ---------------------------------------------------------
 elif menu == "🔑 Teacher Portal & QR Scanner":
     st.header("🔑 Faculty Portal & Class Management Desk")
@@ -509,40 +506,81 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
         cur_time_str = now_ist.strftime("%I:%M:%S %p")
         cur_date_str = now_ist.strftime("%Y-%m-%d")
         
-        st_tab1, st_tab2, st_tab3 = st.tabs(["📸 Camera Live QR Attendance", "⏱️ Self Punch-In", "📖 Log Syllabus Topics"])
+        t_tab1, t_tab2, t_tab3, t_tab4 = st.tabs([
+            "📸 Camera Student Attendance", 
+            "⏱️ Faculty Self Punch-In", 
+            "📖 Log Syllabus Topics",
+            "📊 Log Student Test Marks"
+        ])
         
-        with st_tab1:
-            st.subheader("📸 Camera Live Student QR Code Reader Desk")
-            cam_pic = st.camera_input("Scan Student QR Code via Mobile / Laptop Camera")
+        # TAB 1: CAMERA SCANNER & DIRECT STUDENT SELECTION
+        with t_tab1:
+            st.subheader("📸 Live Camera Student Attendance Desk")
+            cam_pic = st.camera_input("Scan Student Digital ID Card / QR via Mobile or Laptop Camera")
             
             if cam_pic:
-                st.success("📸 Photo Captured! Student ID Scanned & Verified!")
+                st.success("📸 Photo Captured! Camera Attendance Input Logged!")
             
             st.markdown("---")
             if not student_df.empty:
-                sel_student_att = st.selectbox("Select Roll ID to Punch Live IST Attendance:", student_df["Student ID"] + " - " + student_df["Name"])
+                sel_student_att = st.selectbox("Select Student Roll ID to Punch Attendance:", student_df["Student ID"] + " - " + student_df["Name"])
                 if st.button("Mark Student Present Now"):
                     st_id_scan = sel_student_att.split(" - ")[0]
                     st_name_scan = sel_student_att.split(" - ")[1]
-                    att_row = {"Student ID": st_id_scan, "Date": cur_date_str, "Time_In": cur_time_str, "Status": "Present", "Late_Reason": "Camera Verified", "Sign_Mode": "QR Camera", "Location_Verified": "Campus"}
+                    att_row = {"Student ID": st_id_scan, "Date": cur_date_str, "Time_In": cur_time_str, "Status": "Present", "Late_Reason": "Camera Verified", "Sign_Mode": "Camera QR Portal", "Location_Verified": "Campus"}
                     att_df = pd.concat([att_df, pd.DataFrame([att_row])], ignore_index=True)
                     save_data(att_df, ATTENDANCE_FILE)
                     st.success(f"✅ Marked Present for {st_name_scan} ({st_id_scan}) at {cur_time_str} IST!")
 
-        with st_tab2:
+        # TAB 2: FACULTY SELF PUNCH-IN
+        with t_tab2:
             st.subheader("⏱️ Faculty Punch-In & Shift Session Tracker")
             t_name_sel = st.selectbox("Select Teacher Name:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Faculty"])
+            t_shift = st.selectbox("Select Shift Session:", ["Morning Shift (06:30 AM)", "Afternoon Shift (04:00 PM)", "Evening Shift (05:30 PM)"])
+            st.info(f"Current Live IST Punch Time: **{cur_time_str}** | Date: **{cur_date_str}**")
+            
             if st.button("Punch Self Attendance"):
-                st.success(f"✅ Teacher Punched at {cur_time_str} IST!")
+                t_row = {"Teacher ID": "TCH-01", "Name": t_name_sel, "Date": cur_date_str, "Time_In": cur_time_str, "Shift": t_shift, "Status": "Present", "Late_Mins": "0", "Penalty_Deduction": "₹0.00", "Net_Earning_Today": "₹76.66"}
+                teacher_att_df = pd.concat([teacher_att_df, pd.DataFrame([t_row])], ignore_index=True)
+                save_data(teacher_att_df, "teacher_attendance.csv")
+                st.success(f"✅ Faculty {t_name_sel} Punched Successfully at {cur_time_str} IST!")
 
-        with st_tab3:
-            st.subheader("📖 Log Daily Class Syllabus")
-            sys_topics = st.multiselect("Select Topics Covered Today:", ALL_SYLLABUS_TOPICS, default=["Computer Basics / Fundamentals"])
-            if st.button("Save Syllabus Record"):
-                st.success("✅ Class Syllabus Saved!")
+        # TAB 3: LOG SYLLABUS TOPICS
+        with t_tab3:
+            st.subheader("📖 Log Daily Class Syllabus Topics")
+            with st.form("syllabus_form", clear_on_submit=True):
+                sys_course = st.selectbox("Select Course Taught:", list(COURSE_CONFIG.keys()))
+                sys_topics = st.multiselect("Select Topics Covered Today:", ALL_SYLLABUS_TOPICS, default=["Computer Basics / Fundamentals"])
+                sys_class_type = st.radio("Class Delivered Type:", ["Practical Session", "Theory Session", "Both Practical & Theory", "Exam / Test Conducted"])
+                
+                if st.form_submit_button("Save Daily Syllabus Record"):
+                    topic_str = ", ".join(sys_topics) if sys_topics else "General Topics"
+                    s_row = {"Date": cur_date_str, "Course": sys_course, "Topics Covered": topic_str, "Class Type": sys_class_type, "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Faculty"}
+                    syllabus_df = pd.concat([syllabus_df, pd.DataFrame([s_row])], ignore_index=True)
+                    save_data(syllabus_df, SYLLABUS_LOG_FILE)
+                    st.success(f"✅ Saved Syllabus Record: {topic_str} ({sys_class_type})")
+
+        # TAB 4: LOG STUDENT TEST MARKS
+        with t_tab4:
+            st.subheader("📊 Log Student Test Marks for Report Card")
+            with st.form("marks_form", clear_on_submit=True):
+                m_student = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+                m_subject = st.selectbox("Course / Subject:", list(COURSE_CONFIG.keys()))
+                m_topic = st.text_input("Test Topic (e.g. MS Excel / English Grammar)")
+                m_obtained = st.number_input("Marks Obtained:", min_value=0.0, step=1.0)
+                m_total = st.number_input("Total Marks:", min_value=10.0, value=100.0, step=50.0)
+                
+                if st.form_submit_button("Save Student Marks"):
+                    if m_student:
+                        m_id = m_student.split(" - ")[0]
+                        m_name = m_student.split(" - ")[1]
+                        m_row = {"Date": cur_date_str, "Student ID": m_id, "Student Name": m_name, "Course/Subject": m_subject, "Test Topic": m_topic, "Marks Obtained": str(m_obtained), "Total Marks": str(m_total), "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Director"}
+                        marks_df = pd.concat([marks_df, pd.DataFrame([m_row])], ignore_index=True)
+                        save_data(marks_df, MARKS_FILE)
+                        st.success(f"✅ Test Marks Saved for {m_name}!")
 
 # ---------------------------------------------------------
-# 7. ADMIN CONTROL PANEL (ONE-CLICK WHATSAPP, EDIT/DELETE & BACKUPS)
+# 7. ADMIN CONTROL PANEL
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -559,7 +597,6 @@ elif menu == "🔐 Admin Control Panel":
             "👨‍🏫 Add New Faculty"
         ])
         
-        # RED DEFAULTERS WITH ONE-CLICK WHATSAPP
         with adm_tab1:
             st.subheader("📊 Red Alert Fee Defaulters & One-Click WhatsApp Reminders")
             if not student_df.empty:
@@ -578,7 +615,6 @@ elif menu == "🔐 Admin Control Panel":
                         col_a.markdown(f"🔴 <span style='color:#EF4444; font-weight:bold;'>{row['Name']} ({sid})</span> - Pending Balance: **₹{due:.2f}**", unsafe_allow_html=True)
                         col_b.markdown(f'<a href="{wa_url}" target="_blank" style="background:#25D366; color:white; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">📲 Send WhatsApp</a>', unsafe_allow_html=True)
 
-        # EDIT / DELETE STUDENTS & FACULTY
         with adm_tab2:
             st.subheader("✏️ Edit or Remove Student / Faculty Records")
             st_action = st.radio("Choose Record Type to Manage:", ["Student Registry", "Faculty Roster"])
@@ -602,7 +638,6 @@ elif menu == "🔐 Admin Control Panel":
                     st.success(f"✅ Deleted Faculty Record: {target_tid}!")
                     st.rerun()
 
-        # LIVE PUBLIC ENQUIRY DESK
         with adm_tab3:
             st.subheader("📝 Live Enquiries Received from Public Dashboard")
             if not enquiry_df.empty:
@@ -610,7 +645,6 @@ elif menu == "🔐 Admin Control Panel":
             else:
                 st.info("No public enquiries logged yet.")
 
-        # BACKUP CSV DOWNLOAD DESK
         with adm_tab4:
             st.subheader("📥 Download Institute CSV Database Copies")
             col_d1, col_d2, col_d3 = st.columns(3)
@@ -621,7 +655,6 @@ elif menu == "🔐 Admin Control Panel":
             with col_d3:
                 st.download_button("📥 Download Attendance Logs (CSV)", data=att_df.to_csv(index=False), file_name="attendance_db_backup.csv", mime="text/csv")
 
-        # ADD NEW FACULTY
         with adm_tab5:
             st.subheader("👨‍🏫 Add New Faculty Staff")
             with st.form("add_teacher_form", clear_on_submit=True):
