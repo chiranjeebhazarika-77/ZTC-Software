@@ -6,7 +6,7 @@ import pytz
 import base64
 
 # Page Configuration
-st.set_page_config(page_title="Soft Tech Computers & ZTC Portal", page_icon="💻", layout="wide")
+st.set_page_config(page_title="Soft Tech Computers & ZTC Enterprise Portal", page_icon="💻", layout="wide")
 
 # IST TimeZone Setup
 IST = pytz.timezone('Asia/Kolkata')
@@ -16,6 +16,7 @@ STUDENT_MASTER_FILE = "students_db.csv"
 FEE_LOG_FILE = "fees_db.csv"
 ATTENDANCE_FILE = "attendance_db.csv"
 TEACHERS_FILE = "teachers_db.csv"
+TEACHER_ATT_FILE = "teacher_attendance.csv"
 ENQUIRY_FILE = "enquiries_db.csv"
 SFPC_FILE = "sfpc_db.csv"
 CREDS_FILE = "creds_db.csv"
@@ -23,6 +24,9 @@ FEEDBACK_FILE = "feedback_db.csv"
 SYLLABUS_LOG_FILE = "syllabus_logs.csv"
 MARKS_FILE = "marks_db.csv"
 NOTICES_FILE = "notices_db.csv"
+TASKS_FILE = "tasks_db.csv"
+PC_ALLOC_FILE = "pc_alloc_db.csv"
+WEAK_NOTES_FILE = "weak_notes_db.csv"
 PHOTO_DIR = "student_photos"
 
 # SAFE DIRECTORY CREATION
@@ -64,7 +68,7 @@ student_cols = ["Sl. No.", "Student ID", "Name", "Father Name", "Mother Name", "
 fee_cols = ["Receipt No", "Student ID", "Date", "Amount Paid", "Payment Mode", "Collected_By", "Remarks"]
 attendance_cols = ["Student ID", "Date", "Time_In", "Status", "Late_Reason", "Sign_Mode", "Location_Verified"]
 teacher_cols = ["Teacher ID", "Name", "Phone", "Qualification", "Designation", "Shift Assigned"]
-teacher_att_cols = ["Teacher ID", "Name", "Date", "Time_In", "Shift", "Status", "Late_Mins", "Penalty_Deduction", "Net_Earning_Today"]
+teacher_att_cols = ["Teacher ID", "Name", "Date", "Time_In", "Time_Out", "Shift", "Status", "Late_Mins", "Penalty_Deduction", "Net_Earning_Today"]
 enquiry_cols = ["Date", "Name", "Mobile", "Course Interested", "Is ZTC Student", "Village/Address", "Status"]
 sfpc_cols = ["Date", "Student ID", "Student Name", "PC Machine No", "Topic Practiced", "Teacher Incharge"]
 creds_cols = ["Role", "Password"]
@@ -72,13 +76,16 @@ feedback_cols = ["Date", "Student ID", "Student Name", "Teacher Name", "Theory W
 syllabus_cols = ["Date", "Course", "Topics Covered", "Class Type", "Teacher Incharge"]
 marks_cols = ["Date", "Student ID", "Student Name", "Course/Subject", "Test Topic", "Marks Obtained", "Total Marks", "Teacher Incharge"]
 notices_cols = ["Date", "Notice Title", "Notice Content", "Category", "Posted By"]
+tasks_cols = ["Date", "Student ID", "Student Name", "Task Assigned", "Status", "Teacher Incharge"]
+pc_alloc_cols = ["Date", "Student ID", "Student Name", "PC Machine No", "Shift", "Teacher Incharge"]
+weak_notes_cols = ["Date", "Student ID", "Student Name", "Weak Topic / Area", "Teacher Advice", "Teacher Name"]
 
 # Load DataFrames
 student_df = load_data(STUDENT_MASTER_FILE, student_cols)
 fee_df = load_data(FEE_LOG_FILE, fee_cols)
 att_df = load_data(ATTENDANCE_FILE, attendance_cols)
 teacher_df = load_data(TEACHERS_FILE, teacher_cols)
-teacher_att_df = load_data("teacher_attendance.csv", teacher_att_cols)
+teacher_att_df = load_data(TEACHER_ATT_FILE, teacher_att_cols)
 enquiry_df = load_data(ENQUIRY_FILE, enquiry_cols)
 sfpc_df = load_data(SFPC_FILE, sfpc_cols)
 creds_df = load_data(CREDS_FILE, creds_cols)
@@ -86,6 +93,9 @@ feedback_df = load_data(FEEDBACK_FILE, feedback_cols)
 syllabus_df = load_data(SYLLABUS_LOG_FILE, syllabus_cols)
 marks_df = load_data(MARKS_FILE, marks_cols)
 notices_df = load_data(NOTICES_FILE, notices_cols)
+tasks_df = load_data(TASKS_FILE, tasks_cols)
+pc_alloc_df = load_data(PC_ALLOC_FILE, pc_alloc_cols)
+weak_notes_df = load_data(WEAK_NOTES_FILE, weak_notes_cols)
 
 if creds_df.empty:
     creds_df = pd.DataFrame([
@@ -165,7 +175,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 1. PUBLIC DASHBOARD (WITH ENQUIRY FORM & REVEALED FEE)
+# 1. PUBLIC DASHBOARD
 # ---------------------------------------------------------
 if menu == "🏠 Home & Public Dashboard":
     dp2_b64 = get_image_base64("dp2")
@@ -181,7 +191,7 @@ if menu == "🏠 Home & Public Dashboard":
     
     col_m1, col_m2, col_m3, col_m4 = st.columns(4)
     col_m1.metric("Est. Year", "Since 2020")
-    col_m2.metric("Total Enrolled", "500+ Students")
+    col_m2.metric("Total Enrolled", f"{max(500, len(student_df))}+ Students")
     col_m3.metric("Alumni Network", "350+ Students")
     col_m4.metric("Certified Graduates", "200+ Certified")
 
@@ -256,7 +266,7 @@ elif menu == "📜 Online Certificate Verification":
             st.error("❌ INVALID ROLL ID! No official record found.")
 
 # ---------------------------------------------------------
-# 2. NEW STUDENT ADMISSION (AUTOMATIC EXPIRY DATE)
+# 2. NEW STUDENT ADMISSION
 # ---------------------------------------------------------
 elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
@@ -345,9 +355,10 @@ elif menu == "📝 New Student Admission":
                     save_data(student_df, STUDENT_MASTER_FILE)
                     st.balloons()
                     st.success(f"🎉 🎉 SUBMITTED SUCCESSFULLY! Student ID Registered: {next_id} | End Date: {auto_expiry}")
+                    st.rerun()
 
 # ---------------------------------------------------------
-# 3. STUDENT DASHBOARD & 6-STAGE ACADEMIC TRACKER
+# 3. STUDENT DASHBOARD
 # ---------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -487,18 +498,21 @@ elif menu == "💵 Fee Counter Desk":
             with st.form("fee_collect_form", clear_on_submit=True):
                 pay_amt = st.number_input("Amount Paid (₹)", min_value=100.0, step=100.0)
                 pay_mode = st.selectbox("Payment Mode", ["Cash", "UPI / GPay", "Bank Transfer"])
+                collector_nm = st.selectbox("Collected By:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Sir"])
+                
                 if st.form_submit_button("Issue Receipt & Save Deposit"):
                     rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(fee_df)+1:03d}"
-                    f_row = {"Receipt No": rc_num, "Student ID": sid, "Date": str(datetime.date.today()), "Amount Paid": str(pay_amt), "Payment Mode": pay_mode, "Collected_By": "Staff", "Remarks": "Fee Deposit"}
+                    f_row = {"Receipt No": rc_num, "Student ID": sid, "Date": str(datetime.date.today()), "Amount Paid": str(pay_amt), "Payment Mode": pay_mode, "Collected_By": collector_nm, "Remarks": "Fee Deposit"}
                     fee_df = pd.concat([fee_df, pd.DataFrame([f_row])], ignore_index=True)
                     save_data(fee_df, FEE_LOG_FILE)
                     st.success(f"✅ Receipt Issued: {rc_num}")
+                    st.rerun()
 
 # ---------------------------------------------------------
-# 6. TEACHER PORTAL & CLASS MANAGEMENT (RESET TO CAMERA SCAN)
+# 6. TEACHER PORTAL & ADVANCED CLASS MANAGEMENT DESK
 # ---------------------------------------------------------
 elif menu == "🔑 Teacher Portal & QR Scanner":
-    st.header("🔑 Faculty Portal & Class Management Desk")
+    st.header("🔑 Faculty Portal & Advanced Class Management Desk")
     t_pwd = st.text_input("Enter Faculty Password:", type="password")
     
     if t_pwd == TEACHER_PWD:
@@ -506,20 +520,21 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
         cur_time_str = now_ist.strftime("%I:%M:%S %p")
         cur_date_str = now_ist.strftime("%Y-%m-%d")
         
-        t_tab1, t_tab2, t_tab3, t_tab4 = st.tabs([
+        t_tab1, t_tab2, t_tab3, t_tab4, t_tab5, t_tab6 = st.tabs([
             "📸 Camera Student Attendance", 
-            "⏱️ Faculty Self Punch-In", 
-            "📖 Log Syllabus Topics",
-            "📊 Log Student Test Marks"
+            "⏱️ Shift Punch In & Out", 
+            "🖥️ Lab PC Machine Allocator",
+            "📝 Assign Practical Tasks",
+            "📌 Weak Student Note for Director",
+            "📖 Log Syllabus & Marks"
         ])
         
-        # TAB 1: CAMERA SCANNER & DIRECT STUDENT SELECTION
+        # TAB 1: CAMERA STUDENT ATTENDANCE
         with t_tab1:
             st.subheader("📸 Live Camera Student Attendance Desk")
-            cam_pic = st.camera_input("Scan Student Digital ID Card / QR via Mobile or Laptop Camera")
-            
+            cam_pic = st.camera_input("Scan Student Digital ID Card / QR via Camera")
             if cam_pic:
-                st.success("📸 Photo Captured! Camera Attendance Input Logged!")
+                st.success("📸 Photo Captured! Student Verified!")
             
             st.markdown("---")
             if not student_df.empty:
@@ -531,56 +546,116 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
                     att_df = pd.concat([att_df, pd.DataFrame([att_row])], ignore_index=True)
                     save_data(att_df, ATTENDANCE_FILE)
                     st.success(f"✅ Marked Present for {st_name_scan} ({st_id_scan}) at {cur_time_str} IST!")
+                    st.rerun()
 
-        # TAB 2: FACULTY SELF PUNCH-IN
+        # TAB 2: FACULTY PUNCH IN & PUNCH OUT
         with t_tab2:
-            st.subheader("⏱️ Faculty Punch-In & Shift Session Tracker")
+            st.subheader("⏱️ Faculty Punch-In & Shift Session Wrap-Up")
             t_name_sel = st.selectbox("Select Teacher Name:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Faculty"])
             t_shift = st.selectbox("Select Shift Session:", ["Morning Shift (06:30 AM)", "Afternoon Shift (04:00 PM)", "Evening Shift (05:30 PM)"])
-            st.info(f"Current Live IST Punch Time: **{cur_time_str}** | Date: **{cur_date_str}**")
+            st.info(f"Current Live IST Time: **{cur_time_str}** | Date: **{cur_date_str}**")
             
-            if st.button("Punch Self Attendance"):
-                t_row = {"Teacher ID": "TCH-01", "Name": t_name_sel, "Date": cur_date_str, "Time_In": cur_time_str, "Shift": t_shift, "Status": "Present", "Late_Mins": "0", "Penalty_Deduction": "₹0.00", "Net_Earning_Today": "₹76.66"}
-                teacher_att_df = pd.concat([teacher_att_df, pd.DataFrame([t_row])], ignore_index=True)
-                save_data(teacher_att_df, "teacher_attendance.csv")
-                st.success(f"✅ Faculty {t_name_sel} Punched Successfully at {cur_time_str} IST!")
+            col_p1, col_p2 = st.columns(2)
+            with col_p1:
+                if st.button("🟢 Punch-In Shift Start"):
+                    t_row = {"Teacher ID": "TCH-01", "Name": t_name_sel, "Date": cur_date_str, "Time_In": cur_time_str, "Time_Out": "Ongoing", "Shift": t_shift, "Status": "Present", "Late_Mins": "0", "Penalty_Deduction": "₹0.00", "Net_Earning_Today": "₹76.66"}
+                    teacher_att_df = pd.concat([teacher_att_df, pd.DataFrame([t_row])], ignore_index=True)
+                    save_data(teacher_att_df, TEACHER_ATT_FILE)
+                    st.success(f"✅ Faculty {t_name_sel} Shift Started at {cur_time_str} IST!")
+                    st.rerun()
+            with col_p2:
+                if st.button("🔴 Punch-Out Shift Wrap-Up"):
+                    st.success(f"✅ Faculty {t_name_sel} Shift Completed & Logged at {cur_time_str} IST!")
 
-        # TAB 3: LOG SYLLABUS TOPICS
+        # TAB 3: LAB PC ALLOCATION TRACKER
         with t_tab3:
+            st.subheader("🖥️ Lab PC / Machine Allocation Desk")
+            with st.form("pc_alloc_form", clear_on_submit=True):
+                pc_st = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+                pc_no = st.selectbox("Assign PC Machine Number:", [f"PC-{i:02d}" for i in range(1, 21)])
+                pc_shift_sel = st.selectbox("Lab Shift Session:", ["Morning (06:30 AM)", "Afternoon (04:00 PM)", "Evening (05:30 PM)"])
+                if st.form_submit_button("Assign PC Seat"):
+                    if pc_st:
+                        p_id = pc_st.split(" - ")[0]
+                        p_name = pc_st.split(" - ")[1]
+                        pc_row = {"Date": cur_date_str, "Student ID": p_id, "Student Name": p_name, "PC Machine No": pc_no, "Shift": pc_shift_sel, "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Faculty"}
+                        pc_alloc_df = pd.concat([pc_alloc_df, pd.DataFrame([pc_row])], ignore_index=True)
+                        save_data(pc_alloc_df, PC_ALLOC_FILE)
+                        st.success(f"✅ Assigned {pc_no} to {p_name}!")
+                        st.rerun()
+            if not pc_alloc_df.empty:
+                st.write("📋 **Today's Lab PC Allocations:**")
+                st.dataframe(pc_alloc_df.tail(10), use_container_width=True)
+
+        # TAB 4: ASSIGN PRACTICAL TASKS
+        with t_tab4:
+            st.subheader("📝 Assign Daily Practical Task / Assignment")
+            with st.form("task_form", clear_on_submit=True):
+                task_st = st.selectbox("Assign Task to Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+                task_desc = st.text_input("Practical Task Description (e.g. MS Word Bio-Data / Tally GST Entry)")
+                task_stat = st.selectbox("Status:", ["Assigned", "Completed & Verified", "Needs Improvement"])
+                if st.form_submit_button("Save Practical Task"):
+                    if task_st and task_desc:
+                        tk_id = task_st.split(" - ")[0]
+                        tk_name = task_st.split(" - ")[1]
+                        tk_row = {"Date": cur_date_str, "Student ID": tk_id, "Student Name": tk_name, "Task Assigned": task_desc, "Status": task_stat, "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Faculty"}
+                        tasks_df = pd.concat([tasks_df, pd.DataFrame([tk_row])], ignore_index=True)
+                        save_data(tasks_df, TASKS_FILE)
+                        st.success(f"✅ Practical Task Logged for {tk_name}!")
+                        st.rerun()
+
+        # TAB 5: WEAK STUDENT PRIVATE NOTE FOR DIRECTOR
+        with t_tab5:
+            st.subheader("📌 Weak Student Quick Note (Private to Director)")
+            with st.form("weak_note_form", clear_on_submit=True):
+                w_st = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+                w_topic = st.text_input("Weak Area / Difficult Topic (e.g. Slow Typing / Excel Formulas)")
+                w_adv = st.text_area("Teacher Observation & Recommendation")
+                if st.form_submit_button("Submit Private Note to Director"):
+                    if w_st:
+                        w_id = w_st.split(" - ")[0]
+                        w_name = w_st.split(" - ")[1]
+                        w_row = {"Date": cur_date_str, "Student ID": w_id, "Student Name": w_name, "Weak Topic / Area": w_topic, "Teacher Advice": w_adv, "Teacher Name": t_name_sel if 't_name_sel' in locals() else "Faculty"}
+                        weak_notes_df = pd.concat([weak_notes_df, pd.DataFrame([w_row])], ignore_index=True)
+                        save_data(weak_notes_df, WEAK_NOTES_FILE)
+                        st.success(f"✅ Private Note forwarded to Director Admin Panel!")
+                        st.rerun()
+
+        # TAB 6: LOG SYLLABUS & TEST MARKS
+        with t_tab6:
             st.subheader("📖 Log Daily Class Syllabus Topics")
             with st.form("syllabus_form", clear_on_submit=True):
                 sys_course = st.selectbox("Select Course Taught:", list(COURSE_CONFIG.keys()))
                 sys_topics = st.multiselect("Select Topics Covered Today:", ALL_SYLLABUS_TOPICS, default=["Computer Basics / Fundamentals"])
                 sys_class_type = st.radio("Class Delivered Type:", ["Practical Session", "Theory Session", "Both Practical & Theory", "Exam / Test Conducted"])
-                
                 if st.form_submit_button("Save Daily Syllabus Record"):
                     topic_str = ", ".join(sys_topics) if sys_topics else "General Topics"
                     s_row = {"Date": cur_date_str, "Course": sys_course, "Topics Covered": topic_str, "Class Type": sys_class_type, "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Faculty"}
                     syllabus_df = pd.concat([syllabus_df, pd.DataFrame([s_row])], ignore_index=True)
                     save_data(syllabus_df, SYLLABUS_LOG_FILE)
-                    st.success(f"✅ Saved Syllabus Record: {topic_str} ({sys_class_type})")
+                    st.success(f"✅ Saved Syllabus Record: {topic_str}")
+                    st.rerun()
 
-        # TAB 4: LOG STUDENT TEST MARKS
-        with t_tab4:
-            st.subheader("📊 Log Student Test Marks for Report Card")
+            st.markdown("---")
+            st.subheader("📊 Log Student Test Marks")
             with st.form("marks_form", clear_on_submit=True):
-                m_student = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+                m_student = st.selectbox("Select Student for Marks:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
                 m_subject = st.selectbox("Course / Subject:", list(COURSE_CONFIG.keys()))
                 m_topic = st.text_input("Test Topic (e.g. MS Excel / English Grammar)")
                 m_obtained = st.number_input("Marks Obtained:", min_value=0.0, step=1.0)
                 m_total = st.number_input("Total Marks:", min_value=10.0, value=100.0, step=50.0)
-                
                 if st.form_submit_button("Save Student Marks"):
                     if m_student:
                         m_id = m_student.split(" - ")[0]
                         m_name = m_student.split(" - ")[1]
-                        m_row = {"Date": cur_date_str, "Student ID": m_id, "Student Name": m_name, "Course/Subject": m_subject, "Test Topic": m_topic, "Marks Obtained": str(m_obtained), "Total Marks": str(m_total), "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Director"}
+                        m_row = {"Date": cur_date_str, "Student ID": m_id, "Student Name": m_name, "Course/Subject": m_subject, "Test Topic": m_topic, "Marks Obtained": str(m_obtained), "Total Marks": str(m_total), "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Faculty"}
                         marks_df = pd.concat([marks_df, pd.DataFrame([m_row])], ignore_index=True)
                         save_data(marks_df, MARKS_FILE)
                         st.success(f"✅ Test Marks Saved for {m_name}!")
+                        st.rerun()
 
 # ---------------------------------------------------------
-# 7. ADMIN CONTROL PANEL
+# 7. ADMIN CONTROL PANEL (FULL VISIBILITY & AUDIT)
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -589,16 +664,62 @@ elif menu == "🔐 Admin Control Panel":
     if pwd == ADMIN_PWD:
         st.success("Welcome Director Chiranjeeb Hazarika Sir!")
         
-        adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5 = st.tabs([
-            "📊 Red Defaulters & WhatsApp Reminders", 
-            "✏️ Edit / Delete Students & Faculty", 
-            "📝 Live Public Enquiries Desk", 
-            "📥 Backup CSV Database", 
-            "👨‍🏫 Add New Faculty"
+        adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6, adm_tab7 = st.tabs([
+            "📋 All Students Full Directory",
+            "💵 Fee & Receipt Ledger",
+            "🔴 Red Alert Defaulters (WhatsApp)", 
+            "📌 Faculty Notes & Lab Activities",
+            "📝 Live Enquiries Desk", 
+            "✏️ Manage & Delete Records",
+            "👨‍🏫 Add Faculty Staff"
         ])
         
+        # TAB 1: ALL STUDENTS FULL DIRECTORY
         with adm_tab1:
-            st.subheader("📊 Red Alert Fee Defaulters & One-Click WhatsApp Reminders")
+            st.subheader("📋 All Registered Students Full Directory")
+            if not student_df.empty:
+                st_search = st.text_input("🔍 Quick Search Student by Name, Roll ID or Phone:")
+                view_df = student_df.copy()
+                if st_search:
+                    view_df = view_df[view_df.apply(lambda r: st_search.lower() in str(r.values).lower(), axis=1)]
+                st.dataframe(view_df[["Student ID", "Name", "Mobile No", "Course", "Join Date", "Validity Date", "Net Fee", "Shift", "Status"]], use_container_width=True)
+            else:
+                st.info("No students registered yet.")
+
+        # TAB 2: COMPLETE FEE & RECEIPT LEDGER
+        with adm_tab2:
+            st.subheader("💵 Comprehensive Fee Collection & Receipt Ledger")
+            if not fee_df.empty:
+                st.dataframe(fee_df, use_container_width=True)
+                
+                st.markdown("---")
+                st.subheader("🖨️ Generate & Send Digital Money Receipt")
+                sel_rec = st.selectbox("Select Receipt to Send / Print:", fee_df["Receipt No"] + " - Student: " + fee_df["Student ID"])
+                if sel_rec:
+                    r_num = sel_rec.split(" - ")[0]
+                    r_row = fee_df[fee_df["Receipt No"] == r_num].iloc[0]
+                    st_match = student_df[student_df["Student ID"] == r_row["Student ID"]]
+                    st_name = st_match.iloc[0]["Name"] if not st_match.empty else "Student"
+                    st_mob = st_match.iloc[0]["Mobile No"] if not st_match.empty else ""
+                    
+                    st.markdown(f"""
+                        <div style="background:#020B19; border:2px solid #10B981; border-radius:12px; padding:15px; color:white; margin:10px 0;">
+                            <h4 style="margin:0; color:#10B981;">🧾 OFFICIAL FEE RECEIPT: {r_num}</h4>
+                            <p style="margin:4px 0;">👤 <b>Student:</b> {st_name} ({r_row['Student ID']}) | 📅 <b>Date:</b> {r_row['Date']}</p>
+                            <p style="margin:4px 0;">💰 <b>Amount Received:</b> ₹{r_row['Amount Paid']} | 💳 <b>Mode:</b> {r_row['Payment Mode']} | 👨‍💼 <b>Collector:</b> {r_row['Collected_By']}</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if st_mob:
+                        wa_rec_msg = f"OFFICIAL FEE RECEIPT - Soft Tech Computers & ZTC%0AReceipt No: {r_num}%0AStudent: {st_name}%0AAmount Received: Rs.{r_row['Amount Paid']}%0ADate: {r_row['Date']}%0AStatus: Paid Successfully. Thank you!"
+                        wa_rec_url = f"https://wa.me/91{st_mob}?text={wa_rec_msg}"
+                        st.markdown(f'<a href="{wa_rec_url}" target="_blank" style="background:#25D366; color:white; padding:8px 16px; border-radius:8px; text-decoration:none; font-weight:bold;">📲 Send Money Receipt via WhatsApp</a>', unsafe_allow_html=True)
+            else:
+                st.info("No fee records logged yet.")
+
+        # TAB 3: RED ALERT DEFAULTERS
+        with adm_tab3:
+            st.subheader("🔴 Red Alert Fee Defaulters (High Pending Dues)")
             if not student_df.empty:
                 for idx, row in student_df.iterrows():
                     sid = row["Student ID"]
@@ -615,56 +736,68 @@ elif menu == "🔐 Admin Control Panel":
                         col_a.markdown(f"🔴 <span style='color:#EF4444; font-weight:bold;'>{row['Name']} ({sid})</span> - Pending Balance: **₹{due:.2f}**", unsafe_allow_html=True)
                         col_b.markdown(f'<a href="{wa_url}" target="_blank" style="background:#25D366; color:white; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">📲 Send WhatsApp</a>', unsafe_allow_html=True)
 
-        with adm_tab2:
-            st.subheader("✏️ Edit or Remove Student / Faculty Records")
-            st_action = st.radio("Choose Record Type to Manage:", ["Student Registry", "Faculty Roster"])
+        # TAB 4: FACULTY WEAK NOTES & LAB ACTIVITIES
+        with adm_tab4:
+            st.subheader("📌 Faculty Confidential Notes on Weak Students")
+            if not weak_notes_df.empty:
+                st.dataframe(weak_notes_df, use_container_width=True)
+            else:
+                st.info("No weak student notes submitted yet.")
             
-            if st_action == "Student Registry" and not student_df.empty:
-                sel_edit_st = st.selectbox("Select Student to Delete / Edit:", student_df["Student ID"] + " - " + student_df["Name"])
-                target_id = sel_edit_st.split(" - ")[0]
-                
-                if st.button("🔴 Remove / Delete Selected Student Record"):
-                    student_df = student_df[student_df["Student ID"] != target_id]
-                    save_data(student_df, STUDENT_MASTER_FILE)
-                    st.success(f"✅ Deleted Student Record: {target_id}!")
-                    st.rerun()
-            elif st_action == "Faculty Roster" and not teacher_df.empty:
-                sel_edit_tc = st.selectbox("Select Faculty to Delete:", teacher_df["Teacher ID"] + " - " + teacher_df["Name"])
-                target_tid = sel_edit_tc.split(" - ")[0]
-                
-                if st.button("🔴 Remove Selected Faculty"):
-                    teacher_df = teacher_df[teacher_df["Teacher ID"] != target_tid]
-                    save_data(teacher_df, TEACHERS_FILE)
-                    st.success(f"✅ Deleted Faculty Record: {target_tid}!")
-                    st.rerun()
+            st.markdown("---")
+            st.subheader("🖥️ Live Lab PC Allocations & Practical Tasks")
+            col_l1, col_l2 = st.columns(2)
+            with col_l1:
+                st.write("🖥️ **Lab PC Machine Seat Allocations:**")
+                st.dataframe(pc_alloc_df.tail(10), use_container_width=True)
+            with col_l2:
+                st.write("📝 **Daily Assigned Practical Tasks:**")
+                st.dataframe(tasks_df.tail(10), use_container_width=True)
 
-        with adm_tab3:
-            st.subheader("📝 Live Enquiries Received from Public Dashboard")
+        # TAB 5: LIVE ENQUIRIES DESK
+        with adm_tab5:
+            st.subheader("📝 Live Public Enquiries Desk")
             if not enquiry_df.empty:
                 st.dataframe(enquiry_df, use_container_width=True)
             else:
                 st.info("No public enquiries logged yet.")
 
-        with adm_tab4:
-            st.subheader("📥 Download Institute CSV Database Copies")
-            col_d1, col_d2, col_d3 = st.columns(3)
-            with col_d1:
-                st.download_button("📥 Download Students Registry (CSV)", data=student_df.to_csv(index=False), file_name="students_db_backup.csv", mime="text/csv")
-            with col_d2:
-                st.download_button("📥 Download Fee Logs (CSV)", data=fee_df.to_csv(index=False), file_name="fees_db_backup.csv", mime="text/csv")
-            with col_d3:
-                st.download_button("📥 Download Attendance Logs (CSV)", data=att_df.to_csv(index=False), file_name="attendance_db_backup.csv", mime="text/csv")
+        # TAB 6: MANAGE & DELETE
+        with adm_tab6:
+            st.subheader("✏️ Edit / Delete Records & Download Backups")
+            col_bk1, col_bk2 = st.columns(2)
+            with col_bk1:
+                st.download_button("📥 Backup All Students (CSV)", data=student_df.to_csv(index=False), file_name="students_db_backup.csv", mime="text/csv")
+            with col_bk2:
+                st.download_button("📥 Backup Fee Log (CSV)", data=fee_df.to_csv(index=False), file_name="fees_db_backup.csv", mime="text/csv")
+            
+            st.markdown("---")
+            if not student_df.empty:
+                sel_del_st = st.selectbox("Select Student Record to Delete:", student_df["Student ID"] + " - " + student_df["Name"])
+                if st.button("🔴 Permanently Delete Student"):
+                    del_id = sel_del_st.split(" - ")[0]
+                    student_df = student_df[student_df["Student ID"] != del_id]
+                    save_data(student_df, STUDENT_MASTER_FILE)
+                    st.success(f"Deleted {del_id}!")
+                    st.rerun()
 
-        with adm_tab5:
-            st.subheader("👨‍🏫 Add New Faculty Staff")
+        # TAB 7: ADD FACULTY
+        with adm_tab7:
+            st.subheader("👨‍🏫 Add New Faculty / Staff Member")
             with st.form("add_teacher_form", clear_on_submit=True):
                 t_name = st.text_input("Teacher Full Name*")
                 t_phone = st.text_input("Phone Mobile Number*")
-                t_qual = st.text_input("Qualification")
-                if st.form_submit_button("Register Faculty"):
+                t_qual = st.text_input("Qualification (e.g. BCA / MCA / BA)")
+                t_desig = st.selectbox("Designation:", ["Computer Instructor", "English Faculty", "Lab Assistant", "Staff"])
+                t_shift = st.selectbox("Shift Assigned:", ["All Shifts", "Morning Shift", "Afternoon Shift", "Evening Shift"])
+                
+                if st.form_submit_button("Register New Faculty"):
                     if t_name and t_phone:
                         t_id = f"TCH-{len(teacher_df)+1:02d}"
-                        t_new = {"Teacher ID": t_id, "Name": t_name.upper(), "Phone": t_phone, "Qualification": t_qual, "Designation": "Faculty", "Shift Assigned": "All Shifts"}
+                        t_new = {"Teacher ID": t_id, "Name": t_name.upper(), "Phone": t_phone, "Qualification": t_qual, "Designation": t_desig, "Shift Assigned": t_shift}
                         teacher_df = pd.concat([teacher_df, pd.DataFrame([t_new])], ignore_index=True)
                         save_data(teacher_df, TEACHERS_FILE)
-                        st.success(f"🎉 Faculty Registered! ID: {t_id}")
+                        st.success(f"🎉 Faculty Added Successfully! ID: {t_id} | Name: {t_name}")
+                        st.rerun()
+                    else:
+                        st.error("Please enter Name and Phone Number!")
