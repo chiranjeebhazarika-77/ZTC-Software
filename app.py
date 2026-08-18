@@ -648,14 +648,14 @@ elif menu == "🔑 Teacher Portal & QR Scanner":
                     if m_student:
                         m_id = m_student.split(" - ")[0]
                         m_name = m_student.split(" - ")[1]
-                        m_row = {"Date": cur_date_str, "Student ID": m_id, "Student Name": m_name, "Course/Subject": m_subject, "Test Topic": m_topic, "Marks Obtained": str(m_obtained), "Total Marks": str(m_total), "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Faculty"}
+                        m_row = {"Date": cur_date_str, "Student ID": m_id, "Student Name": m_name, "Course/Subject": m_subject, "Test Topic": m_topic, "Marks Obtained": str(m_obtained), "Total Marks": str(m_total), "Teacher Incharge": t_name_sel if 't_name_sel' in locals() else "Director"}
                         marks_df = pd.concat([marks_df, pd.DataFrame([m_row])], ignore_index=True)
                         save_data(marks_df, MARKS_FILE)
                         st.success(f"✅ Test Marks Saved for {m_name}!")
                         st.rerun()
 
 # ---------------------------------------------------------
-# 7. ADMIN CONTROL PANEL (FULL VISIBILITY & AUDIT)
+# 7. ADMIN CONTROL PANEL
 # ---------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -670,7 +670,7 @@ elif menu == "🔐 Admin Control Panel":
             "🔴 Red Alert Defaulters (WhatsApp)", 
             "📌 Faculty Notes & Lab Activities",
             "📝 Live Enquiries Desk", 
-            "✏️ Manage & Delete Records",
+            "✏️ Edit & Delete Records",
             "👨‍🏫 Add Faculty Staff"
         ])
         
@@ -762,24 +762,43 @@ elif menu == "🔐 Admin Control Panel":
             else:
                 st.info("No public enquiries logged yet.")
 
-        # TAB 6: MANAGE & DELETE
+        # TAB 6: EDIT & DELETE (STUDENTS & FACULTY)
         with adm_tab6:
             st.subheader("✏️ Edit / Delete Records & Download Backups")
-            col_bk1, col_bk2 = st.columns(2)
+            col_bk1, col_bk2, col_bk3 = st.columns(3)
             with col_bk1:
                 st.download_button("📥 Backup All Students (CSV)", data=student_df.to_csv(index=False), file_name="students_db_backup.csv", mime="text/csv")
             with col_bk2:
                 st.download_button("📥 Backup Fee Log (CSV)", data=fee_df.to_csv(index=False), file_name="fees_db_backup.csv", mime="text/csv")
+            with col_bk3:
+                st.download_button("📥 Backup Faculty List (CSV)", data=teacher_df.to_csv(index=False), file_name="faculty_db_backup.csv", mime="text/csv")
             
             st.markdown("---")
-            if not student_df.empty:
-                sel_del_st = st.selectbox("Select Student Record to Delete:", student_df["Student ID"] + " - " + student_df["Name"])
-                if st.button("🔴 Permanently Delete Student"):
-                    del_id = sel_del_st.split(" - ")[0]
-                    student_df = student_df[student_df["Student ID"] != del_id]
-                    save_data(student_df, STUDENT_MASTER_FILE)
-                    st.success(f"Deleted {del_id}!")
-                    st.rerun()
+            del_type = st.radio("Select Category to Delete:", ["Delete Student Record", "Delete Faculty / Staff Member"])
+            
+            if del_type == "Delete Student Record":
+                if not student_df.empty:
+                    sel_del_st = st.selectbox("Select Student Record to Delete:", student_df["Student ID"] + " - " + student_df["Name"])
+                    if st.button("🔴 Permanently Delete Student"):
+                        del_id = sel_del_st.split(" - ")[0]
+                        student_df = student_df[student_df["Student ID"] != del_id]
+                        save_data(student_df, STUDENT_MASTER_FILE)
+                        st.success(f"Deleted Student: {del_id}!")
+                        st.rerun()
+                else:
+                    st.info("No student records available to delete.")
+                    
+            elif del_type == "Delete Faculty / Staff Member":
+                if not teacher_df.empty:
+                    sel_del_tch = st.selectbox("Select Faculty Staff to Delete:", teacher_df["Teacher ID"] + " - " + teacher_df["Name"])
+                    if st.button("🔴 Permanently Delete Faculty Staff"):
+                        del_tch_id = sel_del_tch.split(" - ")[0]
+                        teacher_df = teacher_df[teacher_df["Teacher ID"] != del_tch_id]
+                        save_data(teacher_df, TEACHERS_FILE)
+                        st.success(f"Deleted Faculty Member: {del_tch_id}!")
+                        st.rerun()
+                else:
+                    st.info("No faculty records available to delete.")
 
         # TAB 7: ADD FACULTY
         with adm_tab7:
