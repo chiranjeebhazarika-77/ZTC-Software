@@ -33,6 +33,7 @@ NOTICES_FILE = "notices_db.csv"
 TASKS_FILE = "tasks_db.csv"
 PC_ALLOC_FILE = "pc_alloc_db.csv"
 WEAK_NOTES_FILE = "weak_notes_db.csv"
+EXAM_FORMS_FILE = "exam_forms_db.csv"
 PHOTO_DIR = "student_photos"
 
 os.makedirs(PHOTO_DIR, exist_ok=True)
@@ -113,6 +114,7 @@ notices_cols = ["Date", "Notice Title", "Notice Content", "Category", "Posted By
 tasks_cols = ["Date", "Student ID", "Student Name", "Task Assigned", "Status", "Teacher Incharge"]
 pc_alloc_cols = ["Date", "Student ID", "Student Name", "PC Machine No", "Shift", "Teacher Incharge"]
 weak_notes_cols = ["Date", "Student ID", "Student Name", "Weak Topic / Area", "Teacher Advice", "Teacher Name"]
+exam_forms_cols = ["Date", "Student ID", "Student Name", "Course", "Exam Fee Amount", "Payment Status", "Exam Center Code", "Remarks"]
 
 # Load DataFrames with Cloud Persistence
 student_df = load_data(STUDENT_MASTER_FILE, student_cols, "students_db")
@@ -130,6 +132,7 @@ notices_df = load_data(NOTICES_FILE, notices_cols, "notices_db")
 tasks_df = load_data(TASKS_FILE, tasks_cols, "tasks_db")
 pc_alloc_df = load_data(PC_ALLOC_FILE, pc_alloc_cols, "pc_alloc_db")
 weak_notes_df = load_data(WEAK_NOTES_FILE, weak_notes_cols, "weak_notes_db")
+exam_forms_df = load_data(EXAM_FORMS_FILE, exam_forms_cols, "exam_forms_db")
 
 if creds_df.empty:
     creds_df = pd.DataFrame([
@@ -186,6 +189,7 @@ menu = st.sidebar.radio("Navigation Menu:", [
     "📝 New Student Admission",
     "🔑 Student Login Portal",
     "🎯 Sunday Free Practice Class (SFPC)",
+    "📝 Exam Form Fill-Up & Reg Desk",
     "💵 Fee Counter Desk",
     "🔑 Teacher Portal & QR Scanner",
     "🔐 Admin Control Panel"
@@ -355,12 +359,13 @@ elif menu == "📝 New Student Admission":
                             f.write(photo_file.getbuffer())
                             
                     net_fee = float(total_fee) - float(discount)
+                    full_addr = f"{vill}, {po}, {ps}, {dist}".upper()
                     new_row = {
                         "Sl. No.": str(len(student_df) + 1), "Student ID": next_id, "Name": name.upper(),
                         "Father Name": fname.upper(), "Mother Name": mname.upper(), "Gender": gender,
                         "DOB": str(dob), "Caste": "General", "Mobile No": mobile, "Vill Town": vill.upper(),
                         "PO": po.upper(), "PS": ps.upper(), "PIN Code": "784149", "District": dist.upper(),
-                        "Full Address": f"{vill}, {po}, {ps}, {dist}".upper(), "Course": course,
+                        "Full Address": full_addr, "Course": course,
                         "Duration": cert_dur, "Days_Batch": days_batch, "Session": session,
                         "Join Date": str(join_date), "Validity Date": str(auto_expiry),
                         "Total Fee": str(total_fee), "Discount": str(discount), "Net Fee": str(net_fee),
@@ -467,15 +472,147 @@ elif menu == "🔑 Student Login Portal":
             """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 4. SUNDAY PRACTICE CLASS (SFPC)
+# 4. SUNDAY FREE PRACTICE CLASS (SFPC) - ADM + MONTHLY ONLY
 # ---------------------------------------------------------
 elif menu == "🎯 Sunday Free Practice Class (SFPC)":
     st.header("🎯 Sunday Free Practice Class (SFPC) Eligibility Portal")
-    check_id = st.text_input("Enter Student Roll ID:").strip().upper()
+    st.markdown("""
+        <div style="background:#0F172A; border:1.5px solid #F59E0B; padding:12px 18px; border-radius:10px; color:#FBBF24; margin-bottom:15px; font-size:13px;">
+            📌 <b>SFPC RUNNING FEE POLICY:</b> Admission Fee: ₹999 | Monthly Class: ₹550/Month.<br>
+            (Registration/Exam Fee is charged separately at the final month and NOT included in SFPC eligibility).<br>
+            Student must have cleared <b>≥50% of Current Running Bill</b> AND maintain <b>≥75% Attendance Record</b>.
+        </div>
+    """, unsafe_allow_html=True)
+    
+    check_id = st.text_input("Enter Student Roll ID (e.g. STC26-001):").strip().upper()
     if check_id:
         st_res = student_df[student_df["Student ID"] == check_id]
         if not st_res.empty:
-            st.success("🎉 Access Eligible!")
+            s = st_res.iloc[0]
+            
+            today_date = datetime.date.today()
+            try:
+                j_date = datetime.datetime.strptime(str(s["Join Date"]), "%Y-%m-%d").date()
+            except Exception:
+                j_date = today_date
+                
+            days_enrolled = max(1, (today_date - j_date).days)
+            months_active = max(1, (today_date.year - j_date.year) * 12 + today_date.month - j_date.month + 1)
+            
+            # RUNNING BILL FOR SFPC (ADM ₹999 + MONTHLY ₹550 ONLY)
+            adm_fee = 999.0
+            monthly_rate = 550.0
+            total_running_bill = adm_fee + (months_active * monthly_rate)
+            
+            p_logs = fee_df[fee_df["Student ID"] == check_id]
+            tot_paid = sum([float(a) for a in p_logs["Amount Paid"] if a])
+            min_fee_required = total_running_bill * 0.50
+            fee_paid_perc = (tot_paid / total_running_bill * 100) if total_running_bill > 0 else 100.0
+            
+            # Attendance
+            s_att = att_df[att_df["Student ID"] == check_id]
+            present_days = len(s_att[s_att["Status"] == "Present"])
+            total_conducted_classes = max(1, len(s_att))
+            attendance_perc = (present_days / total_conducted_classes * 100)
+            
+            fee_cleared = tot_paid >= min_fee_required
+            att_cleared = attendance_perc >= 75.0
+            is_eligible = fee_cleared and att_cleared
+            
+            st.markdown(f"""
+                <div style="background:#020B19; border:2px solid {'#10B981' if is_eligible else '#EF4444'}; border-radius:14px; padding:20px; color:white; margin:15px 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; color:#00F0FF;">👤 {s['Name']} ({s['Student ID']})</h3>
+                        <span style="background:{'#10B981' if is_eligible else '#EF4444'}; color:white; padding:5px 14px; border-radius:8px; font-weight:bold; font-size:13px;">
+                            {'✅ ELIGIBLE FOR SFPC' if is_eligible else '❌ NOT ELIGIBLE'}
+                        </span>
+                    </div>
+                    <p style="margin:6px 0; color:#CBD5E1; font-size:13px;"><b>Course:</b> {s['Course']} | <b>Active:</b> {months_active} Months ({days_enrolled} Days Enrolled)</p>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+            col_m1.metric("Current Running Bill", f"₹{total_running_bill:.2f}")
+            col_m2.metric("Total Fee Paid", f"₹{tot_paid:.2f}", delta=f"{fee_paid_perc:.1f}% Cleared")
+            col_m3.metric("Attendance Score", f"{attendance_perc:.1f}%", delta=f"{present_days}/{total_conducted_classes} Days Present")
+            col_m4.metric("Minimum 50% Req.", f"₹{min_fee_required:.2f}", delta="Required to Qualify")
+            
+            st.markdown("---")
+            st.subheader("🔍 SFPC Running Bill Breakdown")
+            
+            audit_data = [
+                {"Criteria": "Admission Fee Bill", "Value": "₹999.00", "Details": "One-time Admission Charge"},
+                {"Criteria": f"Active Monthly Tuition ({months_active} Months × ₹550)", "Value": f"₹{months_active * monthly_rate:.2f}", "Details": f"{months_active} Months Running"},
+                {"Criteria": "Total Running Bill Generated", "Value": f"₹{total_running_bill:.2f}", "Details": "Admission + Monthly Total"},
+                {"Criteria": "Amount Deposited by Student", "Value": f"₹{tot_paid:.2f}", "Details": f"{fee_paid_perc:.1f}% Cleared"},
+                {"Criteria": "Fee Rule Status (≥50% Required)", "Value": f"₹{tot_paid:.2f} / ₹{min_fee_required:.2f}", "Details": "Passed ✅" if fee_cleared else "Failed ❌ (Deposit Needed)"},
+                {"Criteria": "Attendance Status (≥75% Required)", "Value": f"{attendance_perc:.1f}%", "Details": "Passed ✅" if att_cleared else "Failed ❌ (Low Attendance)"}
+            ]
+            st.table(pd.DataFrame(audit_data))
+            
+            if is_eligible:
+                st.balloons()
+                st.success(f"🎉 Congratulations {s['Name']}! You are ELIGIBLE for Sunday Free Practice Lab Access!")
+            else:
+                reasons = []
+                if not fee_cleared:
+                    shortage = min_fee_required - tot_paid
+                    reasons.append(f"Fee clearance is {fee_paid_perc:.1f}% (Minimum 50% required. Please deposit ₹{shortage:.2f} to qualify).")
+                if not att_cleared:
+                    reasons.append(f"Attendance is {attendance_perc:.1f}% (Minimum 75% required).")
+                st.error("❌ Access Denied! Reasons:\n- " + "\n- ".join(reasons))
+        else:
+            st.error("❌ INVALID ROLL ID! No student record found.")
+
+# ---------------------------------------------------------
+# 4.5 EXAM FORM FILL-UP & FINAL REGISTRATION DESK (NEW)
+# ---------------------------------------------------------
+elif menu == "📝 Exam Form Fill-Up & Reg Desk":
+    st.header("📝 Final Examination & Registration Form Fill-Up Desk")
+    st.markdown("""
+        <div style="background:#0F172A; border:1.5px solid #2563EB; padding:12px 18px; border-radius:10px; color:#93C5FD; margin-bottom:15px; font-size:13px;">
+            🎓 <b>EXAMINATION POLICY:</b> Registration cum Examination Form Fill-Up Fee: <b>₹999/-</b>.<br>
+            Calculated and applied automatically during the final course duration period before SARVA Board Exam conduction.
+        </div>
+    """, unsafe_allow_html=True)
+    
+    ex_sid = st.text_input("Enter Student Roll ID for Examination Form:").strip().upper()
+    if ex_sid:
+        st_res = student_df[student_df["Student ID"] == ex_sid]
+        if not st_res.empty:
+            s = st_res.iloc[0]
+            st.markdown(f"""
+                <div style="background:#020B19; border:2px solid #2563EB; border-radius:14px; padding:18px; color:white; margin:15px 0;">
+                    <h3 style="margin:0; color:#60A5FA;">👤 {s['Name']} ({s['Student ID']})</h3>
+                    <p style="margin:4px 0; color:#CBD5E1;"><b>Course:</b> {s['Course']} | <b>Duration:</b> {s['Duration']} | <b>Validity:</b> {s['Join Date']} to {s['Validity Date']}</p>
+                    <h4 style="margin:6px 0; color:#FBBF24;">🧾 Registration & Examination Bill: ₹999.00</h4>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            with st.form("exam_fill_form", clear_on_submit=True):
+                st.write("📋 **SARVA Head Office Exam Center Details:**")
+                st.text_input("Center Code", value="4159", disabled=True)
+                st.text_input("Institution Name", value="SOFT TECH COMPUTERS & ZTC", disabled=True)
+                ex_pay_mode = st.selectbox("Exam Fee Payment Mode (₹999)", ["Paid via Cash at Counter", "Paid via UPI / Online", "Due to Pay"])
+                ex_remarks = st.text_input("Remarks", value="Final Term Board Exam Form Fill-Up")
+                
+                if st.form_submit_button("Submit Exam Form & Register Candidate"):
+                    ex_row = {
+                        "Date": str(datetime.date.today()), "Student ID": ex_sid, "Student Name": s["Name"],
+                        "Course": s["Course"], "Exam Fee Amount": "999", "Payment Status": ex_pay_mode,
+                        "Exam Center Code": "4159", "Remarks": ex_remarks
+                    }
+                    exam_forms_df = pd.concat([exam_forms_df, pd.DataFrame([ex_row])], ignore_index=True)
+                    save_data(exam_forms_df, EXAM_FORMS_FILE, "exam_forms_db")
+                    
+                    student_df.loc[student_df["Student ID"] == ex_sid, "Stage_ExamForm"] = "Completed"
+                    student_df.loc[student_df["Student ID"] == ex_sid, "Stage_Registration"] = "Verified"
+                    save_data(student_df, STUDENT_MASTER_FILE, "students_db")
+                    
+                    st.balloons()
+                    st.success(f"🎉 Examination Form Filled Successfully for {s['Name']}! Registration Stage Updated to Verified.")
+        else:
+            st.error("❌ INVALID ROLL ID! No student record found.")
 
 # ---------------------------------------------------------
 # 5. FEE COUNTER DESK
@@ -607,7 +744,7 @@ elif menu == "🔐 Admin Control Panel":
         
         adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6 = st.tabs([
             "📋 All Students Directory",
-            "✏️ Edit Student Profile",
+            "✏️ Edit Student Profile & Address",
             "💵 Fee & Receipt Ledger",
             "🔴 Red Alert Defaulters (WhatsApp)", 
             "📌 Faculty Notes & Lab Activities",
@@ -617,28 +754,64 @@ elif menu == "🔐 Admin Control Panel":
         with adm_tab1:
             st.subheader("📋 All Registered Students Full Directory")
             if not student_df.empty:
-                st.dataframe(student_df[["Student ID", "Name", "Mobile No", "Course", "Join Date", "Net Fee", "Shift", "Status"]], use_container_width=True)
+                st.dataframe(student_df[["Student ID", "Name", "Father Name", "Mother Name", "Mobile No", "Full Address", "Course", "Join Date", "Net Fee", "Shift", "Status"]], use_container_width=True)
             else:
                 st.info("No students registered yet.")
 
         with adm_tab2:
-            st.subheader("✏️ Edit & Update Student Information")
+            st.subheader("✏️ Edit Student Profile, Parents & Full Address Information")
             if not student_df.empty:
                 sel_edit_st = st.selectbox("Select Student to Edit:", student_df["Student ID"] + " - " + student_df["Name"])
                 if sel_edit_st:
                     edit_id = sel_edit_st.split(" - ")[0]
                     curr_st = student_df[student_df["Student ID"] == edit_id].iloc[0]
-                    with st.form("edit_student_form"):
-                        new_name = st.text_input("Student Name", value=curr_st["Name"])
-                        new_mob = st.text_input("Mobile Number", value=curr_st["Mobile No"])
-                        new_tot_fee = st.number_input("Total Fee (₹)", min_value=0.0, value=float(curr_st["Total Fee"]) if curr_st["Total Fee"] else 2550.0)
-                        if st.form_submit_button("💾 Update Student Record"):
+                    
+                    with st.form("edit_student_full_form"):
+                        col_e1, col_e2 = st.columns(2)
+                        with col_e1:
+                            new_name = st.text_input("Student Name*", value=curr_st.get("Name", ""))
+                            new_fname = st.text_input("Father's Name*", value=curr_st.get("Father Name", ""))
+                            new_mname = st.text_input("Mother's Name*", value=curr_st.get("Mother Name", ""))
+                            new_mob = st.text_input("Mobile Number*", value=curr_st.get("Mobile No", ""))
+                            new_course = st.selectbox("Course", list(COURSE_CONFIG.keys()), index=list(COURSE_CONFIG.keys()).index(curr_st["Course"]) if curr_st.get("Course") in COURSE_CONFIG else 0)
+                        
+                        with col_e2:
+                            new_vill = st.text_input("Village / Town*", value=curr_st.get("Vill Town", ""))
+                            new_po = st.text_input("Post Office", value=curr_st.get("PO", ""))
+                            new_ps = st.text_input("Police Station", value=curr_st.get("PS", "THELAMARA"))
+                            new_dist = st.text_input("District", value=curr_st.get("District", "Sonitpur"))
+                            new_shift = st.selectbox("Shift Assigned", ["Morning (06:30-08:00 AM)", "Afternoon (04:00-05:30 PM)", "Evening (05:30-07:00 PM)"], index=0)
+                            
+                        col_e3, col_e4 = st.columns(2)
+                        with col_e3:
+                            new_tot_fee = st.number_input("Total Fee (₹)", min_value=0.0, value=float(curr_st["Total Fee"]) if curr_st.get("Total Fee") else 2550.0)
+                            new_disc = st.number_input("Discount Allowed (₹)", min_value=0.0, value=float(curr_st["Discount"]) if curr_st.get("Discount") else 0.0)
+                        with col_e4:
+                            new_status = st.selectbox("Student Status", ["Active", "Completed", "Dropped"], index=0 if curr_st.get("Status") == "Active" else 1)
+
+                        if st.form_submit_button("💾 Save & Update Full Student Information"):
+                            full_addr_up = f"{new_vill}, {new_po}, {new_ps}, {new_dist}".upper()
                             student_df.loc[student_df["Student ID"] == edit_id, "Name"] = new_name.upper()
+                            student_df.loc[student_df["Student ID"] == edit_id, "Father Name"] = new_fname.upper()
+                            student_df.loc[student_df["Student ID"] == edit_id, "Mother Name"] = new_mname.upper()
                             student_df.loc[student_df["Student ID"] == edit_id, "Mobile No"] = new_mob
+                            student_df.loc[student_df["Student ID"] == edit_id, "Course"] = new_course
+                            student_df.loc[student_df["Student ID"] == edit_id, "Vill Town"] = new_vill.upper()
+                            student_df.loc[student_df["Student ID"] == edit_id, "PO"] = new_po.upper()
+                            student_df.loc[student_df["Student ID"] == edit_id, "PS"] = new_ps.upper()
+                            student_df.loc[student_df["Student ID"] == edit_id, "District"] = new_dist.upper()
+                            student_df.loc[student_df["Student ID"] == edit_id, "Full Address"] = full_addr_up
+                            student_df.loc[student_df["Student ID"] == edit_id, "Shift"] = new_shift
                             student_df.loc[student_df["Student ID"] == edit_id, "Total Fee"] = str(new_tot_fee)
+                            student_df.loc[student_df["Student ID"] == edit_id, "Discount"] = str(new_disc)
+                            student_df.loc[student_df["Student ID"] == edit_id, "Net Fee"] = str(new_tot_fee - new_disc)
+                            student_df.loc[student_df["Student ID"] == edit_id, "Status"] = new_status
+                            
                             save_data(student_df, STUDENT_MASTER_FILE, "students_db")
-                            st.success(f"✅ Student {edit_id} Successfully Updated!")
+                            st.success(f"✅ Successfully Updated Profile & Address for Roll ID: {edit_id}!")
                             st.rerun()
+            else:
+                st.info("No registered students available to edit.")
 
         with adm_tab3:
             st.subheader("💵 Comprehensive Fee Collection & Receipt Ledger")
