@@ -14,9 +14,9 @@ st.set_page_config(page_title="Soft Tech Computers & ZTC Enterprise Portal", pag
 IST = pytz.timezone('Asia/Kolkata')
 
 # -------------------------------------------------------------
-# GOOGLE SHEETS LIVE SYNC URL (REPLACE WITH YOUR WEB APP URL)
+# GOOGLE SHEETS LIVE SYNC URL (PASTE YOUR DEPLOYED URL HERE)
 # -------------------------------------------------------------
-GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx.../exec"  # Paste your Google Apps Script Web App URL here
+GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzKN3L0VyzgniW8RYlG3qZjp9DZZmCSTQHmXS1l2shwtAQu6mHIQX1w1nbFcnOghkMy/exec"
 
 STUDENT_MASTER_FILE = "students_db.csv"
 FEE_LOG_FILE = "fees_db.csv"
@@ -56,7 +56,7 @@ def get_image_base64(file_name):
 def sync_from_cloud(sheet_name, columns):
     if GSHEET_WEBAPP_URL:
         try:
-            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=5)
+            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=10, allow_redirects=True)
             if res.status_code == 200:
                 data = res.json()
                 if data and len(data) > 1:
@@ -94,7 +94,7 @@ def save_data(df, file_path, sheet_name=None):
         try:
             records = [df.columns.tolist()] + df.fillna("").values.tolist()
             payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
-            requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=5)
+            requests.post(GSHEET_WEBAPP_URL, json=payload, timeout=10, allow_redirects=True)
         except Exception:
             pass
 
@@ -472,14 +472,13 @@ elif menu == "🔑 Student Login Portal":
             """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 4. SUNDAY FREE PRACTICE CLASS (SFPC) - ADM + MONTHLY ONLY
+# 4. SUNDAY FREE PRACTICE CLASS (SFPC)
 # ---------------------------------------------------------
 elif menu == "🎯 Sunday Free Practice Class (SFPC)":
     st.header("🎯 Sunday Free Practice Class (SFPC) Eligibility Portal")
     st.markdown("""
         <div style="background:#0F172A; border:1.5px solid #F59E0B; padding:12px 18px; border-radius:10px; color:#FBBF24; margin-bottom:15px; font-size:13px;">
             📌 <b>SFPC RUNNING FEE POLICY:</b> Admission Fee: ₹999 | Monthly Class: ₹550/Month.<br>
-            (Registration/Exam Fee is charged separately at the final month and NOT included in SFPC eligibility).<br>
             Student must have cleared <b>≥50% of Current Running Bill</b> AND maintain <b>≥75% Attendance Record</b>.
         </div>
     """, unsafe_allow_html=True)
@@ -499,7 +498,6 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             days_enrolled = max(1, (today_date - j_date).days)
             months_active = max(1, (today_date.year - j_date.year) * 12 + today_date.month - j_date.month + 1)
             
-            # RUNNING BILL FOR SFPC (ADM ₹999 + MONTHLY ₹550 ONLY)
             adm_fee = 999.0
             monthly_rate = 550.0
             total_running_bill = adm_fee + (months_active * monthly_rate)
@@ -509,7 +507,6 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             min_fee_required = total_running_bill * 0.50
             fee_paid_perc = (tot_paid / total_running_bill * 100) if total_running_bill > 0 else 100.0
             
-            # Attendance
             s_att = att_df[att_df["Student ID"] == check_id]
             present_days = len(s_att[s_att["Status"] == "Present"])
             total_conducted_classes = max(1, len(s_att))
@@ -565,7 +562,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
             st.error("❌ INVALID ROLL ID! No student record found.")
 
 # ---------------------------------------------------------
-# 4.5 EXAM FORM FILL-UP & FINAL REGISTRATION DESK (NEW)
+# 4.5 EXAM FORM FILL-UP & FINAL REGISTRATION DESK
 # ---------------------------------------------------------
 elif menu == "📝 Exam Form Fill-Up & Reg Desk":
     st.header("📝 Final Examination & Registration Form Fill-Up Desk")
