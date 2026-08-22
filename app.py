@@ -16,7 +16,7 @@ IST = pytz.timezone('Asia/Kolkata')
 # -------------------------------------------------------------
 # GOOGLE SHEETS LIVE SYNC URL (REPLACE WITH YOUR WEB APP URL)
 # -------------------------------------------------------------
-GSHEET_WEBAPP_URL = ""  # Paste your Google Apps Script Web App URL here
+GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx.../exec"  # Paste your Google Apps Script Web App URL here
 
 STUDENT_MASTER_FILE = "students_db.csv"
 FEE_LOG_FILE = "fees_db.csv"
