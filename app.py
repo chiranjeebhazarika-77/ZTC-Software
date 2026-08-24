@@ -53,30 +53,23 @@ def get_image_base64(file_name):
                 pass
     return None
 
-def sync_from_cloud(sheet_name, columns):
+# -------------------------------------------------------------
+# HIGH-SPEED OPTIMIZED DATA LOADING & BACKGROUND SYNC
+# -------------------------------------------------------------
+@st.cache_data(ttl=60)
+def sync_from_cloud(sheet_name):
     if GSHEET_WEBAPP_URL:
         try:
-            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=10, allow_redirects=True)
+            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=3, allow_redirects=True)
             if res.status_code == 200:
                 data = res.json()
                 if data and len(data) > 1:
-                    header = data[0]
-                    rows = data[1:]
-                    df = pd.DataFrame(rows, columns=header, dtype=str)
-                    for col in columns:
-                        if col not in df.columns: df[col] = ""
-                    return df
+                    return data
         except Exception:
             pass
     return None
 
 def load_data(file_path, columns, sheet_name=None):
-    if sheet_name:
-        cloud_df = sync_from_cloud(sheet_name, columns)
-        if cloud_df is not None and not cloud_df.empty:
-            cloud_df.to_csv(file_path, index=False)
-            return cloud_df
-
     if os.path.exists(file_path):
         try:
             df = pd.read_csv(file_path, dtype=str)
@@ -84,12 +77,30 @@ def load_data(file_path, columns, sheet_name=None):
                 if col not in df.columns: df[col] = ""
             return df
         except Exception:
-            return pd.DataFrame(columns=columns)
-    else:
-        return pd.DataFrame(columns=columns)
+            pass
+
+    if sheet_name:
+        cloud_raw = sync_from_cloud(sheet_name)
+        if cloud_raw and len(cloud_raw) > 1:
+            header = cloud_raw[0]
+            rows = cloud_raw[1:]
+            df = pd.DataFrame(rows, columns=header, dtype=str)
+            for col in columns:
+                if col not in df.columns: df[col] = ""
+            df.to_csv(file_path, index=False)
+            return df
+
+    return pd.DataFrame(columns=columns)
 
 def save_data(df, file_path, sheet_name=None):
     df.to_csv(file_path, index=False)
+    if GSHEET_WEBAPP_URL and sheet_name:
+        try:
+            records = [df.columns.tolist()] + df.fillna("").values.tolist()
+            payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
+            requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=4, allow_redirects=True)
+        except Exception:
+            pass    df.to_csv(file_path, index=False)
     if GSHEET_WEBAPP_URL and sheet_name:
         try:
             records = [df.columns.tolist()] + df.fillna("").values.tolist()
