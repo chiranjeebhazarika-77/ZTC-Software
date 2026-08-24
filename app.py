@@ -6,6 +6,7 @@ import pytz
 import base64
 import requests
 import json
+import threading
 
 # Page Configuration
 st.set_page_config(page_title="Soft Tech Computers & ZTC Enterprise Portal", page_icon="💻", layout="wide")
@@ -53,17 +54,15 @@ def get_image_base64(file_name):
                 pass
     return None
 
-def sync_from_cloud(sheet_name):
-    if GSHEET_WEBAPP_URL:
+def push_to_cloud_async(payload):
+    def _worker():
         try:
-            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=3, allow_redirects=True)
-            if res.status_code == 200:
-                data = res.json()
-                if isinstance(data, list) and len(data) > 1:
-                    return data
+            requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=8, allow_redirects=True)
         except Exception:
             pass
-    return None
+    t = threading.Thread(target=_worker)
+    t.daemon = True
+    t.start()
 
 def load_data(file_path, columns, sheet_name=None):
     if os.path.exists(file_path):
@@ -74,32 +73,14 @@ def load_data(file_path, columns, sheet_name=None):
             return df
         except Exception:
             pass
-
-    if sheet_name:
-        cloud_raw = sync_from_cloud(sheet_name)
-        if cloud_raw and isinstance(cloud_raw, list) and len(cloud_raw) > 1:
-            try:
-                header = cloud_raw[0]
-                rows = cloud_raw[1:]
-                df = pd.DataFrame(rows, columns=header, dtype=str)
-                for col in columns:
-                    if col not in df.columns: df[col] = ""
-                df.to_csv(file_path, index=False)
-                return df
-            except Exception:
-                pass
-
     return pd.DataFrame(columns=columns)
 
 def save_data(df, file_path, sheet_name=None):
     df.to_csv(file_path, index=False)
     if GSHEET_WEBAPP_URL and sheet_name:
-        try:
-            records = [df.columns.tolist()] + df.fillna("").values.tolist()
-            payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
-            requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=4, allow_redirects=True)
-        except Exception:
-            pass
+        records = [df.columns.tolist()] + df.fillna("").values.tolist()
+        payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
+        push_to_cloud_async(payload)
 
 # Columns definitions
 student_cols = ["Sl. No.", "Student ID", "Name", "Father Name", "Mother Name", "Gender", "DOB", "Caste", "Mobile No", "Vill Town", "PO", "PS", "PIN Code", "District", "Full Address", "Course", "Duration", "Days_Batch", "Session", "Join Date", "Validity Date", "Total Fee", "Discount", "Net Fee", "Shift", "Batch Time", "Photo Path", "Status", "Stage_Admission", "Stage_IDCard", "Stage_Registration", "Stage_ExamForm", "Stage_AdmitCard", "Stage_Certificate"]
@@ -119,7 +100,7 @@ pc_alloc_cols = ["Date", "Student ID", "Student Name", "PC Machine No", "Shift",
 weak_notes_cols = ["Date", "Student ID", "Student Name", "Weak Topic / Area", "Teacher Advice", "Teacher Name"]
 exam_forms_cols = ["Date", "Student ID", "Student Name", "Course", "Exam Fee Amount", "Payment Status", "Exam Center Code", "Remarks"]
 
-# Load DataFrames
+# Ultra-Fast Local Storage Initialization
 student_df = load_data(STUDENT_MASTER_FILE, student_cols, "students_db")
 fee_df = load_data(FEE_LOG_FILE, fee_cols, "fees_db")
 att_df = load_data(ATTENDANCE_FILE, attendance_cols, "attendance_db")
