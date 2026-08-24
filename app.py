@@ -14,7 +14,7 @@ st.set_page_config(page_title="Soft Tech Computers & ZTC Enterprise Portal", pag
 IST = pytz.timezone('Asia/Kolkata')
 
 # -------------------------------------------------------------
-# GOOGLE SHEETS LIVE SYNC URL (PASTE YOUR NEW WEB APP URL HERE)
+# GOOGLE SHEETS LIVE SYNC URL
 # -------------------------------------------------------------
 GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyeLkWRqD_gHSIQzFBUEJ2kv1e6DpbaUkBB9_CV5l_95k8kg-tSyBnCC50W1TN0XwES/exec"
 
@@ -53,9 +53,6 @@ def get_image_base64(file_name):
                 pass
     return None
 
-# -------------------------------------------------------------
-# HIGH-SPEED OPTIMIZED DATA LOADING & BACKGROUND SYNC
-# -------------------------------------------------------------
 @st.cache_data(ttl=60)
 def sync_from_cloud(sheet_name):
     if GSHEET_WEBAPP_URL:
@@ -99,14 +96,6 @@ def save_data(df, file_path, sheet_name=None):
             records = [df.columns.tolist()] + df.fillna("").values.tolist()
             payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
             requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=4, allow_redirects=True)
-        except Exception:
-            pass    df.to_csv(file_path, index=False)
-    if GSHEET_WEBAPP_URL and sheet_name:
-        try:
-            records = [df.columns.tolist()] + df.fillna("").values.tolist()
-            payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
-            # Google Script Redirects handle
-            requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=12, allow_redirects=True)
         except Exception:
             pass
 
@@ -207,6 +196,23 @@ menu = st.sidebar.radio("Navigation Menu:", [
     "🔐 Admin Control Panel"
 ])
 
+# Custom CSS
+st.markdown("""
+    <style>
+    div.stButton > button:first-child {
+        background-color: #065F46;
+        color: white;
+        font-weight: bold;
+        border-radius: 8px;
+        padding: 8px 16px;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #047857;
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # 1. PUBLIC DASHBOARD
 if menu == "🏠 Home & Public Dashboard":
     dp2_b64 = get_image_base64("dp2")
@@ -226,7 +232,20 @@ if menu == "🏠 Home & Public Dashboard":
     col_m3.metric("Alumni Network", "350+ Students")
     col_m4.metric("Certified Graduates", "200+ Certified")
 
-# 2. NEW STUDENT ADMISSION
+# 2. ONLINE CERTIFICATE VERIFICATION
+elif menu == "📜 Online Certificate Verification":
+    st.header("📜 Online Certificate Verification Desk")
+    verify_id = st.text_input("Enter Student Roll ID (e.g. STC26-001):").strip().upper()
+    if verify_id:
+        v_match = student_df[student_df["Student ID"] == verify_id]
+        if not v_match.empty:
+            v_data = v_match.iloc[0]
+            st.balloons()
+            st.success(f"✅ **VERIFIED RECORD FOUND:** Name: {v_data['Name']} | Course: {v_data['Course']} | Roll ID: {v_data['Student ID']}")
+        else:
+            st.error("❌ INVALID ROLL ID! No official record found.")
+
+# 3. NEW STUDENT ADMISSION
 elif menu == "📝 New Student Admission":
     st.header("📝 New Student Registration Form")
     auth_pwd = st.text_input("Enter Staff / Admin Password:", type="password")
@@ -309,6 +328,37 @@ elif menu == "📝 New Student Admission":
                     st.success(f"🎉 Registered Successfully! Student ID: {next_id}")
                     st.rerun()
 
+# 4. STUDENT LOGIN PORTAL
+elif menu == "🔑 Student Login Portal":
+    st.header("🔑 Student Individual Dashboard")
+    if "student_logged_in" not in st.session_state:
+        st.session_state["student_logged_in"] = False
+        st.session_state["logged_student_id"] = ""
+
+    if not st.session_state["student_logged_in"]:
+        col_l1, col_l2 = st.columns(2)
+        with col_l1:
+            s_id_in = st.text_input("Enter Student Roll ID:").strip().upper()
+        with col_l2:
+            s_pwd_in = st.text_input("Enter Password (Mobile No):", type="password").strip()
+            
+        if st.button("Login To Dashboard"):
+            st_data = student_df[(student_df["Student ID"] == s_id_in) & (student_df["Mobile No"] == s_pwd_in)]
+            if not st_data.empty:
+                st.session_state["student_logged_in"] = True
+                st.session_state["logged_student_id"] = s_id_in
+                st.rerun()
+            else:
+                st.error("Invalid Roll ID or Password!")
+    else:
+        s_id = st.session_state["logged_student_id"]
+        s = student_df[student_df["Student ID"] == s_id].iloc[0]
+        st.success(f"Welcome, **{s['Name']}** ({s['Student ID']})")
+        if st.button("🔒 Logout"):
+            st.session_state["student_logged_in"] = False
+            st.session_state["logged_student_id"] = ""
+            st.rerun()
+
 # 5. FEE COUNTER DESK
 elif menu == "💵 Fee Counter Desk":
     st.header("💵 Student Fee Collection Counter Desk")
@@ -337,7 +387,7 @@ elif menu == "💵 Fee Counter Desk":
                     st.success(f"✅ Receipt Issued: {rc_num}")
                     st.rerun()
 
-# 7. ADMIN CONTROL PANEL
+# 6. ADMIN CONTROL PANEL
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
     pwd = st.text_input("Enter Director Admin Password", type="password")
