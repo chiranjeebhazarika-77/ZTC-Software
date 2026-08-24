@@ -16,7 +16,7 @@ IST = pytz.timezone('Asia/Kolkata')
 # -------------------------------------------------------------
 # GOOGLE SHEETS LIVE SYNC URL (PASTE YOUR DEPLOYED URL HERE)
 # -------------------------------------------------------------
-GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzKN3L0VyzgniW8RYlG3qZjp9DZZmCSTQHmXS1l2shwtAQu6mHIQX1w1nbFcnOghkMy/exec"
+GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzKN3L0VyzgniW8RYlG3qZjp9DZzmCSTQHmXS1l2shwtAQu6mHIQX1w1nbFcnOghkMy/exec"
 
 STUDENT_MASTER_FILE = "students_db.csv"
 FEE_LOG_FILE = "fees_db.csv"
