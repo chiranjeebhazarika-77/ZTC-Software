@@ -53,14 +53,13 @@ def get_image_base64(file_name):
                 pass
     return None
 
-@st.cache_data(ttl=60)
 def sync_from_cloud(sheet_name):
     if GSHEET_WEBAPP_URL:
         try:
             res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=3, allow_redirects=True)
             if res.status_code == 200:
                 data = res.json()
-                if data and len(data) > 1:
+                if isinstance(data, list) and len(data) > 1:
                     return data
         except Exception:
             pass
@@ -78,14 +77,17 @@ def load_data(file_path, columns, sheet_name=None):
 
     if sheet_name:
         cloud_raw = sync_from_cloud(sheet_name)
-        if cloud_raw and len(cloud_raw) > 1:
-            header = cloud_raw[0]
-            rows = cloud_raw[1:]
-            df = pd.DataFrame(rows, columns=header, dtype=str)
-            for col in columns:
-                if col not in df.columns: df[col] = ""
-            df.to_csv(file_path, index=False)
-            return df
+        if cloud_raw and isinstance(cloud_raw, list) and len(cloud_raw) > 1:
+            try:
+                header = cloud_raw[0]
+                rows = cloud_raw[1:]
+                df = pd.DataFrame(rows, columns=header, dtype=str)
+                for col in columns:
+                    if col not in df.columns: df[col] = ""
+                df.to_csv(file_path, index=False)
+                return df
+            except Exception:
+                pass
 
     return pd.DataFrame(columns=columns)
 
