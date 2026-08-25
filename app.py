@@ -429,7 +429,7 @@ if main_mod == "⚡ Quick Actions & Dashboard":
         elif view_pwd:
             st.error("Incorrect Password! Access denied for privacy reasons.")
         else:
-            st.info("Student phone numbers, addresses, and fee details are hidden for privacy. Enter password to view.")elif main_mod == "📝 New Student Admission":
+    st.info("Student phone numbers, addresses, and fee details are hidden for privacy. Enter password to view.")elif main_mod == "📝 New Student Admission":
     st.header("📝 Candidate Admission Data Capture Format (DCF)")
     
     year_code = str(datetime.date.today().year)[2:]
