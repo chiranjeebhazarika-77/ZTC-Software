@@ -793,7 +793,7 @@ elif menu == "🔐 Admin Control Panel":
 # -------------------------------------------------------------
 st.markdown("""
 <div style="text-align:center; padding:20px; font-size:12px; color:#64748B; border-top:1px solid #CBD5E1; margin-top:40px;">
-    Design & Architecture Inspired by National Institutional Portals | Developed for Soft Tech Computers & ZTC Enterprise © 2026<br>
-    Center Code: 4159 | Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149
+    Official Enterprise Management System | Soft Tech Computers & ZTC Enterprise © 2026<br>
+    An ISO 9001:2015 Certified Institution | Center Code: 4159 | Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149
 </div>
 """, unsafe_allow_html=True)
