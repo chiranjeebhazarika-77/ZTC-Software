@@ -96,7 +96,7 @@ student_cols = ["Sl. No.", "Student ID", "Name", "Father Name", "Mother Name", "
 fee_cols = ["Receipt No", "Student ID", "Date", "Amount Paid", "Payment Mode", "Collected_By", "Remarks"]
 attendance_cols = ["Student ID", "Date", "Time_In", "Status", "Late_Reason", "Sign_Mode", "Location_Verified"]
 teacher_cols = ["Teacher ID", "Name", "Phone", "Qualification", "Designation", "Shift Assigned"]
-teacher_att_cols = ["Date", "Teacher ID", "Name", "Shift", "Time_In", "Time_Out", "Status", "Late_Mins", "Remarks"]
+teacher_att_cols = ["Date", "Teacher ID", "Name", "Shift", "Time_In", "Time_Out", "Status", "Late_Mins", "Penalty_Deduction", "Net_Earning_Today", "Remarks"]
 enquiry_cols = ["Date", "Name", "Mobile", "Course Interested", "Village/Address", "Status"]
 sfpc_cols = ["Date", "Student ID", "Student Name", "PC Machine No", "Topic Practiced", "Teacher Incharge"]
 creds_cols = ["Role", "Password"]
@@ -150,7 +150,7 @@ if courses_df.empty:
 if teacher_df.empty:
     default_teachers = [
         {"Teacher ID": "TCH-01", "Name": "Chiranjeeb Hazarika", "Phone": "9101026718", "Qualification": "Director / Master Trainer", "Designation": "Director", "Shift Assigned": "All Shifts"},
-        {"Teacher ID": "TCH-02", "Name": "Senior Faculty", "Phone": "9876543210", "Qualification": "MCA / PGDCA", "Designation": "Instructor", "Shift Assigned": "Morning & Afternoon"}
+        {"Teacher ID": "TCH-02", "Name": "Senior Faculty", "Phone": "9876543210", "Qualification": "MCA / PGDCA", "Designation": "Instructor", "Shift Assigned": "Morning, Afternoon, Evening"}
     ]
     teacher_df = pd.DataFrame(default_teachers)
     save_data(teacher_df, TEACHERS_FILE, "teachers_db")
@@ -316,7 +316,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Institutional Header Strip
+# Institutional Header Strip (No student counts on public strip)
 st.markdown("""
 <div class="school-info-card">
     <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px;">
@@ -383,8 +383,8 @@ if menu == "⚡ Quick Actions & Dashboard":
         <div class="action-box">
             <div class="action-icon">📝</div>
             <div>
-                <b style="font-size:15px; color:#0F172A;">Online Student Admission & Enquiry Desk</b>
-                <div style="font-size:12px; color:#64748B;">Fill up candidate form or check official course fee details</div>
+                <b style="font-size:15px; color:#0F172A;">Online Student Admission & Course Fee Enquiry Desk</b>
+                <div style="font-size:12px; color:#64748B;">Submit your query to check official course duration and fee structure</div>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -422,8 +422,8 @@ if menu == "⚡ Quick Actions & Dashboard":
                         <div class="pink-badge">
                             🎉 <b>Enquiry Submitted Successfully!</b><br>
                             <b>Selected Course:</b> {e_course}<br>
-                            <b>Duration:</b> {c_dur} | <b>Official Total Fee:</b> ₹{c_fee}<br>
-                            <i>Our center will contact you on {e_mobile} shortly!</i>
+                            <b>Duration:</b> {c_dur} | <b>Official Total Course Fee:</b> ₹{c_fee}<br>
+                            <i>Our academy office will contact you on {e_mobile} shortly!</i>
                         </div>
                         """, unsafe_allow_html=True)
 
@@ -630,65 +630,78 @@ elif menu == "🔑 Student Login Portal":
             st.rerun()
 
 # -------------------------------------------------------------
-# 5. SUNDAY FREE PRACTICE CLASS (SFPC)
+# 5. SUNDAY FREE PRACTICE CLASS (SFPC) - PROTECTED WITH ID & PASSWORD
 # -------------------------------------------------------------
 elif menu == "🎯 Sunday Free Practice Class (SFPC)":
     st.header("🎯 Sunday Free Practice Class (SFPC) Desk")
-    tab_sf1, tab_sf2 = st.tabs(["🔍 Check Eligibility & Fee Summary", "📝 SFPC Lab Entry Log"])
+    tab_sf1, tab_sf2 = st.tabs(["🔒 Student Eligibility & Fee Summary", "📝 Staff SFPC Lab Entry Log"])
     
     with tab_sf1:
-        sf_id = st.text_input("Enter Student Roll ID (e.g. STC26-001):").strip().upper()
-        if sf_id:
-            st_res = student_df[student_df["Student ID"] == sf_id]
-            if not st_res.empty:
-                s = st_res.iloc[0]
-                p_logs = fee_df[fee_df["Student ID"] == sf_id]
-                tot_paid = sum([float(a) for a in p_logs["Amount Paid"] if a])
-                net_f = float(s["Net Fee"]) if s["Net Fee"] else 2550.0
-                due_f = net_f - tot_paid
-                
-                # Attendance calculation
-                s_att = att_df[att_df["Student ID"] == sf_id]
-                tot_classes = len(s_att)
-                present_classes = len(s_att[s_att["Status"].isin(["Present", "Late"])])
-                att_pct = (present_classes / tot_classes * 100) if tot_classes > 0 else 100.0
-                
-                # SFPC Eligibility Rules:
-                # 1. Admission Fee min ₹999 paid
-                cond1 = tot_paid >= 999.0
-                # 2. At least 50% of total course fee paid
-                cond2 = (tot_paid / net_f * 100) >= 50.0 if net_f > 0 else True
-                # 3. Attendance >= 75%
-                cond3 = att_pct >= 75.0
-                
-                is_eligible = cond1 and cond2 and cond3
-                
-                st.subheader(f"📊 Student Account & Eligibility Summary: {s['Name']}")
-                col_c1, col_c2, col_c3 = st.columns(3)
-                col_c1.metric("Total Fee Paid", f"₹{tot_paid:.2f}", f"Due: ₹{due_f:.2f}")
-                col_c2.metric("Fee Clearance %", f"{(tot_paid/net_f*100):.1f}%", "Min 50% required")
-                col_c3.metric("Attendance %", f"{att_pct:.1f}%", "Min 75% required")
-                
-                st.markdown("---")
-                st.write("**Mandatory Eligibility Checklist:**")
-                st.write(f"- {'✅' if cond1 else '❌'} **Admission Fee (Min ₹999 Paid):** Paid ₹{tot_paid:.2f}")
-                st.write(f"- {'✅' if cond2 else '❌'} **50% Total Course Fee Clearance:** Current {(tot_paid/net_f*100):.1f}%")
-                st.write(f"- {'✅' if cond3 else '❌'} **Minimum 75% Class Attendance:** Current {att_pct:.1f}%")
-                
-                if is_eligible:
-                    st.markdown("""
-                    <div class="green-badge" style="font-size:16px;">
-                        🎉 <b>APPROVED: Candidate is 100% ELIGIBLE for Sunday Free Practice Class (SFPC)!</b>
-                    </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown("""
-                    <div class="pink-badge" style="font-size:16px;">
-                        ❌ <b>NOT ELIGIBLE:</b> Student does not satisfy all 3 mandatory SFPC criteria. Please clear pending dues/attendance.
-                    </div>
-                    """, unsafe_allow_html=True)
+        st.subheader("🔑 Check SFPC Eligibility & Account Summary")
+        st.info("ℹ️ Enter your official **Roll ID** and **Password (Registered Mobile No)** to verify access.")
+        
+        col_sf_id, col_sf_pwd = st.columns(2)
+        with col_sf_id:
+            sf_id = st.text_input("Enter Student Roll ID (e.g. STC26-001):", key="sf_user_id").strip().upper()
+        with col_sf_pwd:
+            sf_pwd = st.text_input("Enter Password (Registered Mobile No):", type="password", key="sf_user_pwd").strip()
+            
+        if st.button("🔓 Check My SFPC Eligibility Now", use_container_width=True):
+            if not sf_id or not sf_pwd:
+                st.error("Please enter both Roll ID and Password!")
             else:
-                st.error("Candidate Roll ID not found!")
+                st_res = student_df[(student_df["Student ID"] == sf_id) & (student_df["Mobile No"] == sf_pwd)]
+                if not st_res.empty:
+                    s = st_res.iloc[0]
+                    p_logs = fee_df[fee_df["Student ID"] == sf_id]
+                    tot_paid = sum([float(a) for a in p_logs["Amount Paid"] if a])
+                    net_f = float(s["Net Fee"]) if s["Net Fee"] else 2550.0
+                    due_f = net_f - tot_paid
+                    
+                    # Attendance calculation
+                    s_att = att_df[att_df["Student ID"] == sf_id]
+                    tot_classes = len(s_att)
+                    present_classes = len(s_att[s_att["Status"].isin(["Present", "Late"])])
+                    att_pct = (present_classes / tot_classes * 100) if tot_classes > 0 else 100.0
+                    
+                    # SFPC Eligibility Rules:
+                    # 1. Admission Fee min ₹999 paid
+                    cond1 = tot_paid >= 999.0
+                    # 2. At least 50% of total course fee paid
+                    fee_pct = (tot_paid / net_f * 100) if net_f > 0 else 100.0
+                    cond2 = fee_pct >= 50.0
+                    # 3. Attendance >= 75%
+                    cond3 = att_pct >= 75.0
+                    
+                    is_eligible = cond1 and cond2 and cond3
+                    
+                    st.markdown("---")
+                    st.subheader(f"📊 Student Account & SFPC Summary: {s['Name']}")
+                    col_c1, col_c2, col_c3 = st.columns(3)
+                    col_c1.metric("Total Fee Paid", f"₹{tot_paid:.2f}", f"Due: ₹{due_f:.2f}")
+                    col_c2.metric("Fee Clearance", f"{fee_pct:.1f}%", "Min 50% required")
+                    col_c3.metric("Attendance Score", f"{att_pct:.1f}%", "Min 75% required")
+                    
+                    st.markdown("---")
+                    st.write("**Mandatory Eligibility Checklist:**")
+                    st.write(f"- {'✅' if cond1 else '❌'} **Admission Fee (Min ₹999 Paid):** Paid ₹{tot_paid:.2f}")
+                    st.write(f"- {'✅' if cond2 else '❌'} **50% Total Course Fee Clearance:** Current {fee_pct:.1f}%")
+                    st.write(f"- {'✅' if cond3 else '❌'} **Minimum 75% Class Attendance:** Current {att_pct:.1f}%")
+                    
+                    if is_eligible:
+                        st.markdown("""
+                        <div class="green-badge" style="font-size:16px;">
+                            🎉 <b>APPROVED: Candidate is 100% ELIGIBLE for Sunday Free Practice Class (SFPC)!</b>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    else:
+                        st.markdown("""
+                        <div class="pink-badge" style="font-size:16px;">
+                            ❌ <b>NOT ELIGIBLE:</b> Student does not satisfy all 3 mandatory SFPC criteria. Please clear pending dues/attendance.
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.error("❌ Authentication Failed: Invalid Roll ID or Password!")
                 
     with tab_sf2:
         sf_auth = st.text_input("Enter Staff Password for SFPC Lab Entry:", type="password", key="sfpc_auth")
@@ -756,7 +769,7 @@ elif menu == "💵 Fee Counter Desk":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 7. TEACHER PORTAL & ATTENDANCE
+# 7. TEACHER PORTAL & ATTENDANCE WITH LATE PENALTY & SALARY FORMULA
 # -------------------------------------------------------------
 elif menu == "🔑 Teacher Portal & Attendance":
     st.header("🔑 Faculty / Teacher Desk & Shift Punching")
@@ -764,18 +777,24 @@ elif menu == "🔑 Teacher Portal & Attendance":
     if t_pwd in [ADMIN_PWD, TEACHER_PWD]:
         st.success("Authorized Faculty Access Granted!")
         t_tab1, t_tab2, t_tab3, t_tab4, t_tab5 = st.tabs([
-            "⏰ Teacher Self Attendance (Punch In/Out)",
+            "⏰ Teacher Self Attendance & Salary Punch",
             "📸 Student Attendance (IST)",
             "📚 Syllabus Coverage (Multi-Topic)",
             "💻 PC Lab Allocation",
             "📝 Daily Student Tasks"
         ])
         
-        # 1. TEACHER SELF PUNCH
+        # 1. TEACHER SELF PUNCH WITH LATE DEDUCTION & EARNING
         with t_tab1:
-            st.subheader("⏰ Teacher Self Shift Attendance (IST Clock)")
+            st.subheader("⏰ Teacher Shift Attendance (Late Penalty & Daily Earning)")
             now_ist = datetime.datetime.now(IST)
             st.info(f"🕒 **Current IST Real-Time:** `{now_ist.strftime('%I:%M:%S %p (%d-%B-%Y)')}`")
+            
+            st.markdown("""
+            <div style="background:#F1F5F9; border:1px solid #CBD5E1; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:12px;">
+                💡 <b>Salary Rule:</b> 3 Batches (90+90+90 = 270 Mins) = <b>₹230 / Day</b> (₹76.67 per 90-min batch | ₹0.852/Min). Late arrival automatically calculates penalty deduction.
+            </div>
+            """, unsafe_allow_html=True)
             
             t_name_sel = st.selectbox("Select Teacher Name:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Chiranjeeb Hazarika"])
             t_shift_sel = st.selectbox("Assigned Shift:", [
@@ -784,11 +803,17 @@ elif menu == "🔑 Teacher Portal & Attendance":
                 "Evening (05:30 - 07:00 PM)"
             ])
             
-            # Late Check Calculation
+            # Late Check Calculation based on 90 mins shift
             shift_start_mins = 6 * 60 + 30 if "Morning" in t_shift_sel else (16 * 60 if "Afternoon" in t_shift_sel else 17 * 60 + 30)
             current_mins = now_ist.hour * 60 + now_ist.minute
-            is_late = current_mins > (shift_start_mins + 10)  # 10 min grace period
             late_by = max(0, current_mins - shift_start_mins)
+            is_late = late_by > 5  # 5 min grace period
+            
+            # Base per batch: 230 / 3 = 76.67. Per min rate: 230 / 270 = 0.85185
+            base_batch_pay = 230.0 / 3.0
+            per_min_rate = 230.0 / 270.0
+            penalty_amt = round(min(late_by * per_min_rate, base_batch_pay), 2) if is_late else 0.0
+            net_batch_earning = round(max(0.0, base_batch_pay - penalty_amt), 2)
             
             col_p1, col_p2 = st.columns(2)
             with col_p1:
@@ -807,6 +832,8 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         "Time_Out": "--",
                         "Status": stat_val,
                         "Late_Mins": late_val,
+                        "Penalty_Deduction": f"₹{penalty_amt:.2f}",
+                        "Net_Earning_Today": f"₹{net_batch_earning:.2f}",
                         "Remarks": "Punched In"
                     }
                     teacher_att_df = pd.concat([teacher_att_df, pd.DataFrame([new_t_att])], ignore_index=True)
@@ -815,18 +842,22 @@ elif menu == "🔑 Teacher Portal & Attendance":
                     if is_late:
                         st.markdown(f"""
                         <div class="pink-badge">
-                            🚨 <b>RED ALERT (LATE PUNCH):</b> Punched in at {time_in_str} (Late by {late_by} minutes for {t_shift_sel})!
+                            🚨 <b>RED ALERT (LATE PUNCH):</b> Punched In at <b>{time_in_str}</b> (Late by <b>{late_by} mins</b>)!<br>
+                            <b>Penalty Deducted:</b> ₹{penalty_amt:.2f} | <b>Net Shift Earning:</b> ₹{net_batch_earning:.2f} / ₹{base_batch_pay:.2f}
                         </div>
                         """, unsafe_allow_html=True)
                     else:
-                        st.markdown(f'<div class="green-badge">✅ Punched IN On-Time at {time_in_str}!</div>', unsafe_allow_html=True)
+                        st.markdown(f"""
+                        <div class="green-badge">
+                            ✅ <b>Punched IN On-Time at {time_in_str}!</b> Net Shift Earning: <b>₹{base_batch_pay:.2f}</b>
+                        </div>
+                        """, unsafe_allow_html=True)
                     st.rerun()
                     
             with col_p2:
                 if st.button("🔴 Teacher Punch OUT Now", use_container_width=True):
                     today_str = str(datetime.date.today())
                     time_out_str = now_ist.strftime("%I:%M %p")
-                    # Update today's record
                     idx = teacher_att_df[(teacher_att_df["Date"] == today_str) & (teacher_att_df["Name"] == t_name_sel)].index
                     if len(idx) > 0:
                         teacher_att_df.loc[idx[-1], "Time_Out"] = time_out_str
@@ -838,7 +869,7 @@ elif menu == "🔑 Teacher Portal & Attendance":
                     st.rerun()
                     
             if not teacher_att_df.empty:
-                st.write("**Recent Teacher Attendance Records:**")
+                st.write("**Recent Teacher Punch & Earning Records:**")
                 st.dataframe(teacher_att_df.tail(10), use_container_width=True)
 
         # 2. STUDENT ATTENDANCE
@@ -1051,21 +1082,21 @@ elif menu == "🔐 Admin Control Panel":
                     
                 st.dataframe(show_df, use_container_width=True)
 
-        # 4. CLASS LOGS REVIEW
+        # 4. CLASS LOGS & TEACHER EARNINGS REVIEW
         with adm_tab4:
-            st.subheader("📖 Daily Teacher Activities & Classroom Logs")
-            c_sub1, c_sub2, c_sub3, c_sub4 = st.tabs(["📚 Syllabus Covered", "⏰ Teacher Attendance", "💻 PC Allocations", "📝 Practical Tasks Assigned"])
+            st.subheader("📖 Daily Teacher Activities, Attendance & Earnings")
+            c_sub1, c_sub2, c_sub3, c_sub4 = st.tabs(["⏰ Teacher Attendance & Earnings", "📚 Syllabus Covered", "💻 PC Allocations", "📝 Tasks Assigned"])
             
             with c_sub1:
-                if not syllabus_df.empty:
-                    st.dataframe(syllabus_df, use_container_width=True)
-                else:
-                    st.info("No syllabus logs recorded yet.")
-            with c_sub2:
                 if not teacher_att_df.empty:
                     st.dataframe(teacher_att_df, use_container_width=True)
                 else:
                     st.info("No teacher attendance punched yet.")
+            with c_sub2:
+                if not syllabus_df.empty:
+                    st.dataframe(syllabus_df, use_container_width=True)
+                else:
+                    st.info("No syllabus logs recorded yet.")
             with c_sub3:
                 if not pc_alloc_df.empty:
                     st.dataframe(pc_alloc_df, use_container_width=True)
@@ -1093,7 +1124,6 @@ elif menu == "🔐 Admin Control Panel":
                     
                     if st.form_submit_button("Save Course"):
                         if c_nname:
-                            # If exists update, else add
                             if c_nname in courses_df["Course Name"].values:
                                 courses_df.loc[courses_df["Course Name"] == c_nname, "Duration"] = c_ndur
                                 courses_df.loc[courses_df["Course Name"] == c_nname, "Fee (₹)"] = str(c_nfee)
