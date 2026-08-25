@@ -325,8 +325,25 @@ st.markdown("---")
 # -------------------------------------------------------------
 # 1. QUICK ACTIONS (UDISE+ HOMEPAGE GRID)
 # -------------------------------------------------------------
+# -------------------------------------------------------------
+# 1. QUICK ACTIONS & PRIVACY-PROTECTED DASHBOARD
+# -------------------------------------------------------------
 if main_mod == "⚡ Quick Actions & Dashboard":
-    st.markdown('<h4 style="color:#0F172A; margin:0 0 15px 0;">⚡ Quick Actions</h4>', unsafe_allow_html=True)
+    st.markdown('<h4 style="color:#0F172A; margin:0 0 15px 0;">⚡ Institutional Overview & Quick Actions</h4>', unsafe_allow_html=True)
+    
+    # Overview Summary Cards (No Personal Data Leaked)
+    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+    with col_s1:
+        st.metric("Total Enrolled Candidates", f"{len(student_df)} Students")
+    with col_s2:
+        active_count = len(student_df[student_df["Status"] == "Active"]) if "Status" in student_df.columns else len(student_df)
+        st.metric("Active Ongoing Batches", f"{active_count} Trainees")
+    with col_s3:
+        st.metric("Institutional ISO Certified", "ISO 9001:2015")
+    with col_s4:
+        st.metric("Authorized Center Code", "4159 (Assam)")
+        
+    st.markdown("<br>", unsafe_allow_html=True)
     
     col_l, col_r = st.columns([2, 1])
     
@@ -337,8 +354,8 @@ if main_mod == "⚡ Quick Actions & Dashboard":
             <div class="action-box">
                 <div class="action-icon">📊</div>
                 <div>
-                    <div class="action-title">Dashboard & Master Data</div>
-                    <div class="action-sub">View master student records, reports & logs</div>
+                    <div class="action-title">Candidate Directory</div>
+                    <div class="action-sub">Protected master student database</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -347,8 +364,8 @@ if main_mod == "⚡ Quick Actions & Dashboard":
             <div class="action-box">
                 <div class="action-icon">💳</div>
                 <div>
-                    <div class="action-title">Fee Ledger Matrix</div>
-                    <div class="action-sub">Real-time deposit receipts & dues tracking</div>
+                    <div class="action-title">Fee Ledger Desk</div>
+                    <div class="action-sub">Confidential money receipts & dues</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -359,7 +376,7 @@ if main_mod == "⚡ Quick Actions & Dashboard":
                 <div class="action-icon">📝</div>
                 <div>
                     <div class="action-title">Candidate Admission DCF</div>
-                    <div class="action-sub">Register new applicant data entry form</div>
+                    <div class="action-sub">Register new applicant form</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -368,8 +385,8 @@ if main_mod == "⚡ Quick Actions & Dashboard":
             <div class="action-box">
                 <div class="action-icon">📜</div>
                 <div>
-                    <div class="action-title">Certificate & Admit Module</div>
-                    <div class="action-sub">Verify authentic Sarva India certificates</div>
+                    <div class="action-title">Public Certificate Verification</div>
+                    <div class="action-sub">Verify authentic Sarva India records</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -398,16 +415,21 @@ if main_mod == "⚡ Quick Actions & Dashboard":
         """, unsafe_allow_html=True)
         
     st.markdown("---")
-    st.subheader("📋 Live Master Records Summary")
-    if not student_df.empty:
-        st.dataframe(student_df[["Student ID", "Name", "Father Name", "Mobile No", "Course", "Join Date", "Net Fee", "Status"]], use_container_width=True)
-    else:
-        st.info("No candidates registered in database yet.")
-
-# -------------------------------------------------------------
-# 2. NEW STUDENT ADMISSION
-# -------------------------------------------------------------
-elif main_mod == "📝 New Student Admission":
+    
+    # PRIVACY PROTECTED STUDENT DIRECTORY SECTION
+    st.subheader("🔒 Master Student Records (Authorized Staff Access Only)")
+    with st.expander("🔑 Click here to unlock student database (Password Required)", expanded=False):
+        view_pwd = st.text_input("Enter Staff / Director Password to View Records:", type="password", key="view_dash_pwd")
+        if view_pwd in [ADMIN_PWD, TEACHER_PWD]:
+            st.success("Access Granted! Showing Master Database:")
+            if not student_df.empty:
+                st.dataframe(student_df, use_container_width=True)
+            else:
+                st.info("No candidates registered in database yet.")
+        elif view_pwd:
+            st.error("Incorrect Password! Access denied for privacy reasons.")
+        else:
+            st.info("Student phone numbers, addresses, and fee details are hidden for privacy. Enter password to view.")elif main_mod == "📝 New Student Admission":
     st.header("📝 Candidate Admission Data Capture Format (DCF)")
     
     year_code = str(datetime.date.today().year)[2:]
