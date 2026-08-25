@@ -428,7 +428,7 @@ if main_mod == "⚡ Quick Actions & Dashboard":
                 st.info("No candidates registered in database yet.")
         elif view_pwd:
             st.error("Incorrect Password! Access denied for privacy reasons.")
-        else:
+            else:
     st.info("Student phone numbers, addresses, and fee details are hidden for privacy. Enter password to view.")elif main_mod == "📝 New Student Admission":
     st.header("📝 Candidate Admission Data Capture Format (DCF)")
     
