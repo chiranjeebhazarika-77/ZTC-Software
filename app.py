@@ -586,7 +586,7 @@ elif menu == "📝 New Student Admission":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 4. STUDENT LOGIN PORTAL (FEES, ATTENDANCE & EXAM MARKS)
+# 4. STUDENT LOGIN PORTAL (WITH FORGOT PASSWORD / ROLL ID RECOVERY)
 # -------------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -601,14 +601,48 @@ elif menu == "🔑 Student Login Portal":
         with col_l2:
             s_pwd_in = st.text_input("Enter Password (Mobile No):", type="password").strip()
             
-        if st.button("🟢 Login To Dashboard"):
+        if st.button("🟢 Login To Dashboard", use_container_width=True):
             st_data = student_df[(student_df["Student ID"] == s_id_in) & (student_df["Mobile No"] == s_pwd_in)]
             if not st_data.empty:
                 st.session_state["student_logged_in"] = True
                 st.session_state["logged_student_id"] = s_id_in
                 st.rerun()
             else:
-                st.error("Invalid Roll ID or Mobile Number!")
+                st.error("❌ Invalid Roll ID or Mobile Number!")
+                
+        st.markdown("<br>", unsafe_allow_html=True)
+        # FORGOT PASSWORD & RECOVERY HELPDESK
+        with st.expander("❓ Forgot Roll ID or Password? (লগইন সহায়তা বিচাৰক)", expanded=False):
+            st.write("💡 **মনত ৰাখিব:** তোমাৰ নামভৰ্তিৰ সময়ত দিয়া ১০ টা সংখ্যাৰ ম’বাইল নম্বৰটোৱেই তোমাৰ পাছৱৰ্ড।")
+            st.markdown("---")
+            st.write("**🔍 ১. ম'বাইল নম্বৰ দি Roll ID বিচাৰক:**")
+            find_mob = st.text_input("পঞ্জীকৃত মোবাইল নম্বৰ দিয়ক:", key="find_mob_in").strip()
+            if st.button("Roll ID বিচাৰক"):
+                if find_mob:
+                    match_s = student_df[student_df["Mobile No"] == find_mob]
+                    if not match_s.empty:
+                        for _, row in match_s.iterrows():
+                            st.markdown(f"""
+                            <div class="green-badge">
+                                ✅ <b>Record Found:</b><br>
+                                <b>Student Name:</b> {row['Name']}<br>
+                                <b>Roll ID:</b> <span style="font-size:18px; color:#047857;"><b>{row['Student ID']}</b></span><br>
+                                <b>Password:</b> <i>Your 10-digit mobile number ({find_mob})</i>
+                            </div>
+                            """, unsafe_allow_html=True)
+                    else:
+                        st.error("এই মোবাইল নম্বৰত কোনো ছাত্ৰৰ ৰেকৰ্ড পোৱা নগ'ল। অনুগ্ৰহ কৰি তলৰ হোৱাটছএপত যোগাযোগ কৰক।")
+                        
+            st.markdown("---")
+            st.write("**💬 ২. ডাইৰেক্টৰ ছাৰৰ সৈতে হোৱাটছএপত যোগাযোগ কৰক:**")
+            wa_link = "https://wa.me/919101026718?text=Hello%20Director%20Sir,%20I%20forgot%20my%20Student%20Portal%20Login%20Details%20(STC%20Portal).%20Please%20help."
+            st.markdown(f"""
+            <a href="{wa_link}" target="_blank" style="text-decoration:none;">
+                <div style="background-color:#25D366; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; text-align:center; display:inline-block;">
+                    📲 Message Director Sir on WhatsApp (+91 9101026718)
+                </div>
+            </a>
+            """, unsafe_allow_html=True)
     else:
         s_id = st.session_state["logged_student_id"]
         s = student_df[student_df["Student ID"] == s_id].iloc[0]
