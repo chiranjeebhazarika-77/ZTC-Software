@@ -271,9 +271,9 @@ st.markdown("""
 
     .pink-badge {
         background: #FCE7F3;
-        color: #DB2777;
+        color: #BE185D;
         border: 1px solid #F472B6;
-        padding: 10px 15px;
+        padding: 12px 16px;
         border-radius: 8px;
         font-weight: 600;
         margin-bottom: 12px;
@@ -281,22 +281,30 @@ st.markdown("""
     .green-badge {
         background: #DCFCE7;
         color: #15803D;
-        border: 1px solid #4ADE80;
-        padding: 10px 15px;
+        border: 1.5px solid #22C55E;
+        padding: 12px 16px;
         border-radius: 8px;
         font-weight: 600;
         margin-bottom: 12px;
+        box-shadow: 0 2px 5px rgba(34, 197, 94, 0.15);
     }
 
+    /* Vibrant Green Button Theme */
     div.stButton > button {
-        background-color: #0284C7 !important;
+        background-color: #047857 !important;
         color: white !important;
         border-radius: 6px !important;
         font-weight: 600 !important;
         border: none !important;
+        transition: all 0.2s ease-in-out !important;
     }
     div.stButton > button:hover {
-        background-color: #0369A1 !important;
+        background-color: #059669 !important;
+        transform: scale(1.01) !important;
+        box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3) !important;
+    }
+    div.stButton > button:active {
+        background-color: #10B981 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -399,7 +407,7 @@ if menu == "⚡ Quick Actions & Dashboard":
                 course_list = courses_df["Course Name"].tolist() if not courses_df.empty else []
                 e_course = st.selectbox("Select Interested Course:*", course_list)
                 
-                if st.form_submit_button("Submit Enquiry & Check Course Fee"):
+                if st.form_submit_button("🟢 Submit Enquiry & Check Course Fee"):
                     if not e_name or not e_mobile:
                         st.error("Please enter Name and Mobile Number!")
                     else:
@@ -419,7 +427,7 @@ if menu == "⚡ Quick Actions & Dashboard":
                         save_data(enquiry_df, ENQUIRY_FILE, "enquiries_db")
                         
                         st.markdown(f"""
-                        <div class="pink-badge">
+                        <div class="green-badge">
                             🎉 <b>Enquiry Submitted Successfully!</b><br>
                             <b>Selected Course:</b> {e_course}<br>
                             <b>Duration:</b> {c_dur} | <b>Official Total Course Fee:</b> ₹{c_fee}<br>
@@ -578,7 +586,7 @@ elif menu == "📝 New Student Admission":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 4. STUDENT LOGIN PORTAL
+# 4. STUDENT LOGIN PORTAL (FEES, ATTENDANCE & EXAM MARKS)
 # -------------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -593,7 +601,7 @@ elif menu == "🔑 Student Login Portal":
         with col_l2:
             s_pwd_in = st.text_input("Enter Password (Mobile No):", type="password").strip()
             
-        if st.button("Login To Dashboard"):
+        if st.button("🟢 Login To Dashboard"):
             st_data = student_df[(student_df["Student ID"] == s_id_in) & (student_df["Mobile No"] == s_pwd_in)]
             if not st_data.empty:
                 st.session_state["student_logged_in"] = True
@@ -604,27 +612,61 @@ elif menu == "🔑 Student Login Portal":
     else:
         s_id = st.session_state["logged_student_id"]
         s = student_df[student_df["Student ID"] == s_id].iloc[0]
+        
         st.markdown(f"""
         <div class="green-badge">
-            Welcome back, <b>{s['Name']}</b> (Roll ID: {s['Student ID']})
+            Welcome back, <b>{s['Name']}</b> | Roll ID: <b>{s['Student ID']}</b> | Course: <b>{s['Course']}</b>
         </div>
         """, unsafe_allow_html=True)
         
+        # Calculations
         p_logs = fee_df[fee_df["Student ID"] == s_id]
         tot_paid = sum([float(amt) for amt in p_logs["Amount Paid"] if amt])
         net_f = float(s["Net Fee"]) if s["Net Fee"] else 0.0
         due_f = net_f - tot_paid
         
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Course Enrolled", s["Course"])
-        c2.metric("Total Fee Paid", f"₹{tot_paid:.2f}")
-        c3.metric("Balance Due", f"₹{due_f:.2f}")
+        s_att = att_df[att_df["Student ID"] == s_id]
+        tot_classes = len(s_att)
+        present_cnt = len(s_att[s_att["Status"].isin(["Present", "Late"])])
+        att_percentage = (present_cnt / tot_classes * 100) if tot_classes > 0 else 100.0
         
-        if not p_logs.empty:
-            st.subheader("🧾 Fee Receipts & Payment Logs")
-            st.dataframe(p_logs[["Receipt No", "Date", "Amount Paid", "Payment Mode", "Collected_By"]], use_container_width=True)
+        s_marks = marks_df[marks_df["Student ID"] == s_id]
+        total_tests = len(s_marks)
+        
+        # Metrics Row
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total Fee Paid", f"₹{tot_paid:.2f}", f"Net: ₹{net_f:.2f}")
+        c2.metric("Due Balance", f"₹{due_f:.2f}", delta="-Due" if due_f > 0 else "Cleared", delta_color="inverse")
+        c3.metric("Attendance Score", f"{att_percentage:.1f}%", f"{present_cnt}/{tot_classes} Days")
+        c4.metric("Tests / Exams Taken", f"{total_tests} Exams")
+        
+        st.markdown("---")
+        
+        # Tabs for detailed breakdown
+        s_tab1, s_tab2, s_tab3 = st.tabs(["🧾 Fee Payment Receipts", "📸 Attendance Log", "📝 Exam & Test Marks Report"])
+        
+        with s_tab1:
+            st.subheader("🧾 Fee Receipts & Payment Ledger")
+            if not p_logs.empty:
+                st.dataframe(p_logs[["Receipt No", "Date", "Amount Paid", "Payment Mode", "Collected_By", "Remarks"]], use_container_width=True)
+            else:
+                st.info("No fee deposit receipts recorded yet.")
+                
+        with s_tab2:
+            st.subheader("📸 Classroom Attendance Log")
+            if not s_att.empty:
+                st.dataframe(s_att[["Date", "Time_In", "Status", "Sign_Mode", "Location_Verified"]], use_container_width=True)
+            else:
+                st.info("No daily attendance recorded yet.")
+                
+        with s_tab3:
+            st.subheader("📝 Official Exam & Class Test Marks Report")
+            if not s_marks.empty:
+                st.dataframe(s_marks[["Date", "Course/Subject", "Test Topic", "Marks Obtained", "Total Marks", "Teacher Incharge"]], use_container_width=True)
+            else:
+                st.info("No exam or test marks recorded yet.")
             
-        if st.button("🔒 Logout"):
+        if st.button("🔒 Logout From Portal"):
             st.session_state["student_logged_in"] = False
             st.session_state["logged_student_id"] = ""
             st.rerun()
@@ -646,7 +688,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
         with col_sf_pwd:
             sf_pwd = st.text_input("Enter Password (Registered Mobile No):", type="password", key="sf_user_pwd").strip()
             
-        if st.button("🔓 Check My SFPC Eligibility Now", use_container_width=True):
+        if st.button("🟢 Check My SFPC Eligibility Now", use_container_width=True):
             if not sf_id or not sf_pwd:
                 st.error("Please enter both Roll ID and Password!")
             else:
@@ -665,12 +707,9 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
                     att_pct = (present_classes / tot_classes * 100) if tot_classes > 0 else 100.0
                     
                     # SFPC Eligibility Rules:
-                    # 1. Admission Fee min ₹999 paid
                     cond1 = tot_paid >= 999.0
-                    # 2. At least 50% of total course fee paid
                     fee_pct = (tot_paid / net_f * 100) if net_f > 0 else 100.0
                     cond2 = fee_pct >= 50.0
-                    # 3. Attendance >= 75%
                     cond3 = att_pct >= 75.0
                     
                     is_eligible = cond1 and cond2 and cond3
@@ -712,7 +751,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
                 sf_topic = st.selectbox("Practice Topic:", ALL_SYLLABUS_TOPICS)
                 sf_teacher = st.selectbox("Teacher Incharge:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Chiranjeeb Hazarika"])
                 
-                if st.form_submit_button("Record Sunday Practice Entry"):
+                if st.form_submit_button("🟢 Record Sunday Practice Entry"):
                     if sf_sid:
                         sid_val = sf_sid.split(" - ")[0]
                         sname_val = sf_sid.split(" - ")[1]
@@ -756,7 +795,7 @@ elif menu == "💵 Fee Counter Desk":
                 collector_nm = st.selectbox("Collected By:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Chiranjeeb Hazarika"])
                 remarks = st.text_input("Remarks", value="Monthly / Installment Fee")
                 
-                if st.form_submit_button("Issue Receipt & Save Deposit"):
+                if st.form_submit_button("🟢 Issue Receipt & Save Deposit"):
                     rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(fee_df)+1:03d}"
                     f_row = {"Receipt No": rc_num, "Student ID": sid, "Date": str(datetime.date.today()), "Amount Paid": str(pay_amt), "Payment Mode": pay_mode, "Collected_By": collector_nm, "Remarks": remarks}
                     fee_df = pd.concat([fee_df, pd.DataFrame([f_row])], ignore_index=True)
@@ -769,19 +808,20 @@ elif menu == "💵 Fee Counter Desk":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 7. TEACHER PORTAL & ATTENDANCE WITH LATE PENALTY & SALARY FORMULA
+# 7. TEACHER PORTAL & ATTENDANCE + EXAM MARKS ENTRY MENU
 # -------------------------------------------------------------
 elif menu == "🔑 Teacher Portal & Attendance":
-    st.header("🔑 Faculty / Teacher Desk & Shift Punching")
+    st.header("🔑 Faculty / Teacher Desk, Attendance & Exam Management")
     t_pwd = st.text_input("Enter Teacher Portal Password:", type="password", key="t_desk_pwd")
     if t_pwd in [ADMIN_PWD, TEACHER_PWD]:
         st.success("Authorized Faculty Access Granted!")
-        t_tab1, t_tab2, t_tab3, t_tab4, t_tab5 = st.tabs([
+        t_tab1, t_tab2, t_tab3, t_tab4, t_tab5, t_tab6 = st.tabs([
             "⏰ Teacher Self Attendance & Salary Punch",
             "📸 Student Attendance (IST)",
+            "📝 Student Exam & Test Marks Entry",
             "📚 Syllabus Coverage (Multi-Topic)",
             "💻 PC Lab Allocation",
-            "📝 Daily Student Tasks"
+            "📋 Daily Student Tasks"
         ])
         
         # 1. TEACHER SELF PUNCH WITH LATE DEDUCTION & EARNING
@@ -803,13 +843,11 @@ elif menu == "🔑 Teacher Portal & Attendance":
                 "Evening (05:30 - 07:00 PM)"
             ])
             
-            # Late Check Calculation based on 90 mins shift
             shift_start_mins = 6 * 60 + 30 if "Morning" in t_shift_sel else (16 * 60 if "Afternoon" in t_shift_sel else 17 * 60 + 30)
             current_mins = now_ist.hour * 60 + now_ist.minute
             late_by = max(0, current_mins - shift_start_mins)
-            is_late = late_by > 5  # 5 min grace period
+            is_late = late_by > 5
             
-            # Base per batch: 230 / 3 = 76.67. Per min rate: 230 / 270 = 0.85185
             base_batch_pay = 230.0 / 3.0
             per_min_rate = 230.0 / 270.0
             penalty_amt = round(min(late_by * per_min_rate, base_batch_pay), 2) if is_late else 0.0
@@ -878,7 +916,7 @@ elif menu == "🔑 Teacher Portal & Attendance":
             with st.form("student_att_form", clear_on_submit=True):
                 att_sid = st.selectbox("Select Student:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
                 att_status = st.selectbox("Attendance Status:", ["Present", "Absent", "Late", "Excused"])
-                if st.form_submit_button("Mark Student Attendance"):
+                if st.form_submit_button("🟢 Mark Student Attendance"):
                     if att_sid:
                         s_id_val = att_sid.split(" - ")[0]
                         now_time_ist = datetime.datetime.now(IST).strftime("%I:%M %p")
@@ -894,8 +932,54 @@ elif menu == "🔑 Teacher Portal & Attendance":
             if not att_df.empty:
                 st.dataframe(att_df.tail(15), use_container_width=True)
 
-        # 3. MULTI-TOPIC SYLLABUS COVERAGE
+        # 3. EXAM & TEST MARKS ENTRY
         with t_tab3:
+            st.subheader("📝 Record Class Test & Exam Marks")
+            with st.form("exam_marks_form", clear_on_submit=True):
+                exam_sid = st.selectbox("Select Candidate:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+                exam_course = st.selectbox("Course / Subject:", courses_df["Course Name"].tolist() if not courses_df.empty else ["Computer Application"])
+                exam_topic = st.text_input("Test / Exam Name (e.g., MS Word Test, Tally GST Practical, Unit-1 Exam)*")
+                
+                col_m1, col_m2 = st.columns(2)
+                with col_m1:
+                    marks_obt = st.number_input("Marks Obtained*", min_value=0.0, max_value=100.0, value=40.0, step=1.0)
+                with col_m2:
+                    total_mks = st.number_input("Total Full Marks*", min_value=1.0, max_value=100.0, value=50.0, step=1.0)
+                    
+                exam_teacher = st.selectbox("Evaluated By (Teacher):", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Chiranjeeb Hazarika"])
+                
+                if st.form_submit_button("🟢 Save Exam Marks"):
+                    if exam_sid and exam_topic:
+                        sid_val = exam_sid.split(" - ")[0]
+                        sname_val = exam_sid.split(" - ")[1]
+                        m_row = {
+                            "Date": str(datetime.date.today()),
+                            "Student ID": sid_val,
+                            "Student Name": sname_val,
+                            "Course/Subject": exam_course,
+                            "Test Topic": exam_topic,
+                            "Marks Obtained": str(marks_obt),
+                            "Total Marks": str(total_mks),
+                            "Teacher Incharge": exam_teacher
+                        }
+                        marks_df = pd.concat([marks_df, pd.DataFrame([m_row])], ignore_index=True)
+                        save_data(marks_df, MARKS_FILE, "marks_db")
+                        st.markdown(f"""
+                        <div class="green-badge">
+                            🎉 <b>Exam Result Saved Successfully!</b><br>
+                            Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <b>{marks_obt} / {total_mks}</b>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.rerun()
+                    else:
+                        st.error("Please enter Exam/Test Topic details!")
+                        
+            if not marks_df.empty:
+                st.write("**Recent Exam / Test Records:**")
+                st.dataframe(marks_df.tail(15), use_container_width=True)
+
+        # 4. MULTI-TOPIC SYLLABUS COVERAGE
+        with t_tab4:
             st.subheader("Record Daily Syllabus Coverage (Multi-Select Allowed)")
             with st.form("syl_multi_form", clear_on_submit=True):
                 syl_course = st.selectbox("Course:", courses_df["Course Name"].tolist() if not courses_df.empty else [])
@@ -903,7 +987,7 @@ elif menu == "🔑 Teacher Portal & Attendance":
                 syl_type = st.selectbox("Session Type:", ["Theory Lecture", "Practical Lab Training", "Weekly Revision", "Class Test / Viva"])
                 syl_teacher = st.selectbox("Teacher Incharge:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Chiranjeeb Hazarika"])
                 
-                if st.form_submit_button("Save Daily Syllabus Coverage"):
+                if st.form_submit_button("🟢 Save Daily Syllabus Coverage"):
                     if syl_topics:
                         topics_str = ", ".join(syl_topics)
                         s_row = {"Date": str(datetime.date.today()), "Course": syl_course, "Topics Covered": topics_str, "Class Type": syl_type, "Teacher Incharge": syl_teacher}
@@ -916,14 +1000,14 @@ elif menu == "🔑 Teacher Portal & Attendance":
             if not syllabus_df.empty:
                 st.dataframe(syllabus_df.tail(10), use_container_width=True)
 
-        # 4. PC ALLOCATION
-        with t_tab4:
+        # 5. PC ALLOCATION
+        with t_tab5:
             st.subheader("Daily Computer Machine Allocation")
             with st.form("pc_alloc_form", clear_on_submit=True):
                 pc_sid = st.selectbox("Student:", student_df["Student ID"] + " - " + student_df["Name"], key="pc_s_sel") if not student_df.empty else None
                 m_no = st.selectbox("Machine / PC No:", [f"PC-{i:02d}" for i in range(1, 21)])
                 pc_shift = st.selectbox("Shift Assigned:", ["Morning", "Afternoon", "Evening"])
-                if st.form_submit_button("Assign Machine"):
+                if st.form_submit_button("🟢 Assign Machine"):
                     if pc_sid:
                         pc_row = {"Date": str(datetime.date.today()), "Student ID": pc_sid.split(" - ")[0], "Student Name": pc_sid.split(" - ")[1], "PC Machine No": m_no, "Shift": pc_shift, "Teacher Incharge": "Faculty"}
                         pc_alloc_df = pd.concat([pc_alloc_df, pd.DataFrame([pc_row])], ignore_index=True)
@@ -931,13 +1015,13 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         st.markdown(f'<div class="green-badge">✅ Machine {m_no} allocated to {pc_sid}!</div>', unsafe_allow_html=True)
                         st.rerun()
 
-        # 5. TASKS
-        with t_tab5:
+        # 6. TASKS
+        with t_tab6:
             st.subheader("Assign Student Daily Tasks / Homework")
             with st.form("task_assign_form", clear_on_submit=True):
                 t_sid = st.selectbox("Student:", student_df["Student ID"] + " - " + student_df["Name"], key="t_s_sel") if not student_df.empty else None
                 task_txt = st.text_area("Practical Task / Assignment Details:")
-                if st.form_submit_button("Assign Task"):
+                if st.form_submit_button("🟢 Assign Task"):
                     if t_sid and task_txt:
                         tsk_row = {"Date": str(datetime.date.today()), "Student ID": t_sid.split(" - ")[0], "Student Name": t_sid.split(" - ")[1], "Task Assigned": task_txt, "Status": "Assigned", "Teacher Incharge": "Faculty"}
                         tasks_df = pd.concat([tasks_df, pd.DataFrame([tsk_row])], ignore_index=True)
@@ -946,7 +1030,7 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         st.rerun()
 
 # -------------------------------------------------------------
-# 8. ADMIN CONTROL PANEL
+# 8. ADMIN CONTROL PANEL (WITH FULL COURSE ADD / EDIT / DELETE)
 # -------------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -958,7 +1042,7 @@ elif menu == "🔐 Admin Control Panel":
             "👨‍🏫 Teacher Management",
             "💰 Dues & Balance Ledger",
             "📖 Class Logs & Activity Review",
-            "📚 Course & Fee Settings",
+            "📚 Course Master (Add/Edit/Delete)",
             "🔑 Change Passwords",
             "🗑️ Danger Zone"
         ])
@@ -985,7 +1069,7 @@ elif menu == "🔐 Admin Control Panel":
                             new_course = st.selectbox("Course", courses_df["Course Name"].tolist(), index=0)
                             new_status = st.selectbox("Status", ["Active", "Completed", "Dropout"], index=0 if s_curr["Status"]=="Active" else 1)
                             
-                        if st.form_submit_button("Update Student Record"):
+                        if st.form_submit_button("🟢 Update Student Record"):
                             student_df.loc[student_df["Student ID"] == e_sid, "Name"] = new_name.upper()
                             student_df.loc[student_df["Student ID"] == e_sid, "Mobile No"] = new_mobile
                             student_df.loc[student_df["Student ID"] == e_sid, "Net Fee"] = new_fee
@@ -1021,7 +1105,7 @@ elif menu == "🔐 Admin Control Panel":
                     t_ndesig = st.selectbox("Designation", ["Instructor", "Lab Assistant", "Guest Faculty", "Center Head"])
                     t_nshift = st.selectbox("Shift", ["All Shifts", "Morning", "Afternoon", "Evening"])
                     
-                    if st.form_submit_button("Add Teacher"):
+                    if st.form_submit_button("🟢 Add Teacher"):
                         if t_nname:
                             new_t_row = {"Teacher ID": t_nid, "Name": t_nname, "Phone": t_nphone, "Qualification": t_nqual, "Designation": t_ndesig, "Shift Assigned": t_nshift}
                             teacher_df = pd.concat([teacher_df, pd.DataFrame([new_t_row])], ignore_index=True)
@@ -1033,7 +1117,7 @@ elif menu == "🔐 Admin Control Panel":
                 st.write("**🗑️ Remove Faculty:**")
                 if not teacher_df.empty:
                     del_t_name = st.selectbox("Select Teacher to Remove:", teacher_df["Name"].tolist())
-                    if st.button("Delete Selected Teacher", key="del_t_btn"):
+                    if st.button("🔴 Delete Selected Teacher", key="del_t_btn"):
                         teacher_df = teacher_df[teacher_df["Name"] != del_t_name]
                         save_data(teacher_df, TEACHERS_FILE, "teachers_db")
                         st.markdown(f'<div class="pink-badge">🗑️ Teacher {del_t_name} Removed!</div>', unsafe_allow_html=True)
@@ -1082,67 +1166,118 @@ elif menu == "🔐 Admin Control Panel":
                     
                 st.dataframe(show_df, use_container_width=True)
 
-        # 4. CLASS LOGS & TEACHER EARNINGS REVIEW
+        # 4. CLASS LOGS & TEACHER ACTIVITIES REVIEW
         with adm_tab4:
-            st.subheader("📖 Daily Teacher Activities, Attendance & Earnings")
-            c_sub1, c_sub2, c_sub3, c_sub4 = st.tabs(["⏰ Teacher Attendance & Earnings", "📚 Syllabus Covered", "💻 PC Allocations", "📝 Tasks Assigned"])
+            st.subheader("📖 Daily Activities, Attendance & Exam Marks")
+            c_sub1, c_sub2, c_sub3, c_sub4, c_sub5 = st.tabs(["📝 Exam Marks Given", "⏰ Teacher Attendance", "📚 Syllabus Covered", "💻 PC Allocations", "📋 Tasks Assigned"])
             
             with c_sub1:
+                if not marks_df.empty:
+                    st.dataframe(marks_df, use_container_width=True)
+                else:
+                    st.info("No exam marks recorded yet.")
+            with c_sub2:
                 if not teacher_att_df.empty:
                     st.dataframe(teacher_att_df, use_container_width=True)
                 else:
                     st.info("No teacher attendance punched yet.")
-            with c_sub2:
+            with c_sub3:
                 if not syllabus_df.empty:
                     st.dataframe(syllabus_df, use_container_width=True)
                 else:
                     st.info("No syllabus logs recorded yet.")
-            with c_sub3:
+            with c_sub4:
                 if not pc_alloc_df.empty:
                     st.dataframe(pc_alloc_df, use_container_width=True)
                 else:
                     st.info("No PC allocations recorded.")
-            with c_sub4:
+            with c_sub5:
                 if not tasks_df.empty:
                     st.dataframe(tasks_df, use_container_width=True)
                 else:
                     st.info("No tasks recorded.")
 
-        # 5. COURSE & FEE SETTINGS
+        # 5. COURSE MASTER SETTINGS (ADD, EDIT & DELETE)
         with adm_tab5:
-            st.subheader("📚 Course & Fee Master Settings (Add / Edit / Remove)")
-            st.dataframe(courses_df, use_container_width=True)
+            st.subheader("📚 Course Master Management (Add / Edit / Delete)")
+            if not courses_df.empty:
+                st.dataframe(courses_df, use_container_width=True)
+            else:
+                st.info("No courses registered in catalog.")
+                
+            st.write("---")
+            col_cadd, col_cedit = st.columns(2)
             
-            col_cadd, col_cdel = st.columns(2)
+            # ADD NEW COURSE
             with col_cadd:
-                st.write("**➕ Add / Update Course:**")
+                st.markdown("#### ➕ Add New Course")
                 with st.form("course_add_form", clear_on_submit=True):
                     c_nname = st.text_input("Course Name / Title*")
-                    c_ndur = st.selectbox("Duration", ["12 Months", "6 Months", "3 Months", "2 Months", "45 Days"])
-                    c_nfee = st.number_input("Course Fee (₹)*", min_value=100.0, value=2500.0, step=100.0)
-                    c_ndesc = st.text_input("Topics / Description")
+                    c_ndur = st.selectbox("Duration", ["12 Months", "6 Months", "3 Months", "2 Months", "45 Days"], key="c_add_dur")
+                    c_nfee = st.number_input("Course Fee (₹)*", min_value=100.0, value=3500.0, step=100.0, key="c_add_fee")
+                    c_ndesc = st.text_input("Topics / Description", key="c_add_desc")
                     
-                    if st.form_submit_button("Save Course"):
+                    if st.form_submit_button("🟢 Add Course Now"):
                         if c_nname:
                             if c_nname in courses_df["Course Name"].values:
-                                courses_df.loc[courses_df["Course Name"] == c_nname, "Duration"] = c_ndur
-                                courses_df.loc[courses_df["Course Name"] == c_nname, "Fee (₹)"] = str(c_nfee)
-                                courses_df.loc[courses_df["Course Name"] == c_nname, "Description"] = c_ndesc
+                                st.error("A course with this name already exists! Use the Edit section to modify it.")
                             else:
                                 new_c_row = {"Course Name": c_nname, "Duration": c_ndur, "Fee (₹)": str(c_nfee), "Description": c_ndesc}
                                 courses_df = pd.concat([courses_df, pd.DataFrame([new_c_row])], ignore_index=True)
-                            save_data(courses_df, COURSES_FILE, "courses_db")
-                            st.markdown('<div class="green-badge">✅ Course Master Settings Saved!</div>', unsafe_allow_html=True)
-                            st.rerun()
+                                save_data(courses_df, COURSES_FILE, "courses_db")
+                                st.markdown(f'<div class="green-badge">✅ Course "{c_nname}" Added Successfully!</div>', unsafe_allow_html=True)
+                                st.rerun()
+                        else:
+                            st.error("Please enter Course Name!")
+            
+            # EDIT EXISTING COURSE
+            with col_cedit:
+                st.markdown("#### ✏️ Edit Existing Course")
+                if not courses_df.empty:
+                    sel_edit_c = st.selectbox("Select Course to Modify:", courses_df["Course Name"].tolist(), key="sel_edit_c_box")
+                    if sel_edit_c:
+                        c_data = courses_df[courses_df["Course Name"] == sel_edit_c].iloc[0]
+                        with st.form("course_edit_form"):
+                            edit_cname = st.text_input("Course Name / Title*", value=c_data["Course Name"])
+                            dur_opts = ["12 Months", "6 Months", "3 Months", "2 Months", "45 Days"]
+                            dur_idx = dur_opts.index(c_data["Duration"]) if c_data["Duration"] in dur_opts else 0
+                            edit_cdur = st.selectbox("Duration", dur_opts, index=dur_idx, key="c_edit_dur")
                             
-            with col_cdel:
-                st.write("**🗑️ Delete Course:**")
-                del_c_sel = st.selectbox("Select Course to Remove:", courses_df["Course Name"].tolist() if not courses_df.empty else [])
-                if st.button("Delete Selected Course", key="del_c_btn"):
-                    courses_df = courses_df[courses_df["Course Name"] != del_c_sel]
-                    save_data(courses_df, COURSES_FILE, "courses_db")
-                    st.markdown(f'<div class="pink-badge">🗑️ Course {del_c_sel} Removed!</div>', unsafe_allow_html=True)
-                    st.rerun()
+                            try:
+                                curr_fval = float(c_data["Fee (₹)"])
+                            except Exception:
+                                curr_fval = 3500.0
+                                
+                            edit_cfee = st.number_input("Course Fee (₹)*", min_value=100.0, value=curr_fval, step=100.0, key="c_edit_fee")
+                            edit_cdesc = st.text_input("Topics / Description", value=c_data["Description"] if "Description" in c_data else "", key="c_edit_desc")
+                            
+                            if st.form_submit_button("🟢 Save Updated Course Details"):
+                                match_idx = courses_df[courses_df["Course Name"] == sel_edit_c].index
+                                if len(match_idx) > 0:
+                                    courses_df.loc[match_idx[0], "Course Name"] = edit_cname
+                                    courses_df.loc[match_idx[0], "Duration"] = edit_cdur
+                                    courses_df.loc[match_idx[0], "Fee (₹)"] = str(edit_cfee)
+                                    courses_df.loc[match_idx[0], "Description"] = edit_cdesc
+                                    save_data(courses_df, COURSES_FILE, "courses_db")
+                                    st.markdown(f'<div class="green-badge">✅ Course "{edit_cname}" Updated Successfully!</div>', unsafe_allow_html=True)
+                                    st.rerun()
+                else:
+                    st.info("No courses available to edit.")
+                    
+            st.write("---")
+            # DELETE COURSE
+            st.markdown("#### 🗑️ Delete Course")
+            if not courses_df.empty:
+                col_d1, col_d2 = st.columns([3, 1])
+                with col_d1:
+                    del_c_sel = st.selectbox("Select Course to Delete:", courses_df["Course Name"].tolist(), key="del_c_box")
+                with col_d2:
+                    st.write("<br>", unsafe_allow_html=True)
+                    if st.button("🔴 Delete Selected Course", key="del_c_btn_main"):
+                        courses_df = courses_df[courses_df["Course Name"] != del_c_sel]
+                        save_data(courses_df, COURSES_FILE, "courses_db")
+                        st.markdown(f'<div class="pink-badge">🗑️ Course "{del_c_sel}" Deleted Successfully!</div>', unsafe_allow_html=True)
+                        st.rerun()
 
         # 6. CHANGE PASSWORDS
         with adm_tab6:
@@ -1151,7 +1286,7 @@ elif menu == "🔐 Admin Control Panel":
                 new_adm_pwd = st.text_input("New Director Admin Password:", value=ADMIN_PWD)
                 new_tch_pwd = st.text_input("New Teacher Portal Password:", value=TEACHER_PWD)
                 
-                if st.form_submit_button("Update Passwords"):
+                if st.form_submit_button("🟢 Update Passwords"):
                     creds_df = pd.DataFrame([
                         {"Role": "Admin", "Password": new_adm_pwd},
                         {"Role": "Teacher", "Password": new_tch_pwd}
@@ -1168,9 +1303,11 @@ elif menu == "🔐 Admin Control Panel":
                     student_df = pd.DataFrame(columns=student_cols)
                     fee_df = pd.DataFrame(columns=fee_cols)
                     att_df = pd.DataFrame(columns=attendance_cols)
+                    marks_df = pd.DataFrame(columns=marks_cols)
                     save_data(student_df, STUDENT_MASTER_FILE, "students_db")
                     save_data(fee_df, FEE_LOG_FILE, "fees_db")
                     save_data(att_df, ATTENDANCE_FILE, "attendance_db")
+                    save_data(marks_df, MARKS_FILE, "marks_db")
                     st.success("Database Reset Completed!")
                     st.rerun()
 
