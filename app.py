@@ -229,6 +229,28 @@ st.markdown("""
         margin-bottom: 20px;
     }
     
+    .hero-side-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        padding: 14px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+    }
+    .hero-side-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        background: #F8FAFC;
+        border-radius: 6px;
+        border-left: 3px solid #0284C7;
+        margin-bottom: 6px;
+    }
+    
     .action-box {
         background: #FFFFFF;
         border: 1px solid #CBD5E1;
@@ -316,7 +338,7 @@ st.markdown("""
         STC-ZTC+ <span>Enterprise Management Portal</span>
     </div>
     <div style="display:flex; align-items:center; gap:15px;">
-        <span style="font-size:12px; color:#94A3B8;">Academic Year: 2026-27</span>
+        <span style="font-size:12px; color:#94A3B8;">Academic Session: 2026-27</span>
         <div class="udise-user-badge">
             👤 Chiranjeeb Hazarika (DIRECTOR / ADMIN)
         </div>
@@ -324,7 +346,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Institutional Header Strip (No student counts on public strip)
+# Institutional Header Strip
 st.markdown("""
 <div class="school-info-card">
     <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px;">
@@ -364,24 +386,96 @@ menu = st.sidebar.radio("Go To Module:", [
 ])
 
 # -------------------------------------------------------------
-# 1. QUICK ACTIONS & PUBLIC DASHBOARD
+# 1. QUICK ACTIONS & PUBLIC DASHBOARD (3-COLUMN HERO BANNER)
 # -------------------------------------------------------------
 if menu == "⚡ Quick Actions & Dashboard":
     dp2_b64 = get_image_base64("dp2")
-    if dp2_b64:
-        st.markdown(f'<img src="{dp2_b64}" style="width:100%; max-height:240px; object-fit:contain; border-radius:10px; margin-bottom:15px; border:1px solid #CBD5E1;">', unsafe_allow_html=True)
+    
+    # 3-Column Hero Section filling the entire width seamlessly
+    col_h_left, col_h_mid, col_h_right = st.columns([1, 1.8, 1])
+    
+    with col_h_left:
+        st.markdown("""
+        <div class="hero-side-card">
+            <div style="font-size:13px; font-weight:bold; color:#0F172A; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px;">
+                🏆 Institutional Standards
+            </div>
+            <div class="hero-side-item">
+                <span style="font-size:18px;">🏛️</span>
+                <div>
+                    <b style="font-size:12px; color:#0F172A;">ISO 9001:2015</b><br>
+                    <span style="font-size:11px; color:#64748B;">Certified IT Academy</span>
+                </div>
+            </div>
+            <div class="hero-side-item">
+                <span style="font-size:18px;">🎯</span>
+                <div>
+                    <b style="font-size:12px; color:#0F172A;">Digital India Skill</b><br>
+                    <span style="font-size:11px; color:#64748B;">Quality Technical Training</span>
+                </div>
+            </div>
+            <div class="hero-side-item">
+                <span style="font-size:18px;">💻</span>
+                <div>
+                    <b style="font-size:12px; color:#0F172A;">100% Practical Lab</b><br>
+                    <span style="font-size:11px; color:#64748B;">Dedicated Computer PCs</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-    st.markdown('<h4 style="color:#0F172A; margin:0 0 15px 0;">⚡ Institutional Overview & Services</h4>', unsafe_allow_html=True)
+    with col_h_mid:
+        if dp2_b64:
+            st.markdown(f'<img src="{dp2_b64}" style="width:100%; max-height:220px; object-fit:contain; border-radius:10px; border:1px solid #CBD5E1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">', unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="background:#0F172A; color:white; padding:30px; border-radius:10px; text-align:center;">
+                <h3 style="margin:0; color:#38BDF8;">SOFT TECH COMPUTERS & ZTC</h3>
+                <p style="margin:6px 0 0 0; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+    with col_h_right:
+        st.markdown("""
+        <div class="hero-side-card">
+            <div style="font-size:13px; font-weight:bold; color:#0F172A; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px;">
+                📜 Recognition & Certs
+            </div>
+            <div class="hero-side-item" style="border-left-color:#10B981;">
+                <span style="font-size:18px;">📋</span>
+                <div>
+                    <b style="font-size:12px; color:#0F172A;">Center Code: 4159</b><br>
+                    <span style="font-size:11px; color:#64748B;">Govt Regd Accreditation</span>
+                </div>
+            </div>
+            <div class="hero-side-item" style="border-left-color:#10B981;">
+                <span style="font-size:18px;">📜</span>
+                <div>
+                    <b style="font-size:12px; color:#0F172A;">Sarva India Certs</b><br>
+                    <span style="font-size:11px; color:#64748B;">Valid Across India</span>
+                </div>
+            </div>
+            <div class="hero-side-item" style="border-left-color:#10B981;">
+                <span style="font-size:18px;">🌐</span>
+                <div>
+                    <b style="font-size:12px; color:#0F172A;">Online Verification</b><br>
+                    <span style="font-size:11px; color:#64748B;">Instant Roll ID Check</span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    st.markdown("<br>", unsafe_allow_html=True)
     
     col_s1, col_s2, col_s3, col_s4 = st.columns(4)
     with col_s1:
         st.metric("Institutional Certification", "ISO 9001:2015")
     with col_s2:
-        st.metric("Center Code", "4159 (Assam)")
+        st.metric("Authorized Center Code", "4159 (Assam)")
     with col_s3:
-        st.metric("Alumni Network", "350+ Students")
+        st.metric("Alumni Network", "350+ Graduates")
     with col_s4:
-        st.metric("Govt Approved Courses", f"{len(courses_df)} Available")
+        st.metric("Govt Approved Courses", f"{len(courses_df)} Programs")
         
     st.markdown("<br>", unsafe_allow_html=True)
     col_l, col_r = st.columns([2, 1])
@@ -461,7 +555,7 @@ if menu == "⚡ Quick Actions & Dashboard":
     st.markdown("---")
     
     # PRIVACY PROTECTED MASTER DIRECTORY
-    st.subheader("🔒 Master Student Directory (Authorized Access Only)")
+    st.subheader("🔒 Master Student Directory (Authorized Staff Access Only)")
     with st.expander("🔑 Click to Unlock Master Database (Password Required)", expanded=False):
         view_pwd = st.text_input("Enter Staff / Director Password:", type="password", key="dash_view_pwd")
         if view_pwd in [ADMIN_PWD, TEACHER_PWD]:
@@ -586,7 +680,7 @@ elif menu == "📝 New Student Admission":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 4. STUDENT LOGIN PORTAL (WITH FORGOT PASSWORD / ROLL ID RECOVERY)
+# 4. STUDENT LOGIN PORTAL (CLEAN ENGLISH UI & RECOVERY)
 # -------------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard")
@@ -599,7 +693,7 @@ elif menu == "🔑 Student Login Portal":
         with col_l1:
             s_id_in = st.text_input("Enter Student Roll ID:").strip().upper()
         with col_l2:
-            s_pwd_in = st.text_input("Enter Password (Mobile No):", type="password").strip()
+            s_pwd_in = st.text_input("Enter Password (Registered Mobile No):", type="password").strip()
             
         if st.button("🟢 Login To Dashboard", use_container_width=True):
             st_data = student_df[(student_df["Student ID"] == s_id_in) & (student_df["Mobile No"] == s_pwd_in)]
@@ -611,30 +705,30 @@ elif menu == "🔑 Student Login Portal":
                 st.error("❌ Invalid Roll ID or Mobile Number!")
                 
         st.markdown("<br>", unsafe_allow_html=True)
-        # FORGOT PASSWORD & RECOVERY HELPDESK
-        with st.expander("❓ Forgot Roll ID or Password? (লগইন সহায়তা বিচাৰক)", expanded=False):
-            st.write("💡 **মনত ৰাখিব:** তোমাৰ নামভৰ্তিৰ সময়ত দিয়া ১০ টা সংখ্যাৰ ম’বাইল নম্বৰটোৱেই তোমাৰ পাছৱৰ্ড।")
+        # FORGOT PASSWORD & RECOVERY HELPDESK (CLEAN ENGLISH)
+        with st.expander("❓ Need Login Help / Retrieve Roll ID?", expanded=False):
+            st.info("💡 **Note:** Your registered 10-digit mobile number provided during admission is your default password.")
             st.markdown("---")
-            st.write("**🔍 ১. ম'বাইল নম্বৰ দি Roll ID বিচাৰক:**")
-            find_mob = st.text_input("পঞ্জীকৃত মোবাইল নম্বৰ দিয়ক:", key="find_mob_in").strip()
-            if st.button("Roll ID বিচাৰক"):
+            st.write("**🔍 Option 1: Find your Roll ID by Mobile Number**")
+            find_mob = st.text_input("Enter your 10-digit Registered Mobile Number:", key="find_mob_in").strip()
+            if st.button("Search My Roll ID"):
                 if find_mob:
                     match_s = student_df[student_df["Mobile No"] == find_mob]
                     if not match_s.empty:
                         for _, row in match_s.iterrows():
                             st.markdown(f"""
                             <div class="green-badge">
-                                ✅ <b>Record Found:</b><br>
-                                <b>Student Name:</b> {row['Name']}<br>
+                                ✅ <b>Student Record Found:</b><br>
+                                <b>Name:</b> {row['Name']}<br>
                                 <b>Roll ID:</b> <span style="font-size:18px; color:#047857;"><b>{row['Student ID']}</b></span><br>
-                                <b>Password:</b> <i>Your 10-digit mobile number ({find_mob})</i>
+                                <b>Password:</b> <i>Your 10-digit Mobile Number ({find_mob})</i>
                             </div>
                             """, unsafe_allow_html=True)
                     else:
-                        st.error("এই মোবাইল নম্বৰত কোনো ছাত্ৰৰ ৰেকৰ্ড পোৱা নগ'ল। অনুগ্ৰহ কৰি তলৰ হোৱাটছএপত যোগাযোগ কৰক।")
+                        st.error("No student found with this mobile number. Please contact director support below.")
                         
             st.markdown("---")
-            st.write("**💬 ২. ডাইৰেক্টৰ ছাৰৰ সৈতে হোৱাটছএপত যোগাযোগ কৰক:**")
+            st.write("**💬 Option 2: Direct WhatsApp Support**")
             wa_link = "https://wa.me/919101026718?text=Hello%20Director%20Sir,%20I%20forgot%20my%20Student%20Portal%20Login%20Details%20(STC%20Portal).%20Please%20help."
             st.markdown(f"""
             <a href="{wa_link}" target="_blank" style="text-decoration:none;">
