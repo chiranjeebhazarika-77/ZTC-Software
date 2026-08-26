@@ -7,6 +7,7 @@ import base64
 import requests
 import json
 import threading
+import urllib.parse
 
 # Page Configuration
 st.set_page_config(
@@ -41,12 +42,13 @@ PC_ALLOC_FILE = "pc_alloc_db.csv"
 WEAK_NOTES_FILE = "weak_notes_db.csv"
 EXAM_FORMS_FILE = "exam_forms_db.csv"
 COURSES_FILE = "courses_db.csv"
+DISPATCH_FILE = "dispatch_db.csv"
 PHOTO_DIR = "student_photos"
 
 os.makedirs(PHOTO_DIR, exist_ok=True)
 
 # -------------------------------------------------------------
-# BACKGROUND THREADING FOR CLOUD SYNC (0-LAG PERFORMANCE)
+# BACKGROUND THREADING FOR CLOUD SYNC & RESTORE (0-LAG)
 # -------------------------------------------------------------
 def push_to_cloud_async(payload):
     def _worker():
@@ -58,6 +60,18 @@ def push_to_cloud_async(payload):
     t.daemon = True
     t.start()
 
+def sync_from_cloud(sheet_name):
+    if GSHEET_WEBAPP_URL:
+        try:
+            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=4, allow_redirects=True)
+            if res.status_code == 200:
+                data = res.json()
+                if isinstance(data, list) and len(data) > 1:
+                    return data
+        except Exception:
+            pass
+    return None
+
 def load_data(file_path, columns, sheet_name=None):
     if os.path.exists(file_path):
         try:
@@ -67,6 +81,22 @@ def load_data(file_path, columns, sheet_name=None):
             return df
         except Exception:
             pass
+            
+    # Fallback restore from Google Sheets
+    if sheet_name:
+        cloud_raw = sync_from_cloud(sheet_name)
+        if cloud_raw and isinstance(cloud_raw, list) and len(cloud_raw) > 1:
+            try:
+                header = cloud_raw[0]
+                rows = cloud_raw[1:]
+                df = pd.DataFrame(rows, columns=header, dtype=str)
+                for col in columns:
+                    if col not in df.columns: df[col] = ""
+                df.to_csv(file_path, index=False)
+                return df
+            except Exception:
+                pass
+
     return pd.DataFrame(columns=columns)
 
 def save_data(df, file_path, sheet_name=None):
@@ -92,7 +122,13 @@ def get_image_base64(file_name):
     return None
 
 # Columns definitions
-student_cols = ["Sl. No.", "Student ID", "Name", "Father Name", "Mother Name", "Gender", "DOB", "Caste", "Mobile No", "Vill Town", "PO", "PS", "PIN Code", "District", "Full Address", "Course", "Duration", "Days_Batch", "Session", "Join Date", "Validity Date", "Total Fee", "Discount", "Net Fee", "Shift", "Batch Time", "Photo Path", "Status", "Stage_Admission", "Stage_IDCard", "Stage_Registration", "Stage_ExamForm", "Stage_AdmitCard", "Stage_Certificate"]
+student_cols = [
+    "Sl. No.", "Student ID", "Name", "Father Name", "Mother Name", "Gender", "DOB", "Caste", "Mobile No", 
+    "Vill Town", "PO", "PS", "PIN Code", "District", "Full Address", "Course", "Duration", "Days_Batch", 
+    "Session", "Join Date", "Validity Date", "Total Fee", "Discount", "Net Fee", "Shift", "Batch Time", 
+    "Photo Path", "Status", "HO_Reg_No", "Stage_HO_Reg", "Stage_AdmitCard", "Stage_Exam", 
+    "Stage_Cert_Status", "Cert_Serial_No", "Cert_Arrival_Date", "Cert_Handover_Date", "Handover_Status"
+]
 fee_cols = ["Receipt No", "Student ID", "Date", "Amount Paid", "Payment Mode", "Collected_By", "Remarks"]
 attendance_cols = ["Student ID", "Date", "Time_In", "Status", "Late_Reason", "Sign_Mode", "Location_Verified"]
 teacher_cols = ["Teacher ID", "Name", "Phone", "Qualification", "Designation", "Shift Assigned"]
@@ -109,6 +145,7 @@ pc_alloc_cols = ["Date", "Student ID", "Student Name", "PC Machine No", "Shift",
 weak_notes_cols = ["Date", "Student ID", "Student Name", "Weak Topic / Area", "Teacher Advice", "Teacher Name"]
 exam_forms_cols = ["Date", "Student ID", "Student Name", "Course", "Exam Fee Amount", "Payment Status", "Exam Center Code", "Remarks"]
 courses_cols = ["Course Name", "Duration", "Fee (₹)", "Description"]
+dispatch_cols = ["Date", "Student ID", "Student Name", "Course", "Certificate No", "Marksheet Status", "Received By", "Contact No", "Handover Confirmed"]
 
 # Load Data
 student_df = load_data(STUDENT_MASTER_FILE, student_cols, "students_db")
@@ -128,6 +165,7 @@ pc_alloc_df = load_data(PC_ALLOC_FILE, pc_alloc_cols, "pc_alloc_db")
 weak_notes_df = load_data(WEAK_NOTES_FILE, weak_notes_cols, "weak_notes_db")
 exam_forms_df = load_data(EXAM_FORMS_FILE, exam_forms_cols, "exam_forms_db")
 courses_df = load_data(COURSES_FILE, courses_cols, "courses_db")
+dispatch_df = load_data(DISPATCH_FILE, dispatch_cols, "dispatch_db")
 
 # Initialize Default Courses if empty
 if courses_df.empty:
@@ -311,6 +349,46 @@ st.markdown("""
         box-shadow: 0 2px 5px rgba(34, 197, 94, 0.15);
     }
 
+    /* Timeline Stepper CSS */
+    .stepper-wrapper {
+        display: flex;
+        justify-content: space-between;
+        margin: 20px 0;
+        background: #FFFFFF;
+        padding: 16px 20px;
+        border-radius: 8px;
+        border: 1px solid #E2E8F0;
+    }
+    .stepper-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        flex: 1;
+        position: relative;
+    }
+    .step-counter {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #E2E8F0;
+        color: #64748B;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+    .step-counter.active {
+        background: #10B981;
+        color: white;
+    }
+    .step-name {
+        font-size: 11px;
+        font-weight: 600;
+        color: #334155;
+    }
+
     /* Vibrant Green Button Theme */
     div.stButton > button {
         background-color: #047857 !important;
@@ -391,7 +469,6 @@ menu = st.sidebar.radio("Go To Module:", [
 if menu == "⚡ Quick Actions & Dashboard":
     dp2_b64 = get_image_base64("dp2")
     
-    # 3-Column Hero Section filling the entire width seamlessly
     col_h_left, col_h_mid, col_h_right = st.columns([1, 1.8, 1])
     
     with col_h_left:
@@ -491,7 +568,6 @@ if menu == "⚡ Quick Actions & Dashboard":
         </div>
         """, unsafe_allow_html=True)
         
-        # PUBLIC ADMISSION & FEE ENQUIRY DESK
         with st.expander("📝 Click here to Submit Public Admission / Course Fee Enquiry", expanded=True):
             with st.form("public_enquiry_form", clear_on_submit=True):
                 e_name = st.text_input("Candidate Full Name*")
@@ -554,7 +630,6 @@ if menu == "⚡ Quick Actions & Dashboard":
         
     st.markdown("---")
     
-    # PRIVACY PROTECTED MASTER DIRECTORY
     st.subheader("🔒 Master Student Directory (Authorized Staff Access Only)")
     with st.expander("🔑 Click to Unlock Master Database (Password Required)", expanded=False):
         view_pwd = st.text_input("Enter Staff / Director Password:", type="password", key="dash_view_pwd")
@@ -584,7 +659,7 @@ elif menu == "📜 Online Certificate Verification":
             <div class="green-badge">
                 <h3 style="margin:0; color:#15803D;">✅ OFFICIAL RECORD VERIFIED</h3>
                 <p style="margin:8px 0 0 0; font-size:15px;"><b>Candidate Name:</b> {v_data['Name']} | <b>Course:</b> {v_data['Course']} | <b>Roll ID:</b> {v_data['Student ID']}</p>
-                <p style="margin:4px 0 0 0; font-size:13px; color:#15803D;">Center: Soft Tech Computers & ZTC (Code: 4159) | Status: {v_data['Status']}</p>
+                <p style="margin:4px 0 0 0; font-size:13px; color:#15803D;">Center: Soft Tech Computers & ZTC (Code: 4159) | HP Reg No: {v_data['HO_Reg_No'] if v_data['HO_Reg_No'] else 'Registered'} | Status: {v_data['Status']}</p>
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -666,8 +741,9 @@ elif menu == "📝 New Student Admission":
                         "Join Date": str(join_date), "Validity Date": str(auto_expiry),
                         "Total Fee": str(total_fee), "Discount": str(discount), "Net Fee": str(net_fee),
                         "Shift": shift, "Batch Time": batch_time, "Photo Path": photo_path, "Status": "Active",
-                        "Stage_Admission": "Completed", "Stage_IDCard": "Generated", "Stage_Registration": "Pending",
-                        "Stage_ExamForm": "Pending", "Stage_AdmitCard": "Pending", "Stage_Certificate": "Pending"
+                        "HO_Reg_No": "Pending", "Stage_HO_Reg": "Submitted to HP HO", "Stage_AdmitCard": "Pending",
+                        "Stage_Exam": "Not Appeared", "Stage_Cert_Status": "In Process", "Cert_Serial_No": "--",
+                        "Cert_Arrival_Date": "--", "Cert_Handover_Date": "--", "Handover_Status": "Pending"
                     }
                     student_df = pd.concat([student_df, pd.DataFrame([new_row])], ignore_index=True)
                     save_data(student_df, STUDENT_MASTER_FILE, "students_db")
@@ -680,10 +756,10 @@ elif menu == "📝 New Student Admission":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 4. STUDENT LOGIN PORTAL (CLEAN ENGLISH UI & RECOVERY)
+# 4. STUDENT LOGIN PORTAL (LIFECYCLE TIMELINE & ADMIT CARD)
 # -------------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
-    st.header("🔑 Student Individual Dashboard")
+    st.header("🔑 Student Individual Dashboard & Lifecycle Tracker")
     if "student_logged_in" not in st.session_state:
         st.session_state["student_logged_in"] = False
         st.session_state["logged_student_id"] = ""
@@ -705,7 +781,6 @@ elif menu == "🔑 Student Login Portal":
                 st.error("❌ Invalid Roll ID or Mobile Number!")
                 
         st.markdown("<br>", unsafe_allow_html=True)
-        # FORGOT PASSWORD & RECOVERY HELPDESK (CLEAN ENGLISH)
         with st.expander("❓ Need Login Help / Retrieve Roll ID?", expanded=False):
             st.info("💡 **Note:** Your registered 10-digit mobile number provided during admission is your default password.")
             st.markdown("---")
@@ -747,6 +822,35 @@ elif menu == "🔑 Student Login Portal":
         </div>
         """, unsafe_allow_html=True)
         
+        # LIFECYCLE TIMELINE STEPPER
+        ho_reg = s["HO_Reg_No"] if s["HO_Reg_No"] and s["HO_Reg_No"] != "Pending" else "In Process"
+        c_status = s["Stage_Cert_Status"] if s["Stage_Cert_Status"] else "In Process"
+        
+        st.markdown(f"""
+        <div class="stepper-wrapper">
+            <div class="stepper-item">
+                <div class="step-counter active">1</div>
+                <div class="step-name">Admission<br><span style="color:#10B981;">✓ Confirmed</span></div>
+            </div>
+            <div class="stepper-item">
+                <div class="step-counter {'active' if ho_reg != 'In Process' else ''}">2</div>
+                <div class="step-name">HP HO Reg<br><span style="color:#0284C7;">{ho_reg}</span></div>
+            </div>
+            <div class="stepper-item">
+                <div class="step-counter {'active' if s['Stage_AdmitCard'] == 'Generated' else ''}">3</div>
+                <div class="step-name">Admit Card<br><span style="color:#64748B;">{s['Stage_AdmitCard']}</span></div>
+            </div>
+            <div class="stepper-item">
+                <div class="step-counter {'active' if 'Arrived' in c_status or 'Delivered' in c_status else ''}">4</div>
+                <div class="step-name">Certificate<br><span style="color:#10B981;">{c_status}</span></div>
+            </div>
+            <div class="stepper-item">
+                <div class="step-counter {'active' if s['Handover_Status'] == 'Delivered' else ''}">5</div>
+                <div class="step-name">Handover<br><span style="color:#64748B;">{s['Handover_Status']}</span></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
         # Calculations
         p_logs = fee_df[fee_df["Student ID"] == s_id]
         tot_paid = sum([float(amt) for amt in p_logs["Amount Paid"] if amt])
@@ -759,35 +863,65 @@ elif menu == "🔑 Student Login Portal":
         att_percentage = (present_cnt / tot_classes * 100) if tot_classes > 0 else 100.0
         
         s_marks = marks_df[marks_df["Student ID"] == s_id]
-        total_tests = len(s_marks)
         
         # Metrics Row
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("Total Fee Paid", f"₹{tot_paid:.2f}", f"Net: ₹{net_f:.2f}")
         c2.metric("Due Balance", f"₹{due_f:.2f}", delta="-Due" if due_f > 0 else "Cleared", delta_color="inverse")
         c3.metric("Attendance Score", f"{att_percentage:.1f}%", f"{present_cnt}/{tot_classes} Days")
-        c4.metric("Tests / Exams Taken", f"{total_tests} Exams")
+        c4.metric("HP Registration No", f"{ho_reg}")
         
         st.markdown("---")
         
         # Tabs for detailed breakdown
-        s_tab1, s_tab2, s_tab3 = st.tabs(["🧾 Fee Payment Receipts", "📸 Attendance Log", "📝 Exam & Test Marks Report"])
+        s_tab1, s_tab2, s_tab3, s_tab4 = st.tabs(["🎫 Download Admit Card", "🧾 Fee Receipts", "📸 Attendance Log", "📝 Exam & Marksheet"])
         
         with s_tab1:
+            st.subheader("🎫 Official Examination Admit Card")
+            st.markdown(f"""
+            <div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:10px; padding:20px; max-width:700px; margin:auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <div style="text-align:center; border-bottom:2px solid #0284C7; padding-bottom:10px;">
+                    <h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
+                    <p style="margin:2px 0 0 0; font-size:12px; color:#64748B;">Accredited Center Code: 4159 | Affiliated with Sarva India (HP Head Office)</p>
+                    <h4 style="margin:8px 0 0 0; color:#0284C7; text-transform:uppercase;">Official Examination Admit Card</h4>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:14px; line-height:1.8;">
+                    <div>
+                        <b>Candidate Name:</b> {s['Name']}<br>
+                        <b>Roll ID:</b> {s['Student ID']}<br>
+                        <b>HP Reg No:</b> {ho_reg}<br>
+                        <b>Course:</b> {s['Course']}<br>
+                        <b>Batch Time:</b> {s['Shift']}
+                    </div>
+                    <div style="text-align:right;">
+                        <b>Exam Center:</b> STC Lab (Code: 4159)<br>
+                        <b>Center Location:</b> Thelamara, Sonitpur<br>
+                        <b>Academic Year:</b> {s['Session']}<br>
+                        <b>Validity:</b> {s['Validity Date']}
+                    </div>
+                </div>
+                <div style="margin-top:20px; border-top:1px dashed #CBD5E1; padding-top:10px; font-size:11px; color:#64748B; display:flex; justify-content:space-between;">
+                    <span>Candidate Signature</span>
+                    <span>Authorized Center Seal & Signature</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with s_tab2:
             st.subheader("🧾 Fee Receipts & Payment Ledger")
             if not p_logs.empty:
                 st.dataframe(p_logs[["Receipt No", "Date", "Amount Paid", "Payment Mode", "Collected_By", "Remarks"]], use_container_width=True)
             else:
                 st.info("No fee deposit receipts recorded yet.")
                 
-        with s_tab2:
+        with s_tab3:
             st.subheader("📸 Classroom Attendance Log")
             if not s_att.empty:
                 st.dataframe(s_att[["Date", "Time_In", "Status", "Sign_Mode", "Location_Verified"]], use_container_width=True)
             else:
                 st.info("No daily attendance recorded yet.")
                 
-        with s_tab3:
+        with s_tab4:
             st.subheader("📝 Official Exam & Class Test Marks Report")
             if not s_marks.empty:
                 st.dataframe(s_marks[["Date", "Course/Subject", "Test Topic", "Marks Obtained", "Total Marks", "Teacher Incharge"]], use_container_width=True)
@@ -828,13 +962,11 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
                     net_f = float(s["Net Fee"]) if s["Net Fee"] else 2550.0
                     due_f = net_f - tot_paid
                     
-                    # Attendance calculation
                     s_att = att_df[att_df["Student ID"] == sf_id]
                     tot_classes = len(s_att)
                     present_classes = len(s_att[s_att["Status"].isin(["Present", "Late"])])
                     att_pct = (present_classes / tot_classes * 100) if tot_classes > 0 else 100.0
                     
-                    # SFPC Eligibility Rules:
                     cond1 = tot_paid >= 999.0
                     fee_pct = (tot_paid / net_f * 100) if net_f > 0 else 100.0
                     cond2 = fee_pct >= 50.0
@@ -952,7 +1084,6 @@ elif menu == "🔑 Teacher Portal & Attendance":
             "📋 Daily Student Tasks"
         ])
         
-        # 1. TEACHER SELF PUNCH WITH LATE DEDUCTION & EARNING
         with t_tab1:
             st.subheader("⏰ Teacher Shift Attendance (Late Penalty & Daily Earning)")
             now_ist = datetime.datetime.now(IST)
@@ -1038,7 +1169,6 @@ elif menu == "🔑 Teacher Portal & Attendance":
                 st.write("**Recent Teacher Punch & Earning Records:**")
                 st.dataframe(teacher_att_df.tail(10), use_container_width=True)
 
-        # 2. STUDENT ATTENDANCE
         with t_tab2:
             st.subheader("Student Daily Attendance (IST Recorded)")
             with st.form("student_att_form", clear_on_submit=True):
@@ -1060,7 +1190,6 @@ elif menu == "🔑 Teacher Portal & Attendance":
             if not att_df.empty:
                 st.dataframe(att_df.tail(15), use_container_width=True)
 
-        # 3. EXAM & TEST MARKS ENTRY
         with t_tab3:
             st.subheader("📝 Record Class Test & Exam Marks")
             with st.form("exam_marks_form", clear_on_submit=True):
@@ -1106,7 +1235,6 @@ elif menu == "🔑 Teacher Portal & Attendance":
                 st.write("**Recent Exam / Test Records:**")
                 st.dataframe(marks_df.tail(15), use_container_width=True)
 
-        # 4. MULTI-TOPIC SYLLABUS COVERAGE
         with t_tab4:
             st.subheader("Record Daily Syllabus Coverage (Multi-Select Allowed)")
             with st.form("syl_multi_form", clear_on_submit=True):
@@ -1128,7 +1256,6 @@ elif menu == "🔑 Teacher Portal & Attendance":
             if not syllabus_df.empty:
                 st.dataframe(syllabus_df.tail(10), use_container_width=True)
 
-        # 5. PC ALLOCATION
         with t_tab5:
             st.subheader("Daily Computer Machine Allocation")
             with st.form("pc_alloc_form", clear_on_submit=True):
@@ -1143,7 +1270,6 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         st.markdown(f'<div class="green-badge">✅ Machine {m_no} allocated to {pc_sid}!</div>', unsafe_allow_html=True)
                         st.rerun()
 
-        # 6. TASKS
         with t_tab6:
             st.subheader("Assign Student Daily Tasks / Homework")
             with st.form("task_assign_form", clear_on_submit=True):
@@ -1158,28 +1284,166 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         st.rerun()
 
 # -------------------------------------------------------------
-# 8. ADMIN CONTROL PANEL (WITH FULL COURSE ADD / EDIT / DELETE)
+# 8. ADMIN CONTROL PANEL (WITH HP HO LIFECYCLE & DISPATCH DESK)
 # -------------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
     pwd = st.text_input("Enter Director Admin Password", type="password", key="admin_pwd_main")
     if pwd == ADMIN_PWD:
         st.success("Welcome Director Chiranjeeb Hazarika Sir!")
-        adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6, adm_tab7 = st.tabs([
+        adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6, adm_tab7, adm_tab8 = st.tabs([
+            "🏢 HP HO Registration & Export",
+            "📢 WhatsApp Notice & Dispatch Register",
             "📋 Student Edit / Delete",
             "👨‍🏫 Teacher Management",
             "💰 Dues & Balance Ledger",
-            "📖 Class Logs & Activity Review",
-            "📚 Course Master (Add/Edit/Delete)",
-            "🔑 Change Passwords",
-            "🗑️ Danger Zone"
+            "📖 Activity & Logs Review",
+            "📚 Course Master",
+            "🔑 Change Passwords"
         ])
         
-        # 1. STUDENT EDIT & DELETE
+        # 1. HP HO REGISTRATION & EXPORT
         with adm_tab1:
+            st.subheader("🏢 Head Office (Himachal Pradesh) Candidate Lifecycle Management")
+            st.markdown("""
+            <div style="background:#F1F5F9; border-left:4px solid #0284C7; padding:12px; border-radius:6px; margin-bottom:15px; font-size:13px;">
+                💡 <b>HO Workflow:</b> 1. Download pending student DCF format ➡️ 2. Send to Himachal HO for official registration ➡️ 3. Update HP Reg No & Issue Admit Cards.
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Export to HO Button
+            col_ex1, col_ex2 = st.columns([2, 1])
+            with col_ex1:
+                st.write("**📥 Export Registered Candidates for Himachal HO:**")
+            with col_ex2:
+                if not student_df.empty:
+                    csv_export = student_df[["Student ID", "Name", "Father Name", "Mother Name", "DOB", "Gender", "Course", "Duration", "Join Date", "Full Address", "Mobile No"]].to_csv(index=False)
+                    st.download_button(
+                        label="📥 Download HO Candidate Data (CSV)",
+                        data=csv_export,
+                        file_name=f"STC_HO_Candidates_{datetime.date.today()}.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
+                    
+            st.write("---")
+            st.markdown("#### ✏️ Update Candidate HP HO Registration & Admit Card Status")
+            if not student_df.empty:
+                sel_ho_sid = st.selectbox("Select Candidate to Update HO Record:", student_df["Student ID"] + " - " + student_df["Name"], key="sel_ho_s")
+                if sel_ho_sid:
+                    ho_sid_val = sel_ho_sid.split(" - ")[0]
+                    ho_s_rec = student_df[student_df["Student ID"] == ho_sid_val].iloc[0]
+                    
+                    with st.form("ho_update_form"):
+                        col_u1, col_u2 = st.columns(2)
+                        with col_u1:
+                            new_ho_reg = st.text_input("Himachal HO Registration No / Roll:", value=ho_s_rec["HO_Reg_No"])
+                            new_admit_stat = st.selectbox("Admit Card Status:", ["Pending", "Generated", "Dispatched to Student"], index=0 if ho_s_rec["Stage_AdmitCard"]=="Pending" else 1)
+                        with col_u2:
+                            new_cert_stat = st.selectbox("Certificate / Marksheet Status from HO:", ["In Process at HP HO", "Dispatched from HP", "Arrived at Center (Ready)", "Handed Over to Student"])
+                            new_cert_no = st.text_input("Certificate Serial No (if received):", value=ho_s_rec["Cert_Serial_No"])
+                            
+                        if st.form_submit_button("🟢 Save HO Registration & Status"):
+                            idx_s = student_df[student_df["Student ID"] == ho_sid_val].index
+                            if len(idx_s) > 0:
+                                student_df.loc[idx_s[0], "HO_Reg_No"] = new_ho_reg
+                                student_df.loc[idx_s[0], "Stage_AdmitCard"] = new_admit_stat
+                                student_df.loc[idx_s[0], "Stage_Cert_Status"] = new_cert_stat
+                                student_df.loc[idx_s[0], "Cert_Serial_No"] = new_cert_no
+                                save_data(student_df, STUDENT_MASTER_FILE, "students_db")
+                                st.markdown(f'<div class="green-badge">✅ HO Record for {ho_sid_val} Updated Successfully!</div>', unsafe_allow_html=True)
+                                st.rerun()
+
+        # 2. WHATSAPP NOTICE & DISPATCH REGISTER
+        with adm_tab2:
+            st.subheader("📢 Certificate Arrival Announcement & Handover Record Book")
+            
+            # WhatsApp Notice Generator
+            st.markdown("#### 💬 1-Click WhatsApp Group Notice Generator")
+            arrived_students = student_df[student_df["Stage_Cert_Status"].str.contains("Arrived", na=False)]
+            
+            if not arrived_students.empty:
+                st.write(f"Found **{len(arrived_students)} Candidates** whose certificates have arrived at the center:")
+                st.dataframe(arrived_students[["Student ID", "Name", "Course", "Cert_Serial_No", "Stage_Cert_Status"]], use_container_width=True)
+                
+                # Construct formatted WhatsApp Text
+                names_list = "\n".join([f"• {row['Name']} ({row['Student ID']}) - {row['Course']}" for _, row in arrived_students.iterrows()])
+                raw_wa_msg = f"""📢 *OFFICIAL NOTICE: CERTIFICATES & MARKSHEETS ARRIVED!*
+Soft Tech Computers & ZTC Enterprise (Center Code: 4159)
+
+Dear Students, your official Sarva India Certificates & Marksheets have safely arrived at our center from Himachal Pradesh Head Office.
+
+*List of Candidates:*
+{names_list}
+
+📍 *Please visit our center to sign the official dispatch register and collect your original certificates.*
+Time: 09:00 AM - 05:00 PM
+Director Contact: 9101026718"""
+                
+                wa_encoded = urllib.parse.quote(raw_wa_msg)
+                wa_broadcast_link = f"https://wa.me/?text={wa_encoded}"
+                
+                st.markdown(f"""
+                <a href="{wa_broadcast_link}" target="_blank" style="text-decoration:none;">
+                    <div style="background-color:#25D366; color:white; padding:12px 20px; border-radius:8px; font-weight:bold; text-align:center; display:inline-block; margin:10px 0;">
+                        📲 Share Certificate Arrival List to WhatsApp Group Now
+                    </div>
+                </a>
+                """, unsafe_allow_html=True)
+            else:
+                st.info("No candidates marked as 'Arrived at Center' yet. Update certificate arrival in HP HO tab.")
+                
+            st.write("---")
+            st.markdown("#### 📜 Digital Certificate Handover Log (Student Record Book)")
+            with st.form("dispatch_handover_form", clear_on_submit=True):
+                disp_sid = st.selectbox("Select Student Collecting Certificate:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
+                c_serial = st.text_input("Certificate Serial No*")
+                m_stat = st.selectbox("Marksheet Attached:", ["Certificate + Marksheet", "Certificate Only", "Marksheet Only"])
+                rec_by = st.text_input("Collected By (Self / Father / Guardian)*", value="Self")
+                rec_contact = st.text_input("Receiver Contact Phone No*")
+                
+                if st.form_submit_button("🟢 Confirm Handover & Save to Dispatch Book"):
+                    if disp_sid and c_serial:
+                        d_sid = disp_sid.split(" - ")[0]
+                        d_name = disp_sid.split(" - ")[1]
+                        d_course = student_df[student_df["Student ID"] == d_sid]["Course"].values[0] if not student_df.empty else "N/A"
+                        
+                        disp_row = {
+                            "Date": str(datetime.date.today()),
+                            "Student ID": d_sid,
+                            "Student Name": d_name,
+                            "Course": d_course,
+                            "Certificate No": c_serial,
+                            "Marksheet Status": m_stat,
+                            "Received By": rec_by,
+                            "Contact No": rec_contact,
+                            "Handover Confirmed": "YES (Signed)"
+                        }
+                        dispatch_df = pd.concat([dispatch_df, pd.DataFrame([disp_row])], ignore_index=True)
+                        save_data(dispatch_df, DISPATCH_FILE, "dispatch_db")
+                        
+                        # Update student master record
+                        idx_m = student_df[student_df["Student ID"] == d_sid].index
+                        if len(idx_m) > 0:
+                            student_df.loc[idx_m[0], "Stage_Cert_Status"] = "Handed Over"
+                            student_df.loc[idx_m[0], "Cert_Handover_Date"] = str(datetime.date.today())
+                            student_df.loc[idx_m[0], "Handover_Status"] = "Delivered"
+                            save_data(student_df, STUDENT_MASTER_FILE, "students_db")
+                            
+                        st.markdown(f'<div class="green-badge">✅ Certificate Handover Recorded in Digital Register for {d_name}!</div>', unsafe_allow_html=True)
+                        st.rerun()
+                    else:
+                        st.error("Please enter Certificate Serial No!")
+                        
+            if not dispatch_df.empty:
+                st.write("**Official Certificate Dispatch & Handover Register:**")
+                st.dataframe(dispatch_df, use_container_width=True)
+
+        # 3. STUDENT EDIT & DELETE
+        with adm_tab3:
             st.subheader("📋 Student Master Management (Edit / Delete)")
             if not student_df.empty:
-                st.dataframe(student_df[["Student ID", "Name", "Mobile No", "Course", "Net Fee", "Join Date", "Status"]], use_container_width=True)
+                st.dataframe(student_df[["Student ID", "Name", "Mobile No", "Course", "Net Fee", "Join Date", "HO_Reg_No", "Status"]], use_container_width=True)
                 
                 sel_edit_sid = st.selectbox("Select Student to Edit / Delete:", student_df["Student ID"] + " - " + student_df["Name"])
                 if sel_edit_sid:
@@ -1215,8 +1479,8 @@ elif menu == "🔐 Admin Control Panel":
             else:
                 st.info("No student records found.")
 
-        # 2. TEACHER MANAGEMENT
-        with adm_tab2:
+        # 4. TEACHER MANAGEMENT
+        with adm_tab4:
             st.subheader("👨‍🏫 Teacher Management (Add / Remove)")
             if not teacher_df.empty:
                 st.dataframe(teacher_df, use_container_width=True)
@@ -1251,8 +1515,8 @@ elif menu == "🔐 Admin Control Panel":
                         st.markdown(f'<div class="pink-badge">🗑️ Teacher {del_t_name} Removed!</div>', unsafe_allow_html=True)
                         st.rerun()
 
-        # 3. DUES & BALANCE LEDGER
-        with adm_tab3:
+        # 5. DUES & BALANCE LEDGER
+        with adm_tab5:
             st.subheader("💰 Live Student Fee & Dues Balance Ledger")
             if not student_df.empty:
                 ledger_data = []
@@ -1294,10 +1558,10 @@ elif menu == "🔐 Admin Control Panel":
                     
                 st.dataframe(show_df, use_container_width=True)
 
-        # 4. CLASS LOGS & TEACHER ACTIVITIES REVIEW
-        with adm_tab4:
+        # 6. CLASS LOGS & ACTIVITIES REVIEW
+        with adm_tab6:
             st.subheader("📖 Daily Activities, Attendance & Exam Marks")
-            c_sub1, c_sub2, c_sub3, c_sub4, c_sub5 = st.tabs(["📝 Exam Marks Given", "⏰ Teacher Attendance", "📚 Syllabus Covered", "💻 PC Allocations", "📋 Tasks Assigned"])
+            c_sub1, c_sub2, c_sub3, c_sub4, c_sub5 = st.tabs(["📝 Exam Marks", "⏰ Teacher Attendance", "📚 Syllabus Covered", "💻 PC Allocations", "📋 Tasks Assigned"])
             
             with c_sub1:
                 if not marks_df.empty:
@@ -1325,8 +1589,8 @@ elif menu == "🔐 Admin Control Panel":
                 else:
                     st.info("No tasks recorded.")
 
-        # 5. COURSE MASTER SETTINGS (ADD, EDIT & DELETE)
-        with adm_tab5:
+        # 7. COURSE MASTER SETTINGS
+        with adm_tab7:
             st.subheader("📚 Course Master Management (Add / Edit / Delete)")
             if not courses_df.empty:
                 st.dataframe(courses_df, use_container_width=True)
@@ -1336,7 +1600,6 @@ elif menu == "🔐 Admin Control Panel":
             st.write("---")
             col_cadd, col_cedit = st.columns(2)
             
-            # ADD NEW COURSE
             with col_cadd:
                 st.markdown("#### ➕ Add New Course")
                 with st.form("course_add_form", clear_on_submit=True):
@@ -1358,7 +1621,6 @@ elif menu == "🔐 Admin Control Panel":
                         else:
                             st.error("Please enter Course Name!")
             
-            # EDIT EXISTING COURSE
             with col_cedit:
                 st.markdown("#### ✏️ Edit Existing Course")
                 if not courses_df.empty:
@@ -1393,7 +1655,6 @@ elif menu == "🔐 Admin Control Panel":
                     st.info("No courses available to edit.")
                     
             st.write("---")
-            # DELETE COURSE
             st.markdown("#### 🗑️ Delete Course")
             if not courses_df.empty:
                 col_d1, col_d2 = st.columns([3, 1])
@@ -1407,8 +1668,8 @@ elif menu == "🔐 Admin Control Panel":
                         st.markdown(f'<div class="pink-badge">🗑️ Course "{del_c_sel}" Deleted Successfully!</div>', unsafe_allow_html=True)
                         st.rerun()
 
-        # 6. CHANGE PASSWORDS
-        with adm_tab6:
+        # 8. CHANGE PASSWORDS
+        with adm_tab8:
             st.subheader("🔑 Change Portal Passwords")
             with st.form("pwd_change_form"):
                 new_adm_pwd = st.text_input("New Director Admin Password:", value=ADMIN_PWD)
@@ -1421,22 +1682,6 @@ elif menu == "🔐 Admin Control Panel":
                     ])
                     save_data(creds_df, CREDS_FILE, "creds_db")
                     st.markdown('<div class="green-badge">✅ Passwords Updated Successfully!</div>', unsafe_allow_html=True)
-                    st.rerun()
-
-        # 7. DANGER ZONE
-        with adm_tab7:
-            st.warning("⚠️ Danger Zone: Clear entire local and cloud database.")
-            if st.checkbox("Confirm Reset"):
-                if st.button("🔴 RESET ALL MASTER DATA"):
-                    student_df = pd.DataFrame(columns=student_cols)
-                    fee_df = pd.DataFrame(columns=fee_cols)
-                    att_df = pd.DataFrame(columns=attendance_cols)
-                    marks_df = pd.DataFrame(columns=marks_cols)
-                    save_data(student_df, STUDENT_MASTER_FILE, "students_db")
-                    save_data(fee_df, FEE_LOG_FILE, "fees_db")
-                    save_data(att_df, ATTENDANCE_FILE, "attendance_db")
-                    save_data(marks_df, MARKS_FILE, "marks_db")
-                    st.success("Database Reset Completed!")
                     st.rerun()
 
 # -------------------------------------------------------------
