@@ -129,7 +129,6 @@ def get_student_photo_base64(photo_path):
                 return f"data:image/png;base64,{encoded}"
         except Exception:
             pass
-    # Default Avatar
     return "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
 # Columns definitions
@@ -224,342 +223,327 @@ ALL_SYLLABUS_TOPICS = [
 ]
 
 # -------------------------------------------------------------
-# UDISE+ GOVT-STYLE THEME CSS & PRINT BADGE FORMATS
+# UDISE+ GOVT-STYLE THEME CSS
 # -------------------------------------------------------------
 st.markdown("""
 <style>
-    .stApp {
-        background-color: #F8FAFC;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    .udise-topbar {
-        background-color: #1E293B;
-        color: white;
-        padding: 12px 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 3px solid #0284C7;
-        margin-top: -60px;
-        margin-left: -4rem;
-        margin-right: -4rem;
-        margin-bottom: 18px;
-    }
-    .udise-logo {
-        font-size: 20px;
-        font-weight: 800;
-        letter-spacing: 0.8px;
-        color: #38BDF8;
-    }
-    .udise-logo span {
-        color: #FFFFFF;
-        font-weight: 400;
-        font-size: 15px;
-        margin-left: 10px;
-        border-left: 1px solid #64748B;
-        padding-left: 10px;
-    }
-    .udise-user-badge {
-        background: #334155;
-        padding: 5px 14px;
-        border-radius: 20px;
-        font-size: 12px;
-        color: #E2E8F0;
-        border: 1px solid #475569;
-    }
+.stApp {
+    background-color: #F8FAFC;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+.udise-topbar {
+    background-color: #1E293B;
+    color: white;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 3px solid #0284C7;
+    margin-top: -60px;
+    margin-left: -4rem;
+    margin-right: -4rem;
+    margin-bottom: 18px;
+}
+.udise-logo {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: #38BDF8;
+}
+.udise-logo span {
+    color: #FFFFFF;
+    font-weight: 400;
+    font-size: 15px;
+    margin-left: 10px;
+    border-left: 1px solid #64748B;
+    padding-left: 10px;
+}
+.udise-user-badge {
+    background: #334155;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #E2E8F0;
+    border: 1px solid #475569;
+}
+.school-info-card {
+    background: #FFFFFF;
+    border-radius: 8px;
+    padding: 14px 20px;
+    border: 1px solid #CBD5E1;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+.hero-side-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+.hero-side-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    background: #F8FAFC;
+    border-radius: 6px;
+    border-left: 3px solid #0284C7;
+    margin-bottom: 6px;
+}
+.action-box {
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    margin-bottom: 12px;
+}
+.action-icon {
+    background: #0284C7;
+    color: white;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 20px;
+}
+.support-card {
+    background: #0F172A;
+    color: white;
+    border-radius: 8px;
+    padding: 14px 18px;
+}
+.support-item {
+    background: #1E293B;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+.pink-badge {
+    background: #FCE7F3;
+    color: #BE185D;
+    border: 1px solid #F472B6;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.green-badge {
+    background: #DCFCE7;
+    color: #15803D;
+    border: 1.5px solid #22C55E;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 5px rgba(34, 197, 94, 0.15);
+}
+.stepper-wrapper {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    background: #FFFFFF;
+    padding: 16px 20px;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+}
+.stepper-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+}
+.step-counter {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #E2E8F0;
+    color: #64748B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+.step-counter.active {
+    background: #10B981;
+    color: white;
+}
+.step-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #334155;
+}
 
-    .school-info-card {
-        background: #FFFFFF;
-        border-radius: 8px;
-        padding: 14px 20px;
-        border: 1px solid #CBD5E1;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        margin-bottom: 20px;
-    }
-    
-    .hero-side-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 10px;
-        padding: 14px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-around;
-    }
-    .hero-side-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 10px;
-        background: #F8FAFC;
-        border-radius: 6px;
-        border-left: 3px solid #0284C7;
-        margin-bottom: 6px;
-    }
-    
-    .action-box {
-        background: #FFFFFF;
-        border: 1px solid #CBD5E1;
-        border-radius: 8px;
-        padding: 16px;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-        margin-bottom: 12px;
-    }
-    .action-icon {
-        background: #0284C7;
-        color: white;
-        width: 44px;
-        height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 6px;
-        font-size: 20px;
-    }
+/* ID CARD CSS */
+.id-card-container {
+    width: 360px;
+    background: #FFFFFF;
+    border-radius: 14px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    overflow: hidden;
+    border: 2px solid #0284C7;
+    margin: 10px auto;
+}
+.id-card-header {
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+    color: white;
+    padding: 14px;
+    text-align: center;
+    border-bottom: 3px solid #38BDF8;
+}
+.id-card-body {
+    padding: 16px;
+    text-align: center;
+}
+.id-photo {
+    width: 95px;
+    height: 95px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #0284C7;
+    margin-top: -10px;
+}
+.id-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 8px 0 2px 0;
+    text-transform: uppercase;
+}
+.id-roll-badge {
+    background: #E0F2FE;
+    color: #0369A1;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 3px 12px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-bottom: 10px;
+}
+.id-details-table {
+    width: 100%;
+    font-size: 11.5px;
+    text-align: left;
+    color: #334155;
+    margin-bottom: 12px;
+}
+.id-details-table td {
+    padding: 4px 6px;
+}
+.id-card-footer {
+    background: #F8FAFC;
+    padding: 10px 14px;
+    border-top: 1px dashed #CBD5E1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-    .support-card {
-        background: #0F172A;
-        color: white;
-        border-radius: 8px;
-        padding: 14px 18px;
-    }
-    .support-item {
-        background: #1E293B;
-        padding: 8px 12px;
-        border-radius: 6px;
-        margin-top: 8px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 13px;
-    }
+/* PASSBOOK CSS */
+.passbook-card {
+    background: #FFFFFF;
+    border: 2px solid #334155;
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    max-width: 750px;
+    margin: 10px auto;
+}
+.passbook-header {
+    text-align: center;
+    border-bottom: 2px solid #0284C7;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+.passbook-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin-top: 12px;
+}
+.passbook-table th {
+    background: #F1F5F9;
+    color: #0F172A;
+    border: 1px solid #CBD5E1;
+    padding: 7px;
+    text-align: center;
+    font-weight: 700;
+}
+.passbook-table td {
+    border: 1px solid #E2E8F0;
+    padding: 7px;
+    text-align: center;
+    color: #334155;
+}
 
-    .pink-badge {
-        background: #FCE7F3;
-        color: #BE185D;
-        border: 1px solid #F472B6;
-        padding: 12px 16px;
-        border-radius: 8px;
-        font-weight: 600;
-        margin-bottom: 12px;
-    }
-    .green-badge {
-        background: #DCFCE7;
-        color: #15803D;
-        border: 1.5px solid #22C55E;
-        padding: 12px 16px;
-        border-radius: 8px;
-        font-weight: 600;
-        margin-bottom: 12px;
-        box-shadow: 0 2px 5px rgba(34, 197, 94, 0.15);
-    }
-
-    .stepper-wrapper {
-        display: flex;
-        justify-content: space-between;
-        margin: 20px 0;
-        background: #FFFFFF;
-        padding: 16px 20px;
-        border-radius: 8px;
-        border: 1px solid #E2E8F0;
-    }
-    .stepper-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        flex: 1;
-        position: relative;
-    }
-    .step-counter {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        background: #E2E8F0;
-        color: #64748B;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        margin-bottom: 6px;
-    }
-    .step-counter.active {
-        background: #10B981;
-        color: white;
-    }
-    .step-name {
-        font-size: 11px;
-        font-weight: 600;
-        color: #334155;
-    }
-
-    /* DIGITAL ID CARD CSS */
-    .id-card-container {
-        width: 360px;
-        background: #FFFFFF;
-        border-radius: 14px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.12);
-        overflow: hidden;
-        border: 2px solid #0284C7;
-        font-family: 'Segoe UI', Tahoma, sans-serif;
-        margin: auto;
-    }
-    .id-card-header {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-        color: white;
-        padding: 14px;
-        text-align: center;
-        border-bottom: 3px solid #38BDF8;
-    }
-    .id-card-body {
-        padding: 16px;
-        text-align: center;
-    }
-    .id-photo {
-        width: 95px;
-        height: 95px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 3px solid #0284C7;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        margin-top: -10px;
-    }
-    .id-name {
-        font-size: 17px;
-        font-weight: 800;
-        color: #0F172A;
-        margin: 8px 0 2px 0;
-        text-transform: uppercase;
-    }
-    .id-roll-badge {
-        background: #E0F2FE;
-        color: #0369A1;
-        font-weight: 700;
-        font-size: 12px;
-        padding: 3px 12px;
-        border-radius: 12px;
-        display: inline-block;
-        margin-bottom: 10px;
-    }
-    .id-details-table {
-        width: 100%;
-        font-size: 11.5px;
-        text-align: left;
-        color: #334155;
-        margin-bottom: 12px;
-        border-collapse: collapse;
-    }
-    .id-details-table td {
-        padding: 4px 6px;
-    }
-    .id-card-footer {
-        background: #F8FAFC;
-        padding: 10px 14px;
-        border-top: 1px dashed #CBD5E1;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    /* DIGITAL INSTALLMENT PASSBOOK CARD CSS */
-    .passbook-card {
-        background: #FFFFFF;
-        border: 2px solid #334155;
-        border-radius: 10px;
-        padding: 18px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-        max-width: 750px;
-        margin: auto;
-    }
-    .passbook-header {
-        text-align: center;
-        border-bottom: 2px solid #0284C7;
-        padding-bottom: 8px;
-        margin-bottom: 12px;
-    }
-    .passbook-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 12.5px;
-        margin-top: 12px;
-    }
-    .passbook-table th {
-        background: #F1F5F9;
-        color: #0F172A;
-        border: 1px solid #CBD5E1;
-        padding: 7px;
-        text-align: center;
-        font-weight: 700;
-    }
-    .passbook-table td {
-        border: 1px solid #E2E8F0;
-        padding: 7px;
-        text-align: center;
-        color: #334155;
-    }
-
-    /* Vibrant Green Button Theme */
-    div.stButton > button {
-        background-color: #047857 !important;
-        color: white !important;
-        border-radius: 6px !important;
-        font-weight: 600 !important;
-        border: none !important;
-        transition: all 0.2s ease-in-out !important;
-    }
-    div.stButton > button:hover {
-        background-color: #059669 !important;
-        transform: scale(1.01) !important;
-        box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3) !important;
-    }
-    div.stButton > button:active {
-        background-color: #10B981 !important;
-    }
+/* Vibrant Green Button Theme */
+div.stButton > button {
+    background-color: #047857 !important;
+    color: white !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    transition: all 0.2s ease-in-out !important;
+}
+div.stButton > button:hover {
+    background-color: #059669 !important;
+    transform: scale(1.01) !important;
+    box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3) !important;
+}
+div.stButton > button:active {
+    background-color: #10B981 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # Top Header Bar
 st.markdown("""
 <div class="udise-topbar">
-    <div class="udise-logo">
-        STC-ZTC+ <span>Enterprise Management Portal</span>
-    </div>
-    <div style="display:flex; align-items:center; gap:15px;">
-        <span style="font-size:12px; color:#94A3B8;">Academic Session: 2026-27</span>
-        <div class="udise-user-badge">
-            👤 Chiranjeeb Hazarika (DIRECTOR / ADMIN)
-        </div>
-    </div>
+<div class="udise-logo">STC-ZTC+ <span>Enterprise Management Portal</span></div>
+<div style="display:flex; align-items:center; gap:15px;">
+<span style="font-size:12px; color:#94A3B8;">Academic Session: 2026-27</span>
+<div class="udise-user-badge">👤 Chiranjeeb Hazarika (DIRECTOR / ADMIN)</div>
+</div>
 </div>
 """, unsafe_allow_html=True)
 
 # Institutional Header Strip
 st.markdown("""
 <div class="school-info-card">
-    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px;">
-        <div>
-            <div style="font-size:12px; color:#64748B;">🏛️ Institution:</div>
-            <div style="font-size:15px; font-weight:700; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</div>
-        </div>
-        <div>
-            <div style="font-size:12px; color:#64748B;">📋 Center Code:</div>
-            <div style="font-size:15px; font-weight:700; color:#0284C7;">4159 (Kamarchuburi, Sonitpur)</div>
-        </div>
-        <div>
-            <div style="font-size:12px; color:#64748B;">🏷️ Quality Standard:</div>
-            <div style="font-size:15px; font-weight:700; color:#0F172A;">ISO 9001:2015 Certified Academy</div>
-        </div>
-        <div>
-            <div style="font-size:12px; color:#64748B;">📍 Center Location:</div>
-            <div style="font-size:15px; font-weight:700; color:#10B981;">Thelamara, Assam - 784149</div>
-        </div>
-    </div>
+<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px;">
+<div>
+<div style="font-size:12px; color:#64748B;">🏛️ Institution:</div>
+<div style="font-size:15px; font-weight:700; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</div>
+</div>
+<div>
+<div style="font-size:12px; color:#64748B;">📋 Center Code:</div>
+<div style="font-size:15px; font-weight:700; color:#0284C7;">4159 (Kamarchuburi, Sonitpur)</div>
+</div>
+<div>
+<div style="font-size:12px; color:#64748B;">🏷️ Quality Standard:</div>
+<div style="font-size:15px; font-weight:700; color:#0F172A;">ISO 9001:2015 Certified Academy</div>
+</div>
+<div>
+<div style="font-size:12px; color:#64748B;">📍 Center Location:</div>
+<div style="font-size:15px; font-weight:700; color:#10B981;">Thelamara, Assam - 784149</div>
+</div>
+</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -587,74 +571,52 @@ if menu == "⚡ Quick Actions & Dashboard":
     
     with col_h_left:
         st.markdown("""
-        <div class="hero-side-card">
-            <div style="font-size:13px; font-weight:bold; color:#0F172A; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px;">
-                🏆 Institutional Standards
-            </div>
-            <div class="hero-side-item">
-                <span style="font-size:18px;">🏛️</span>
-                <div>
-                    <b style="font-size:12px; color:#0F172A;">ISO 9001:2015</b><br>
-                    <span style="font-size:11px; color:#64748B;">Certified IT Academy</span>
-                </div>
-            </div>
-            <div class="hero-side-item">
-                <span style="font-size:18px;">🎯</span>
-                <div>
-                    <b style="font-size:12px; color:#0F172A;">Digital India Skill</b><br>
-                    <span style="font-size:11px; color:#64748B;">Quality Technical Training</span>
-                </div>
-            </div>
-            <div class="hero-side-item">
-                <span style="font-size:18px;">💻</span>
-                <div>
-                    <b style="font-size:12px; color:#0F172A;">100% Practical Lab</b><br>
-                    <span style="font-size:11px; color:#64748B;">Dedicated Computer PCs</span>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="hero-side-card">
+<div style="font-size:13px; font-weight:bold; color:#0F172A; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px;">🏆 Institutional Standards</div>
+<div class="hero-side-item">
+<span style="font-size:18px;">🏛️</span>
+<div><b style="font-size:12px; color:#0F172A;">ISO 9001:2015</b><br><span style="font-size:11px; color:#64748B;">Certified IT Academy</span></div>
+</div>
+<div class="hero-side-item">
+<span style="font-size:18px;">🎯</span>
+<div><b style="font-size:12px; color:#0F172A;">Digital India Skill</b><br><span style="font-size:11px; color:#64748B;">Quality Technical Training</span></div>
+</div>
+<div class="hero-side-item">
+<span style="font-size:18px;">💻</span>
+<div><b style="font-size:12px; color:#0F172A;">100% Practical Lab</b><br><span style="font-size:11px; color:#64748B;">Dedicated Computer PCs</span></div>
+</div>
+</div>
+""", unsafe_allow_html=True)
         
     with col_h_mid:
         if dp2_b64:
             st.markdown(f'<img src="{dp2_b64}" style="width:100%; max-height:220px; object-fit:contain; border-radius:10px; border:1px solid #CBD5E1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">', unsafe_allow_html=True)
         else:
             st.markdown("""
-            <div style="background:#0F172A; color:white; padding:30px; border-radius:10px; text-align:center;">
-                <h3 style="margin:0; color:#38BDF8;">SOFT TECH COMPUTERS & ZTC</h3>
-                <p style="margin:6px 0 0 0; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149</p>
-            </div>
-            """, unsafe_allow_html=True)
+<div style="background:#0F172A; color:white; padding:30px; border-radius:10px; text-align:center;">
+<h3 style="margin:0; color:#38BDF8;">SOFT TECH COMPUTERS & ZTC</h3>
+<p style="margin:6px 0 0 0; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149</p>
+</div>
+""", unsafe_allow_html=True)
             
     with col_h_right:
         st.markdown("""
-        <div class="hero-side-card">
-            <div style="font-size:13px; font-weight:bold; color:#0F172A; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px;">
-                📜 Recognition & Certs
-            </div>
-            <div class="hero-side-item" style="border-left-color:#10B981;">
-                <span style="font-size:18px;">📋</span>
-                <div>
-                    <b style="font-size:12px; color:#0F172A;">Center Code: 4159</b><br>
-                    <span style="font-size:11px; color:#64748B;">Govt Regd Accreditation</span>
-                </div>
-            </div>
-            <div class="hero-side-item" style="border-left-color:#10B981;">
-                <span style="font-size:18px;">📜</span>
-                <div>
-                    <b style="font-size:12px; color:#0F172A;">Sarva India Certs</b><br>
-                    <span style="font-size:11px; color:#64748B;">Valid Across India</span>
-                </div>
-            </div>
-            <div class="hero-side-item" style="border-left-color:#10B981;">
-                <span style="font-size:18px;">🌐</span>
-                <div>
-                    <b style="font-size:12px; color:#0F172A;">Online Verification</b><br>
-                    <span style="font-size:11px; color:#64748B;">Instant Roll ID Check</span>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="hero-side-card">
+<div style="font-size:13px; font-weight:bold; color:#0F172A; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px;">📜 Recognition & Certs</div>
+<div class="hero-side-item" style="border-left-color:#10B981;">
+<span style="font-size:18px;">📋</span>
+<div><b style="font-size:12px; color:#0F172A;">Center Code: 4159</b><br><span style="font-size:11px; color:#64748B;">Govt Regd Accreditation</span></div>
+</div>
+<div class="hero-side-item" style="border-left-color:#10B981;">
+<span style="font-size:18px;">📜</span>
+<div><b style="font-size:12px; color:#0F172A;">Sarva India Certs</b><br><span style="font-size:11px; color:#64748B;">Valid Across India</span></div>
+</div>
+<div class="hero-side-item" style="border-left-color:#10B981;">
+<span style="font-size:18px;">🌐</span>
+<div><b style="font-size:12px; color:#0F172A;">Online Verification</b><br><span style="font-size:11px; color:#64748B;">Instant Roll ID Check</span></div>
+</div>
+</div>
+""", unsafe_allow_html=True)
         
     st.markdown("<br>", unsafe_allow_html=True)
     
@@ -673,14 +635,14 @@ if menu == "⚡ Quick Actions & Dashboard":
     
     with col_l:
         st.markdown("""
-        <div class="action-box">
-            <div class="action-icon">📝</div>
-            <div>
-                <b style="font-size:15px; color:#0F172A;">Online Student Admission & Course Fee Enquiry Desk</b>
-                <div style="font-size:12px; color:#64748B;">Submit your query to check official course duration and fee structure</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="action-box">
+<div class="action-icon">📝</div>
+<div>
+<b style="font-size:15px; color:#0F172A;">Online Student Admission & Course Fee Enquiry Desk</b>
+<div style="font-size:12px; color:#64748B;">Submit your query to check official course duration and fee structure</div>
+</div>
+</div>
+""", unsafe_allow_html=True)
         
         with st.expander("📝 Click here to Submit Public Admission / Course Fee Enquiry", expanded=True):
             with st.form("public_enquiry_form", clear_on_submit=True):
@@ -711,36 +673,28 @@ if menu == "⚡ Quick Actions & Dashboard":
                         save_data(enquiry_df, ENQUIRY_FILE, "enquiries_db")
                         
                         st.markdown(f"""
-                        <div class="green-badge">
-                            🎉 <b>Enquiry Submitted Successfully!</b><br>
-                            <b>Selected Course:</b> {e_course}<br>
-                            <b>Duration:</b> {c_dur} | <b>Official Total Course Fee:</b> ₹{c_fee}<br>
-                            <i>Our academy office will contact you on {e_mobile} shortly!</i>
-                        </div>
-                        """, unsafe_allow_html=True)
+<div class="green-badge">
+🎉 <b>Enquiry Submitted Successfully!</b><br>
+<b>Selected Course:</b> {e_course}<br>
+<b>Duration:</b> {c_dur} | <b>Official Total Course Fee:</b> ₹{c_fee}<br>
+<i>Our academy office will contact you on {e_mobile} shortly!</i>
+</div>
+""", unsafe_allow_html=True)
 
     with col_r:
         st.markdown("""
-        <div class="support-card">
-            <div style="font-size:14px; font-weight:700; color:#38BDF8; display:flex; align-items:center; gap:8px;">
-                📞 Center Support & Helplines
-            </div>
-            <div class="support-item">
-                <div>
-                    <b>Director / Head MIS</b><br>
-                    <span style="color:#94A3B8; font-size:11px;">Chiranjeeb Hazarika</span>
-                </div>
-                <div style="color:#38BDF8; font-weight:bold;">9101026718</div>
-            </div>
-            <div class="support-item">
-                <div>
-                    <b>Helpdesk / Center Location</b><br>
-                    <span style="color:#94A3B8; font-size:11px;">Kamarchuburi, Sonitpur</span>
-                </div>
-                <div style="color:#10B981; font-weight:bold;">PIN: 784149</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="support-card">
+<div style="font-size:14px; font-weight:700; color:#38BDF8; display:flex; align-items:center; gap:8px;">📞 Center Support & Helplines</div>
+<div class="support-item">
+<div><b>Director / Head MIS</b><br><span style="color:#94A3B8; font-size:11px;">Chiranjeeb Hazarika</span></div>
+<div style="color:#38BDF8; font-weight:bold;">9101026718</div>
+</div>
+<div class="support-item">
+<div><b>Helpdesk / Center Location</b><br><span style="color:#94A3B8; font-size:11px;">Kamarchuburi, Sonitpur</span></div>
+<div style="color:#10B981; font-weight:bold;">PIN: 784149</div>
+</div>
+</div>
+""", unsafe_allow_html=True)
         
     st.markdown("---")
     
@@ -770,12 +724,12 @@ elif menu == "📜 Online Certificate Verification":
             v_data = v_match.iloc[0]
             st.balloons()
             st.markdown(f"""
-            <div class="green-badge">
-                <h3 style="margin:0; color:#15803D;">✅ OFFICIAL RECORD VERIFIED</h3>
-                <p style="margin:8px 0 0 0; font-size:15px;"><b>Candidate Name:</b> {v_data['Name']} | <b>Course:</b> {v_data['Course']} | <b>Roll ID:</b> {v_data['Student ID']}</p>
-                <p style="margin:4px 0 0 0; font-size:13px; color:#15803D;">Center: Soft Tech Computers & ZTC (Code: 4159) | HP Reg No: {v_data['HO_Reg_No'] if v_data['HO_Reg_No'] else 'Registered'} | Status: {v_data['Status']}</p>
-            </div>
-            """, unsafe_allow_html=True)
+<div class="green-badge">
+<h3 style="margin:0; color:#15803D;">✅ OFFICIAL RECORD VERIFIED</h3>
+<p style="margin:8px 0 0 0; font-size:15px;"><b>Candidate Name:</b> {v_data['Name']} | <b>Course:</b> {v_data['Course']} | <b>Roll ID:</b> {v_data['Student ID']}</p>
+<p style="margin:4px 0 0 0; font-size:13px; color:#15803D;">Center: Soft Tech Computers & ZTC (Code: 4159) | HP Reg No: {v_data['HO_Reg_No'] if v_data['HO_Reg_No'] else 'Registered'} | Status: {v_data['Status']}</p>
+</div>
+""", unsafe_allow_html=True)
         else:
             st.error("❌ INVALID ROLL ID! No official matching record found in academy database.")
 
@@ -863,14 +817,14 @@ elif menu == "📝 New Student Admission":
                     save_data(student_df, STUDENT_MASTER_FILE, "students_db")
                     st.balloons()
                     st.markdown(f"""
-                    <div class="green-badge">
-                        🎉 <b>Candidate Registered Successfully!</b> Student ID: <b>{next_id}</b>
-                    </div>
-                    """, unsafe_allow_html=True)
+<div class="green-badge">
+🎉 <b>Candidate Registered Successfully!</b> Student ID: <b>{next_id}</b>
+</div>
+""", unsafe_allow_html=True)
                     st.rerun()
 
 # -------------------------------------------------------------
-# 4. STUDENT LOGIN PORTAL (WITH ID CARD & INSTALLMENT PASSBOOK)
+# 4. STUDENT LOGIN PORTAL
 # -------------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard & Digital Documents")
@@ -906,13 +860,13 @@ elif menu == "🔑 Student Login Portal":
                     if not match_s.empty:
                         for _, row in match_s.iterrows():
                             st.markdown(f"""
-                            <div class="green-badge">
-                                ✅ <b>Student Record Found:</b><br>
-                                <b>Name:</b> {row['Name']}<br>
-                                <b>Roll ID:</b> <span style="font-size:18px; color:#047857;"><b>{row['Student ID']}</b></span><br>
-                                <b>Password:</b> <i>Your 10-digit Mobile Number ({find_mob})</i>
-                            </div>
-                            """, unsafe_allow_html=True)
+<div class="green-badge">
+✅ <b>Student Record Found:</b><br>
+<b>Name:</b> {row['Name']}<br>
+<b>Roll ID:</b> <span style="font-size:18px; color:#047857;"><b>{row['Student ID']}</b></span><br>
+<b>Password:</b> <i>Your 10-digit Mobile Number ({find_mob})</i>
+</div>
+""", unsafe_allow_html=True)
                     else:
                         st.error("No student found with this mobile number. Please contact director support below.")
                         
@@ -920,50 +874,50 @@ elif menu == "🔑 Student Login Portal":
             st.write("**💬 Option 2: Direct WhatsApp Support**")
             wa_link = "https://wa.me/919101026718?text=Hello%20Director%20Sir,%20I%20forgot%20my%20Student%20Portal%20Login%20Details%20(STC%20Portal).%20Please%20help."
             st.markdown(f"""
-            <a href="{wa_link}" target="_blank" style="text-decoration:none;">
-                <div style="background-color:#25D366; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; text-align:center; display:inline-block;">
-                    📲 Message Director Sir on WhatsApp (+91 9101026718)
-                </div>
-            </a>
-            """, unsafe_allow_html=True)
+<a href="{wa_link}" target="_blank" style="text-decoration:none;">
+<div style="background-color:#25D366; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; text-align:center; display:inline-block;">
+📲 Message Director Sir on WhatsApp (+91 9101026718)
+</div>
+</a>
+""", unsafe_allow_html=True)
     else:
         s_id = st.session_state["logged_student_id"]
         s = student_df[student_df["Student ID"] == s_id].iloc[0]
         
         st.markdown(f"""
-        <div class="green-badge">
-            Welcome back, <b>{s['Name']}</b> | Roll ID: <b>{s['Student ID']}</b> | Course: <b>{s['Course']}</b>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="green-badge">
+Welcome back, <b>{s['Name']}</b> | Roll ID: <b>{s['Student ID']}</b> | Course: <b>{s['Course']}</b>
+</div>
+""", unsafe_allow_html=True)
         
         # LIFECYCLE TIMELINE STEPPER
         ho_reg = s["HO_Reg_No"] if s["HO_Reg_No"] and s["HO_Reg_No"] != "Pending" else "In Process"
         c_status = s["Stage_Cert_Status"] if s["Stage_Cert_Status"] else "In Process"
         
         st.markdown(f"""
-        <div class="stepper-wrapper">
-            <div class="stepper-item">
-                <div class="step-counter active">1</div>
-                <div class="step-name">Admission<br><span style="color:#10B981;">✓ Confirmed</span></div>
-            </div>
-            <div class="stepper-item">
-                <div class="step-counter {'active' if ho_reg != 'In Process' else ''}">2</div>
-                <div class="step-name">HP HO Reg<br><span style="color:#0284C7;">{ho_reg}</span></div>
-            </div>
-            <div class="stepper-item">
-                <div class="step-counter {'active' if s['Stage_AdmitCard'] == 'Generated' else ''}">3</div>
-                <div class="step-name">Admit Card<br><span style="color:#64748B;">{s['Stage_AdmitCard']}</span></div>
-            </div>
-            <div class="stepper-item">
-                <div class="step-counter {'active' if 'Arrived' in c_status or 'Delivered' in c_status else ''}">4</div>
-                <div class="step-name">Certificate<br><span style="color:#10B981;">{c_status}</span></div>
-            </div>
-            <div class="stepper-item">
-                <div class="step-counter {'active' if s['Handover_Status'] == 'Delivered' else ''}">5</div>
-                <div class="step-name">Handover<br><span style="color:#64748B;">{s['Handover_Status']}</span></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+<div class="stepper-wrapper">
+<div class="stepper-item">
+<div class="step-counter active">1</div>
+<div class="step-name">Admission<br><span style="color:#10B981;">✓ Confirmed</span></div>
+</div>
+<div class="stepper-item">
+<div class="step-counter {'active' if ho_reg != 'In Process' else ''}">2</div>
+<div class="step-name">HP HO Reg<br><span style="color:#0284C7;">{ho_reg}</span></div>
+</div>
+<div class="stepper-item">
+<div class="step-counter {'active' if s['Stage_AdmitCard'] == 'Generated' else ''}">3</div>
+<div class="step-name">Admit Card<br><span style="color:#64748B;">{s['Stage_AdmitCard']}</span></div>
+</div>
+<div class="stepper-item">
+<div class="step-counter {'active' if 'Arrived' in c_status or 'Delivered' in c_status else ''}">4</div>
+<div class="step-name">Certificate<br><span style="color:#10B981;">{c_status}</span></div>
+</div>
+<div class="stepper-item">
+<div class="step-counter {'active' if s['Handover_Status'] == 'Delivered' else ''}">5</div>
+<div class="step-name">Handover<br><span style="color:#64748B;">{s['Handover_Status']}</span></div>
+</div>
+</div>
+""", unsafe_allow_html=True)
         
         # Calculations
         p_logs = fee_df[fee_df["Student ID"] == s_id]
@@ -1006,50 +960,47 @@ elif menu == "🔑 Student Login Portal":
             barcode_url = f"https://quickchart.io/barcode?type=code128&text={s['Student ID']}&width=180&height=36"
             
             st.markdown(f"""
-            <div class="id-card-container">
-                <div class="id-card-header">
-                    <div style="font-size:14px; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">SOFT TECH COMPUTERS & ZTC</div>
-                    <div style="font-size:10px; color:#E2E8F0;">ISO 9001:2015 Certified | Center Code: 4159</div>
-                    <div style="font-size:9.5px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur - 784149</div>
-                </div>
-                <div class="id-card-body">
-                    <img src="{photo_src}" class="id-photo"><br>
-                    <div class="id-name">{s['Name']}</div>
-                    <div class="id-roll-badge">ROLL ID: {s['Student ID']}</div>
-                    
-                    <table class="id-details-table">
-                        <tr><td><b>Course:</b></td><td>{s['Course']}</td></tr>
-                        <tr><td><b>Father:</b></td><td>{s['Father Name']}</td></tr>
-                        <tr><td><b>Mobile:</b></td><td>{s['Mobile No']}</td></tr>
-                        <tr><td><b>Shift/Batch:</b></td><td>{s['Shift']}</td></tr>
-                        <tr><td><b>Validity:</b></td><td>{s['Validity Date']}</td></tr>
-                    </table>
-                    
-                    <div style="display:flex; justify-content:space-around; align-items:center; margin-top:6px;">
-                        <div>
-                            <img src="{qr_url}" style="width:75px; height:75px; border:1px solid #CBD5E1; padding:2px; border-radius:4px;"><br>
-                            <span style="font-size:9px; color:#64748B;">Attendance QR</span>
-                        </div>
-                        <div style="text-align:right;">
-                            <img src="{barcode_url}" style="width:140px; height:30px;"><br>
-                            <div style="border-top:1px solid #0F172A; width:100px; margin-top:8px; margin-left:auto;"></div>
-                            <span style="font-size:9.5px; color:#0F172A; font-weight:bold;">Director Sign</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="id-card-footer">
-                    <span style="font-size:9px; color:#64748B;">Affiliated with Sarva India (HP)</span>
-                    <span style="font-size:9px; font-weight:bold; color:#10B981;">● ACTIVE TRAINEE</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+<div class="id-card-container">
+<div class="id-card-header">
+<div style="font-size:14px; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">SOFT TECH COMPUTERS & ZTC</div>
+<div style="font-size:10px; color:#E2E8F0;">ISO 9001:2015 Certified | Center Code: 4159</div>
+<div style="font-size:9.5px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur - 784149</div>
+</div>
+<div class="id-card-body">
+<img src="{photo_src}" class="id-photo"><br>
+<div class="id-name">{s['Name']}</div>
+<div class="id-roll-badge">ROLL ID: {s['Student ID']}</div>
+<table class="id-details-table">
+<tr><td><b>Course:</b></td><td>{s['Course']}</td></tr>
+<tr><td><b>Father:</b></td><td>{s['Father Name']}</td></tr>
+<tr><td><b>Mobile:</b></td><td>{s['Mobile No']}</td></tr>
+<tr><td><b>Shift/Batch:</b></td><td>{s['Shift']}</td></tr>
+<tr><td><b>Validity:</b></td><td>{s['Validity Date']}</td></tr>
+</table>
+<div style="display:flex; justify-content:space-around; align-items:center; margin-top:6px;">
+<div>
+<img src="{qr_url}" style="width:75px; height:75px; border:1px solid #CBD5E1; padding:2px; border-radius:4px;"><br>
+<span style="font-size:9px; color:#64748B;">Attendance QR</span>
+</div>
+<div style="text-align:right;">
+<img src="{barcode_url}" style="width:140px; height:30px;"><br>
+<div style="border-top:1px solid #0F172A; width:100px; margin-top:8px; margin-left:auto;"></div>
+<span style="font-size:9.5px; color:#0F172A; font-weight:bold;">Director Sign</span>
+</div>
+</div>
+</div>
+<div class="id-card-footer">
+<span style="font-size:9px; color:#64748B;">Affiliated with Sarva India (HP)</span>
+<span style="font-size:9px; font-weight:bold; color:#10B981;">● ACTIVE TRAINEE</span>
+</div>
+</div>
+""", unsafe_allow_html=True)
             
         # 2. INSTALLMENT PASSBOOK CARD TAB
         with s_tab2:
             st.subheader("💳 Student Fee Installment Passbook Card")
             st.info("💡 Official digital money receipt ledger for fees paid and remaining dues.")
             
-            # Construct installment rows
             rows_html = ""
             current_running_paid = 0.0
             for idx, (_, row) in enumerate(p_logs.iterrows(), 1):
@@ -1057,95 +1008,92 @@ elif menu == "🔑 Student Login Portal":
                 current_running_paid += amt
                 running_due = max(0.0, net_f - current_running_paid)
                 rows_html += f"""
-                <tr>
-                    <td><b>{idx}</b></td>
-                    <td>{row['Date']}</td>
-                    <td>{row['Receipt No']}</td>
-                    <td style="color:#047857; font-weight:bold;">₹{amt:.2f}</td>
-                    <td style="color:#DC2626; font-weight:bold;">₹{running_due:.2f}</td>
-                    <td>{row['Payment Mode']}</td>
-                    <td>{row['Collected_By']}</td>
-                </tr>
-                """
+<tr>
+<td><b>{idx}</b></td>
+<td>{row['Date']}</td>
+<td>{row['Receipt No']}</td>
+<td style="color:#047857; font-weight:bold;">₹{amt:.2f}</td>
+<td style="color:#DC2626; font-weight:bold;">₹{running_due:.2f}</td>
+<td>{row['Payment Mode']}</td>
+<td>{row['Collected_By']}</td>
+</tr>
+"""
                 
             if not rows_html:
                 rows_html = "<tr><td colspan='7' style='color:#64748B;'>No installment payments deposited yet.</td></tr>"
                 
             st.markdown(f"""
-            <div class="passbook-card">
-                <div class="passbook-header">
-                    <h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
-                    <p style="margin:2px 0 0 0; font-size:11.5px; color:#64748B;">Accredited Center Code: 4159 | An ISO 9001:2015 Certified Academy</p>
-                    <h4 style="margin:6px 0 0 0; color:#0284C7; text-transform:uppercase;">OFFICIAL STUDENT FEE INSTALLMENT PASSBOOK CARD</h4>
-                </div>
-                
-                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; background:#F8FAFC; padding:10px; border-radius:6px; border:1px solid #E2E8F0;">
-                    <div>
-                        <b>Candidate Name:</b> {s['Name']}<br>
-                        <b>Roll ID:</b> {s['Student ID']}<br>
-                        <b>Course:</b> {s['Course']}
-                    </div>
-                    <div style="text-align:right;">
-                        <b>Total Course Fee:</b> ₹{net_f:.2f}<br>
-                        <b>Total Deposited:</b> <span style="color:#047857; font-weight:bold;">₹{tot_paid:.2f}</span><br>
-                        <b>Net Due Balance:</b> <span style="color:#DC2626; font-weight:bold;">₹{due_f:.2f}</span>
-                    </div>
-                </div>
-                
-                <table class="passbook-table">
-                    <thead>
-                        <tr>
-                            <th>Inst #</th>
-                            <th>Date</th>
-                            <th>Receipt No</th>
-                            <th>Amount Paid</th>
-                            <th>Balance Due</th>
-                            <th>Pay Mode</th>
-                            <th>Authorized Sign</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows_html}
-                    </tbody>
-                </table>
-                
-                <div style="display:flex; justify-content:space-between; margin-top:25px; font-size:11px; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:8px;">
-                    <span>Student / Guardian Copy</span>
-                    <span style="font-weight:bold; color:#0F172A;">Authorized Cashier / Director Signature</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+<div class="passbook-card">
+<div class="passbook-header">
+<h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
+<p style="margin:2px 0 0 0; font-size:11.5px; color:#64748B;">Accredited Center Code: 4159 | An ISO 9001:2015 Certified Academy</p>
+<h4 style="margin:6px 0 0 0; color:#0284C7; text-transform:uppercase;">OFFICIAL STUDENT FEE INSTALLMENT PASSBOOK CARD</h4>
+</div>
+<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; background:#F8FAFC; padding:10px; border-radius:6px; border:1px solid #E2E8F0;">
+<div>
+<b>Candidate Name:</b> {s['Name']}<br>
+<b>Roll ID:</b> {s['Student ID']}<br>
+<b>Course:</b> {s['Course']}
+</div>
+<div style="text-align:right;">
+<b>Total Course Fee:</b> ₹{net_f:.2f}<br>
+<b>Total Deposited:</b> <span style="color:#047857; font-weight:bold;">₹{tot_paid:.2f}</span><br>
+<b>Net Due Balance:</b> <span style="color:#DC2626; font-weight:bold;">₹{due_f:.2f}</span>
+</div>
+</div>
+<table class="passbook-table">
+<thead>
+<tr>
+<th>Inst #</th>
+<th>Date</th>
+<th>Receipt No</th>
+<th>Amount Paid</th>
+<th>Balance Due</th>
+<th>Pay Mode</th>
+<th>Authorized Sign</th>
+</tr>
+</thead>
+<tbody>
+{rows_html}
+</tbody>
+</table>
+<div style="display:flex; justify-content:space-between; margin-top:25px; font-size:11px; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:8px;">
+<span>Student / Guardian Copy</span>
+<span style="font-weight:bold; color:#0F172A;">Authorized Cashier / Director Signature</span>
+</div>
+</div>
+""", unsafe_allow_html=True)
             
         with s_tab3:
             st.subheader("🎫 Official Examination Admit Card")
             st.markdown(f"""
-            <div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:10px; padding:20px; max-width:700px; margin:auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                <div style="text-align:center; border-bottom:2px solid #0284C7; padding-bottom:10px;">
-                    <h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
-                    <p style="margin:2px 0 0 0; font-size:12px; color:#64748B;">Accredited Center Code: 4159 | Affiliated with Sarva India (HP Head Office)</p>
-                    <h4 style="margin:8px 0 0 0; color:#0284C7; text-transform:uppercase;">Official Examination Admit Card</h4>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:14px; line-height:1.8;">
-                    <div>
-                        <b>Candidate Name:</b> {s['Name']}<br>
-                        <b>Roll ID:</b> {s['Student ID']}<br>
-                        <b>HP Reg No:</b> {ho_reg}<br>
-                        <b>Course:</b> {s['Course']}<br>
-                        <b>Batch Time:</b> {s['Shift']}
-                    </div>
-                    <div style="text-align:right;">
-                        <b>Exam Center:</b> STC Lab (Code: 4159)<br>
-                        <b>Center Location:</b> Thelamara, Sonitpur<br>
-                        <b>Academic Year:</b> {s['Session']}<br>
-                        <b>Validity:</b> {s['Validity Date']}
-                    </div>
-                </div>
-                <div style="margin-top:20px; border-top:1px dashed #CBD5E1; padding-top:10px; font-size:11px; color:#64748B; display:flex; justify-content:space-between;">
-                    <span>Candidate Signature</span>
-                    <span>Authorized Center Seal & Signature</span>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+<div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:10px; padding:20px; max-width:700px; margin:auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+<div style="text-align:center; border-bottom:2px solid #0284C7; padding-bottom:10px;">
+<h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
+<p style="margin:2px 0 0 0; font-size:12px; color:#64748B;">Accredited Center Code: 4159 | Affiliated with Sarva India (HP Head Office)</p>
+<h4 style="margin:8px 0 0 0; color:#0284C7; text-transform:uppercase;">Official Examination Admit Card</h4>
+</div>
+<div style="display:flex; justify-content:space-between; margin-top:15px; font-size:14px; line-height:1.8;">
+<div>
+<b>Candidate Name:</b> {s['Name']}<br>
+<b>Roll ID:</b> {s['Student ID']}<br>
+<b>HP Reg No:</b> {ho_reg}<br>
+<b>Course:</b> {s['Course']}<br>
+<b>Batch Time:</b> {s['Shift']}
+</div>
+<div style="text-align:right;">
+<b>Exam Center:</b> STC Lab (Code: 4159)<br>
+<b>Center Location:</b> Thelamara, Sonitpur<br>
+<b>Academic Year:</b> {s['Session']}<br>
+<b>Validity:</b> {s['Validity Date']}
+</div>
+</div>
+<div style="margin-top:20px; border-top:1px dashed #CBD5E1; padding-top:10px; font-size:11px; color:#64748B; display:flex; justify-content:space-between;">
+<span>Candidate Signature</span>
+<span>Authorized Center Seal & Signature</span>
+</div>
+</div>
+""", unsafe_allow_html=True)
             
         with s_tab4:
             st.subheader("📸 Classroom Attendance Log")
@@ -1222,16 +1170,16 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
                     
                     if is_eligible:
                         st.markdown("""
-                        <div class="green-badge" style="font-size:16px;">
-                            🎉 <b>APPROVED: Candidate is 100% ELIGIBLE for Sunday Free Practice Class (SFPC)!</b>
-                        </div>
-                        """, unsafe_allow_html=True)
+<div class="green-badge" style="font-size:16px;">
+🎉 <b>APPROVED: Candidate is 100% ELIGIBLE for Sunday Free Practice Class (SFPC)!</b>
+</div>
+""", unsafe_allow_html=True)
                     else:
                         st.markdown("""
-                        <div class="pink-badge" style="font-size:16px;">
-                            ❌ <b>NOT ELIGIBLE:</b> Student does not satisfy all 3 mandatory SFPC criteria. Please clear pending dues/attendance.
-                        </div>
-                        """, unsafe_allow_html=True)
+<div class="pink-badge" style="font-size:16px;">
+❌ <b>NOT ELIGIBLE:</b> Student does not satisfy all 3 mandatory SFPC criteria. Please clear pending dues/attendance.
+</div>
+""", unsafe_allow_html=True)
                 else:
                     st.error("❌ Authentication Failed: Invalid Roll ID or Password!")
                 
@@ -1277,10 +1225,10 @@ elif menu == "💵 Fee Counter Desk":
             due = net - total_paid
             
             st.markdown(f"""
-            <div style="background:#FFFFFF; border-left:4px solid #0284C7; padding:12px 16px; border-radius:6px; margin:10px 0; border:1px solid #E2E8F0;">
-                <b>Student:</b> {s_rec['Name']} | <b>Course Fee:</b> ₹{net:.2f} | <b>Paid:</b> ₹{total_paid:.2f} | <b>Due Balance:</b> <span style="color:#EF4444; font-weight:bold;">₹{due:.2f}</span>
-            </div>
-            """, unsafe_allow_html=True)
+<div style="background:#FFFFFF; border-left:4px solid #0284C7; padding:12px 16px; border-radius:6px; margin:10px 0; border:1px solid #E2E8F0;">
+<b>Student:</b> {s_rec['Name']} | <b>Course Fee:</b> ₹{net:.2f} | <b>Paid:</b> ₹{total_paid:.2f} | <b>Due Balance:</b> <span style="color:#EF4444; font-weight:bold;">₹{due:.2f}</span>
+</div>
+""", unsafe_allow_html=True)
             
             with st.form("fee_collect_form", clear_on_submit=True):
                 pay_amt = st.number_input("Amount Paid (₹)", min_value=100.0, step=100.0)
@@ -1294,10 +1242,10 @@ elif menu == "💵 Fee Counter Desk":
                     fee_df = pd.concat([fee_df, pd.DataFrame([f_row])], ignore_index=True)
                     save_data(fee_df, FEE_LOG_FILE, "fees_db")
                     st.markdown(f"""
-                    <div class="green-badge">
-                        🧾 <b>Money Receipt Issued!</b> Receipt No: <b>{rc_num}</b> | Amount: <b>₹{pay_amt}</b>
-                    </div>
-                    """, unsafe_allow_html=True)
+<div class="green-badge">
+🧾 <b>Money Receipt Issued!</b> Receipt No: <b>{rc_num}</b> | Amount: <b>₹{pay_amt}</b>
+</div>
+""", unsafe_allow_html=True)
                     st.rerun()
 
 # -------------------------------------------------------------
@@ -1323,10 +1271,10 @@ elif menu == "🔑 Teacher Portal & Attendance":
             st.info(f"🕒 **Current IST Real-Time:** `{now_ist.strftime('%I:%M:%S %p (%d-%B-%Y)')}`")
             
             st.markdown("""
-            <div style="background:#F1F5F9; border:1px solid #CBD5E1; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:12px;">
-                💡 <b>Salary Rule:</b> 3 Batches (90+90+90 = 270 Mins) = <b>₹230 / Day</b> (₹76.67 per 90-min batch | ₹0.852/Min). Late arrival automatically calculates penalty deduction.
-            </div>
-            """, unsafe_allow_html=True)
+<div style="background:#F1F5F9; border:1px solid #CBD5E1; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:12px;">
+💡 <b>Salary Rule:</b> 3 Batches (90+90+90 = 270 Mins) = <b>₹230 / Day</b> (₹76.67 per 90-min batch | ₹0.852/Min). Late arrival automatically calculates penalty deduction.
+</div>
+""", unsafe_allow_html=True)
             
             t_name_sel = st.selectbox("Select Teacher Name:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Chiranjeeb Hazarika"])
             t_shift_sel = st.selectbox("Assigned Shift:", [
@@ -1371,17 +1319,17 @@ elif menu == "🔑 Teacher Portal & Attendance":
                     
                     if is_late:
                         st.markdown(f"""
-                        <div class="pink-badge">
-                            🚨 <b>RED ALERT (LATE PUNCH):</b> Punched In at <b>{time_in_str}</b> (Late by <b>{late_by} mins</b>)!<br>
-                            <b>Penalty Deducted:</b> ₹{penalty_amt:.2f} | <b>Net Shift Earning:</b> ₹{net_batch_earning:.2f} / ₹{base_batch_pay:.2f}
-                        </div>
-                        """, unsafe_allow_html=True)
+<div class="pink-badge">
+🚨 <b>RED ALERT (LATE PUNCH):</b> Punched In at <b>{time_in_str}</b> (Late by <b>{late_by} mins</b>)!<br>
+<b>Penalty Deducted:</b> ₹{penalty_amt:.2f} | <b>Net Shift Earning:</b> ₹{net_batch_earning:.2f} / ₹{base_batch_pay:.2f}
+</div>
+""", unsafe_allow_html=True)
                     else:
                         st.markdown(f"""
-                        <div class="green-badge">
-                            ✅ <b>Punched IN On-Time at {time_in_str}!</b> Net Shift Earning: <b>₹{base_batch_pay:.2f}</b>
-                        </div>
-                        """, unsafe_allow_html=True)
+<div class="green-badge">
+✅ <b>Punched IN On-Time at {time_in_str}!</b> Net Shift Earning: <b>₹{base_batch_pay:.2f}</b>
+</div>
+""", unsafe_allow_html=True)
                     st.rerun()
                     
             with col_p2:
@@ -1455,11 +1403,11 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         marks_df = pd.concat([marks_df, pd.DataFrame([m_row])], ignore_index=True)
                         save_data(marks_df, MARKS_FILE, "marks_db")
                         st.markdown(f"""
-                        <div class="green-badge">
-                            🎉 <b>Exam Result Saved Successfully!</b><br>
-                            Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <b>{marks_obt} / {total_mks}</b>
-                        </div>
-                        """, unsafe_allow_html=True)
+<div class="green-badge">
+🎉 <b>Exam Result Saved Successfully!</b><br>
+Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <b>{marks_obt} / {total_mks}</b>
+</div>
+""", unsafe_allow_html=True)
                         st.rerun()
                     else:
                         st.error("Please enter Exam/Test Topic details!")
@@ -1517,7 +1465,7 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         st.rerun()
 
 # -------------------------------------------------------------
-# 8. ADMIN CONTROL PANEL (WITH ID CARD & PASSBOOK PRINTER)
+# 8. ADMIN CONTROL PANEL
 # -------------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -1553,43 +1501,41 @@ elif menu == "🔐 Admin Control Panel":
                         barcode_url_adm = f"https://quickchart.io/barcode?type=code128&text={p_stu['Student ID']}&width=180&height=36"
                         
                         st.markdown(f"""
-                        <div class="id-card-container">
-                            <div class="id-card-header">
-                                <div style="font-size:14px; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">SOFT TECH COMPUTERS & ZTC</div>
-                                <div style="font-size:10px; color:#E2E8F0;">ISO 9001:2015 Certified | Center Code: 4159</div>
-                                <div style="font-size:9.5px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur - 784149</div>
-                            </div>
-                            <div class="id-card-body">
-                                <img src="{photo_src_adm}" class="id-photo"><br>
-                                <div class="id-name">{p_stu['Name']}</div>
-                                <div class="id-roll-badge">ROLL ID: {p_stu['Student ID']}</div>
-                                
-                                <table class="id-details-table">
-                                    <tr><td><b>Course:</b></td><td>{p_stu['Course']}</td></tr>
-                                    <tr><td><b>Father:</b></td><td>{p_stu['Father Name']}</td></tr>
-                                    <tr><td><b>Mobile:</b></td><td>{p_stu['Mobile No']}</td></tr>
-                                    <tr><td><b>Shift/Batch:</b></td><td>{p_stu['Shift']}</td></tr>
-                                    <tr><td><b>Validity:</b></td><td>{p_stu['Validity Date']}</td></tr>
-                                </table>
-                                
-                                <div style="display:flex; justify-content:space-around; align-items:center; margin-top:6px;">
-                                    <div>
-                                        <img src="{qr_url_adm}" style="width:75px; height:75px; border:1px solid #CBD5E1; padding:2px; border-radius:4px;"><br>
-                                        <span style="font-size:9px; color:#64748B;">Attendance QR</span>
-                                    </div>
-                                    <div style="text-align:right;">
-                                        <img src="{barcode_url_adm}" style="width:140px; height:30px;"><br>
-                                        <div style="border-top:1px solid #0F172A; width:100px; margin-top:8px; margin-left:auto;"></div>
-                                        <span style="font-size:9.5px; color:#0F172A; font-weight:bold;">Director Sign</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="id-card-footer">
-                                <span style="font-size:9px; color:#64748B;">Affiliated with Sarva India (HP)</span>
-                                <span style="font-size:9px; font-weight:bold; color:#10B981;">● AUTHORIZED ID</span>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+<div class="id-card-container">
+<div class="id-card-header">
+<div style="font-size:14px; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">SOFT TECH COMPUTERS & ZTC</div>
+<div style="font-size:10px; color:#E2E8F0;">ISO 9001:2015 Certified | Center Code: 4159</div>
+<div style="font-size:9.5px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur - 784149</div>
+</div>
+<div class="id-card-body">
+<img src="{photo_src_adm}" class="id-photo"><br>
+<div class="id-name">{p_stu['Name']}</div>
+<div class="id-roll-badge">ROLL ID: {p_stu['Student ID']}</div>
+<table class="id-details-table">
+<tr><td><b>Course:</b></td><td>{p_stu['Course']}</td></tr>
+<tr><td><b>Father:</b></td><td>{p_stu['Father Name']}</td></tr>
+<tr><td><b>Mobile:</b></td><td>{p_stu['Mobile No']}</td></tr>
+<tr><td><b>Shift/Batch:</b></td><td>{p_stu['Shift']}</td></tr>
+<tr><td><b>Validity:</b></td><td>{p_stu['Validity Date']}</td></tr>
+</table>
+<div style="display:flex; justify-content:space-around; align-items:center; margin-top:6px;">
+<div>
+<img src="{qr_url_adm}" style="width:75px; height:75px; border:1px solid #CBD5E1; padding:2px; border-radius:4px;"><br>
+<span style="font-size:9px; color:#64748B;">Attendance QR</span>
+</div>
+<div style="text-align:right;">
+<img src="{barcode_url_adm}" style="width:140px; height:30px;"><br>
+<div style="border-top:1px solid #0F172A; width:100px; margin-top:8px; margin-left:auto;"></div>
+<span style="font-size:9.5px; color:#0F172A; font-weight:bold;">Director Sign</span>
+</div>
+</div>
+</div>
+<div class="id-card-footer">
+<span style="font-size:9px; color:#64748B;">Affiliated with Sarva India (HP)</span>
+<span style="font-size:9px; font-weight:bold; color:#10B981;">● AUTHORIZED ID</span>
+</div>
+</div>
+""", unsafe_allow_html=True)
                         
                     else:
                         # PASSBOOK CARD
@@ -1605,63 +1551,60 @@ elif menu == "🔐 Admin Control Panel":
                             curr_run_paid += amt
                             run_due = max(0.0, adm_net_f - curr_run_paid)
                             rows_html_adm += f"""
-                            <tr>
-                                <td><b>{idx}</b></td>
-                                <td>{row['Date']}</td>
-                                <td>{row['Receipt No']}</td>
-                                <td style="color:#047857; font-weight:bold;">₹{amt:.2f}</td>
-                                <td style="color:#DC2626; font-weight:bold;">₹{run_due:.2f}</td>
-                                <td>{row['Payment Mode']}</td>
-                                <td>{row['Collected_By']}</td>
-                            </tr>
-                            """
+<tr>
+<td><b>{idx}</b></td>
+<td>{row['Date']}</td>
+<td>{row['Receipt No']}</td>
+<td style="color:#047857; font-weight:bold;">₹{amt:.2f}</td>
+<td style="color:#DC2626; font-weight:bold;">₹{run_due:.2f}</td>
+<td>{row['Payment Mode']}</td>
+<td>{row['Collected_By']}</td>
+</tr>
+"""
                         if not rows_html_adm:
                             rows_html_adm = "<tr><td colspan='7' style='color:#64748B;'>No installment payments deposited yet.</td></tr>"
                             
                         st.markdown(f"""
-                        <div class="passbook-card">
-                            <div class="passbook-header">
-                                <h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
-                                <p style="margin:2px 0 0 0; font-size:11.5px; color:#64748B;">Accredited Center Code: 4159 | An ISO 9001:2015 Certified Academy</p>
-                                <h4 style="margin:6px 0 0 0; color:#0284C7; text-transform:uppercase;">OFFICIAL STUDENT FEE INSTALLMENT PASSBOOK CARD</h4>
-                            </div>
-                            
-                            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; background:#F8FAFC; padding:10px; border-radius:6px; border:1px solid #E2E8F0;">
-                                <div>
-                                    <b>Candidate Name:</b> {p_stu['Name']}<br>
-                                    <b>Roll ID:</b> {p_stu['Student ID']}<br>
-                                    <b>Course:</b> {p_stu['Course']}
-                                </div>
-                                <div style="text-align:right;">
-                                    <b>Total Course Fee:</b> ₹{adm_net_f:.2f}<br>
-                                    <b>Total Deposited:</b> <span style="color:#047857; font-weight:bold;">₹{adm_tot_paid:.2f}</span><br>
-                                    <b>Net Due Balance:</b> <span style="color:#DC2626; font-weight:bold;">₹{adm_due_f:.2f}</span>
-                                </div>
-                            </div>
-                            
-                            <table class="passbook-table">
-                                <thead>
-                                    <tr>
-                                        <th>Inst #</th>
-                                        <th>Date</th>
-                                        <th>Receipt No</th>
-                                        <th>Amount Paid</th>
-                                        <th>Balance Due</th>
-                                        <th>Pay Mode</th>
-                                        <th>Authorized Sign</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {rows_html_adm}
-                                </tbody>
-                            </table>
-                            
-                            <div style="display:flex; justify-content:space-between; margin-top:25px; font-size:11px; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:8px;">
-                                <span>Student / Guardian Copy</span>
-                                <span style="font-weight:bold; color:#0F172A;">Authorized Cashier / Director Signature</span>
-                            </div>
-                        </div>
-                        """, unsafe_allow_html=True)
+<div class="passbook-card">
+<div class="passbook-header">
+<h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
+<p style="margin:2px 0 0 0; font-size:11.5px; color:#64748B;">Accredited Center Code: 4159 | An ISO 9001:2015 Certified Academy</p>
+<h4 style="margin:6px 0 0 0; color:#0284C7; text-transform:uppercase;">OFFICIAL STUDENT FEE INSTALLMENT PASSBOOK CARD</h4>
+</div>
+<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; background:#F8FAFC; padding:10px; border-radius:6px; border:1px solid #E2E8F0;">
+<div>
+<b>Candidate Name:</b> {p_stu['Name']}<br>
+<b>Roll ID:</b> {p_stu['Student ID']}<br>
+<b>Course:</b> {p_stu['Course']}
+</div>
+<div style="text-align:right;">
+<b>Total Course Fee:</b> ₹{adm_net_f:.2f}<br>
+<b>Total Deposited:</b> <span style="color:#047857; font-weight:bold;">₹{adm_tot_paid:.2f}</span><br>
+<b>Net Due Balance:</b> <span style="color:#DC2626; font-weight:bold;">₹{adm_due_f:.2f}</span>
+</div>
+</div>
+<table class="passbook-table">
+<thead>
+<tr>
+<th>Inst #</th>
+<th>Date</th>
+<th>Receipt No</th>
+<th>Amount Paid</th>
+<th>Balance Due</th>
+<th>Pay Mode</th>
+<th>Authorized Sign</th>
+</tr>
+</thead>
+<tbody>
+{rows_html_adm}
+</tbody>
+</table>
+<div style="display:flex; justify-content:space-between; margin-top:25px; font-size:11px; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:8px;">
+<span>Student / Guardian Copy</span>
+<span style="font-weight:bold; color:#0F172A;">Authorized Cashier / Director Signature</span>
+</div>
+</div>
+""", unsafe_allow_html=True)
             else:
                 st.info("No student records available to print.")
 
@@ -1737,12 +1680,12 @@ Director Contact: 9101026718"""
                 wa_broadcast_link = f"https://wa.me/?text={wa_encoded}"
                 
                 st.markdown(f"""
-                <a href="{wa_broadcast_link}" target="_blank" style="text-decoration:none;">
-                    <div style="background-color:#25D366; color:white; padding:12px 20px; border-radius:8px; font-weight:bold; text-align:center; display:inline-block; margin:10px 0;">
-                        📲 Share Certificate Arrival List to WhatsApp Group Now
-                    </div>
-                </a>
-                """, unsafe_allow_html=True)
+<a href="{wa_broadcast_link}" target="_blank" style="text-decoration:none;">
+<div style="background-color:#25D366; color:white; padding:12px 20px; border-radius:8px; font-weight:bold; text-align:center; display:inline-block; margin:10px 0;">
+📲 Share Certificate Arrival List to WhatsApp Group Now
+</div>
+</a>
+""", unsafe_allow_html=True)
             else:
                 st.info("No candidates marked as 'Arrived at Center' yet. Update certificate arrival in HP HO tab.")
                 
@@ -2041,7 +1984,7 @@ Director Contact: 9101026718"""
 # -------------------------------------------------------------
 st.markdown("""
 <div style="text-align:center; padding:20px; font-size:12px; color:#64748B; border-top:1px solid #CBD5E1; margin-top:40px;">
-    Official Enterprise Management System | Soft Tech Computers & ZTC Enterprise © 2026<br>
-    An ISO 9001:2015 Certified Institution | Center Code: 4159 | Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149
+Official Enterprise Management System | Soft Tech Computers & ZTC Enterprise © 2026<br>
+An ISO 9001:2015 Certified Institution | Center Code: 4159 | Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149
 </div>
 """, unsafe_allow_html=True)
