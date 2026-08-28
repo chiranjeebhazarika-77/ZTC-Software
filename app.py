@@ -48,7 +48,7 @@ PHOTO_DIR = "student_photos"
 os.makedirs(PHOTO_DIR, exist_ok=True)
 
 # -------------------------------------------------------------
-# ASYNC CLOUD SYNC & RECOVERY ENGINE
+# REAL-TIME CLOUD-FIRST DATA SYNC ENGINE
 # -------------------------------------------------------------
 def push_to_cloud_async(payload):
     def _worker():
@@ -60,49 +60,56 @@ def push_to_cloud_async(payload):
     t.daemon = True
     t.start()
 
+@st.cache_data(ttl=3, show_spinner=False)
 def sync_from_cloud(sheet_name):
     if GSHEET_WEBAPP_URL:
         try:
-            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=6, allow_redirects=True)
+            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=4, allow_redirects=True)
             if res.status_code == 200:
                 data = res.json()
-                if isinstance(data, list) and len(data) > 1:
+                if isinstance(data, list):
                     return data
         except Exception:
             pass
     return None
 
 def load_data(file_path, columns, sheet_name=None):
-    df_local = pd.DataFrame(columns=columns)
-    if os.path.exists(file_path):
-        try:
-            df_local = pd.read_csv(file_path, dtype=str)
-        except Exception:
-            pass
-            
-    if df_local.empty and sheet_name and not os.path.exists(f"{file_path}.initialized"):
+    # 1. First priority: Read directly from Google Sheet (Master Database)
+    if sheet_name:
         cloud_raw = sync_from_cloud(sheet_name)
-        if cloud_raw and isinstance(cloud_raw, list) and len(cloud_raw) > 1:
-            try:
-                header = cloud_raw[0]
+        if cloud_raw is not None and isinstance(cloud_raw, list):
+            if len(cloud_raw) <= 1:
+                # Cloud sheet is empty
+                df_empty = pd.DataFrame(columns=columns)
+                df_empty.to_csv(file_path, index=False)
+                return df_empty
+            else:
+                header = [str(c).strip() for c in cloud_raw[0]]
                 rows = cloud_raw[1:]
                 df_cloud = pd.DataFrame(rows, columns=header, dtype=str)
                 for col in columns:
-                    if col not in df_cloud.columns: df_cloud[col] = ""
+                    if col not in df_cloud.columns:
+                        df_cloud[col] = ""
+                df_cloud = df_cloud[columns].fillna("")
                 df_cloud.to_csv(file_path, index=False)
                 return df_cloud
-            except Exception:
-                pass
 
-    for col in columns:
-        if col not in df_local.columns: df_local[col] = ""
-    return df_local
+    # 2. Fallback to local file if internet/cloud fails
+    if os.path.exists(file_path):
+        try:
+            df_local = pd.read_csv(file_path, dtype=str)
+            for col in columns:
+                if col not in df_local.columns:
+                    df_local[col] = ""
+            return df_local[columns].fillna("")
+        except Exception:
+            pass
+
+    return pd.DataFrame(columns=columns)
 
 def save_data(df, file_path, sheet_name=None):
     df.to_csv(file_path, index=False)
-    # Mark as user initialized so empty states don't force defaults
-    with open(f"{file_path}.initialized", "w") as f:
-        f.write("1")
+    st.cache_data.clear()
     if GSHEET_WEBAPP_URL and sheet_name:
         records = [df.columns.tolist()] + df.fillna("").values.tolist()
         payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
@@ -134,7 +141,7 @@ def get_student_photo_base64(photo_path):
             pass
     return "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
 
-# Columns definitions
+# Column definitions
 student_cols = [
     "Sl. No.", "Student ID", "Name", "Father Name", "Mother Name", "Gender", "DOB", "Caste", "Mobile No", 
     "Vill Town", "PO", "PS", "PIN Code", "District", "Full Address", "Course", "Duration", "Days_Batch", 
@@ -160,7 +167,7 @@ exam_forms_cols = ["Date", "Student ID", "Student Name", "Course", "Exam Fee Amo
 courses_cols = ["Course Name", "Duration", "Fee (₹)", "Description"]
 dispatch_cols = ["Date", "Student ID", "Student Name", "Course", "Certificate No", "Marksheet Status", "Received By", "Contact No", "Handover Confirmed"]
 
-# Load Data
+# Load Data from Google Sheets / Disk
 student_df = load_data(STUDENT_MASTER_FILE, student_cols, "students_db")
 fee_df = load_data(FEE_LOG_FILE, fee_cols, "fees_db")
 att_df = load_data(ATTENDANCE_FILE, attendance_cols, "attendance_db")
@@ -180,8 +187,15 @@ exam_forms_df = load_data(EXAM_FORMS_FILE, exam_forms_cols, "exam_forms_db")
 courses_df = load_data(COURSES_FILE, courses_cols, "courses_db")
 dispatch_df = load_data(DISPATCH_FILE, dispatch_cols, "dispatch_db")
 
-# Initialize Courses if not initialized yet
-if courses_df.empty and not os.path.exists(f"{COURSES_FILE}.initialized"):
+# -------------------------------------------------------------
+# SANITIZATION: REMOVE ORPHAN / GHOST FEES OF DELETED STUDENTS
+# -------------------------------------------------------------
+valid_student_ids = set(student_df["Student ID"].dropna().astype(str).str.strip().tolist()) if not student_df.empty else set()
+if not fee_df.empty:
+    fee_df = fee_df[fee_df["Student ID"].astype(str).str.strip().isin(valid_student_ids)]
+
+# Default Courses if empty
+if courses_df.empty:
     default_courses = [
         {"Course Name": "PGDCA (Post Graduate Diploma in Computer Application)", "Duration": "12 Months", "Fee (₹)": "8500", "Description": "Fundamentals, Office, Tally Prime, Web Design, Python/C"},
         {"Course Name": "ADCA (Advanced Diploma in Computer Application)", "Duration": "12 Months", "Fee (₹)": "7500", "Description": "Office, DTP, Tally Prime, HTML, Python Basics"},
@@ -195,16 +209,6 @@ if courses_df.empty and not os.path.exists(f"{COURSES_FILE}.initialized"):
         {"Course Name": "Class 12 English Coaching", "Duration": "12 Months", "Fee (₹)": "900", "Description": "Grammar, Literature, Writing Skills (Monthly)"}
     ]
     courses_df = pd.DataFrame(default_courses)
-    save_data(courses_df, COURSES_FILE, "courses_db")
-
-# Initialize Teachers only once
-if teacher_df.empty and not os.path.exists(f"{TEACHERS_FILE}.initialized"):
-    default_teachers = [
-        {"Teacher ID": "TCH-01", "Name": "Chiranjeeb Hazarika", "Phone": "9101026718", "Qualification": "Director / Master Trainer", "Designation": "Director", "Shift Assigned": "All Shifts"},
-        {"Teacher ID": "TCH-02", "Name": "Senior Faculty", "Phone": "9876543210", "Qualification": "MCA / PGDCA", "Designation": "Instructor", "Shift Assigned": "Morning, Afternoon, Evening"}
-    ]
-    teacher_df = pd.DataFrame(default_teachers)
-    save_data(teacher_df, TEACHERS_FILE, "teachers_db")
 
 if creds_df.empty:
     creds_df = pd.DataFrame([
@@ -495,7 +499,6 @@ st.markdown("""
     color: #334155;
 }
 
-/* Vibrant Green Button Theme */
 div.stButton > button {
     background-color: #047857 !important;
     color: white !important;
@@ -555,33 +558,7 @@ st.markdown("""
 # -------------------------------------------------------------
 st.sidebar.title("💻 Portal Navigation")
 
-# GLOBAL ONE-CLICK CLOUD SYNC IN SIDEBAR
 if st.sidebar.button("🔄 Sync & Reload Cloud Data", use_container_width=True):
-    # Wipe local cache files to pull direct fresh data from Google Sheet
-    for f_path, s_name, cols in [
-        (STUDENT_MASTER_FILE, "students_db", student_cols),
-        (FEE_LOG_FILE, "fees_db", fee_cols),
-        (ATTENDANCE_FILE, "attendance_db", attendance_cols),
-        (TEACHERS_FILE, "teachers_db", teacher_cols),
-        (TEACHER_ATT_FILE, "teacher_attendance", teacher_att_cols),
-        (ENQUIRY_FILE, "enquiries_db", enquiry_cols),
-        (SFPC_FILE, "sfpc_db", sfpc_cols),
-        (CREDS_FILE, "creds_db", creds_cols),
-        (MARKS_FILE, "marks_db", marks_cols),
-        (COURSES_FILE, "courses_db", courses_cols),
-        (DISPATCH_FILE, "dispatch_db", dispatch_cols),
-    ]:
-        cloud_data = sync_from_cloud(s_name)
-        if cloud_data and len(cloud_data) > 1:
-            try:
-                h = cloud_data[0]
-                r = cloud_data[1:]
-                df_sync = pd.DataFrame(r, columns=h, dtype=str)
-                for c in cols:
-                    if c not in df_sync.columns: df_sync[c] = ""
-                df_sync.to_csv(f_path, index=False)
-            except Exception:
-                pass
     st.cache_data.clear()
     st.sidebar.success("Cloud Data Synced!")
     st.rerun()
@@ -661,7 +638,7 @@ if menu == "⚡ Quick Actions & Dashboard":
     with col_s2:
         st.metric("Authorized Center Code", "4159 (Assam)")
     with col_s3:
-        st.metric("Alumni Network", "350+ Graduates")
+        st.metric("Enrolled Trainees", f"{len(student_df)} Active")
     with col_s4:
         st.metric("Govt Approved Courses", f"{len(courses_df)} Programs")
         
@@ -859,7 +836,7 @@ elif menu == "📝 New Student Admission":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 4. STUDENT LOGIN PORTAL (WITH REAL-TIME FEES & PASSBOOK)
+# 4. STUDENT LOGIN PORTAL
 # -------------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard & Digital Documents")
@@ -917,7 +894,12 @@ elif menu == "🔑 Student Login Portal":
 """, unsafe_allow_html=True)
     else:
         s_id = st.session_state["logged_student_id"]
-        s = student_df[student_df["Student ID"] == s_id].iloc[0]
+        s_match = student_df[student_df["Student ID"] == s_id]
+        if s_match.empty:
+            st.session_state["student_logged_in"] = False
+            st.rerun()
+            
+        s = s_match.iloc[0]
         
         st.markdown(f"""
 <div class="green-badge">
@@ -957,7 +939,7 @@ Welcome back, <b>{s['Name']}</b> | Roll ID: <b>{s['Student ID']}</b> | Course: <
         p_logs = fee_df[fee_df["Student ID"] == s_id]
         tot_paid = sum([float(amt) for amt in p_logs["Amount Paid"] if amt])
         net_f = float(s["Net Fee"]) if s["Net Fee"] else 0.0
-        due_f = net_f - tot_paid
+        due_f = max(0.0, net_f - tot_paid)
         
         s_att = att_df[att_df["Student ID"] == s_id]
         tot_classes = len(s_att)
@@ -1164,7 +1146,7 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
                     p_logs = fee_df[fee_df["Student ID"] == sf_id]
                     tot_paid = sum([float(a) for a in p_logs["Amount Paid"] if a])
                     net_f = float(s["Net Fee"]) if s["Net Fee"] else 2550.0
-                    due_f = net_f - tot_paid
+                    due_f = max(0.0, net_f - tot_paid)
                     
                     s_att = att_df[att_df["Student ID"] == sf_id]
                     tot_classes = len(s_att)
@@ -1245,7 +1227,7 @@ elif menu == "💵 Fee Counter Desk":
             paid_logs = fee_df[fee_df["Student ID"] == sid]
             total_paid = sum([float(amt) for amt in paid_logs["Amount Paid"] if amt])
             net = float(s_rec["Net Fee"]) if s_rec["Net Fee"] else 0.0
-            due = net - total_paid
+            due = max(0.0, net - total_paid)
             
             st.markdown(f"""
 <div style="background:#FFFFFF; border-left:4px solid #0284C7; padding:12px 16px; border-radius:6px; margin:10px 0; border:1px solid #E2E8F0;">
@@ -1488,7 +1470,7 @@ Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <
                         st.rerun()
 
 # -------------------------------------------------------------
-# 8. ADMIN CONTROL PANEL (WITH CASCADE DELETE & PRINTER)
+# 8. ADMIN CONTROL PANEL
 # -------------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -1565,7 +1547,7 @@ elif menu == "🔐 Admin Control Panel":
                         stu_p_logs = fee_df[fee_df["Student ID"] == p_sid]
                         adm_tot_paid = sum([float(amt) for amt in stu_p_logs["Amount Paid"] if amt])
                         adm_net_f = float(p_stu["Net Fee"]) if p_stu["Net Fee"] else 0.0
-                        adm_due_f = adm_net_f - adm_tot_paid
+                        adm_due_f = max(0.0, adm_net_f - adm_tot_paid)
                         
                         rows_html_adm = ""
                         curr_run_paid = 0.0
@@ -1757,7 +1739,7 @@ Director Contact: 9101026718"""
                 st.write("**Official Certificate Dispatch & Handover Register:**")
                 st.dataframe(dispatch_df, use_container_width=True)
 
-        # 4. STUDENT EDIT & CASCADE DELETE (FIXES GHOST FEES)
+        # 4. STUDENT EDIT & COMPLETE CASCADE DELETE
         with adm_tab4:
             st.subheader("📋 Student Master Management (Edit / Complete Cascade Delete)")
             if not student_df.empty:
@@ -1790,7 +1772,6 @@ Director Contact: 9101026718"""
                             st.rerun()
                             
                     if st.button("🔴 Delete Student & All Fee/Att Records (Complete Cleanup)", key="del_s_btn"):
-                        # Cascade delete across all tables
                         student_df = student_df[student_df["Student ID"] != e_sid]
                         fee_df = fee_df[fee_df["Student ID"] != e_sid]
                         att_df = att_df[att_df["Student ID"] != e_sid]
@@ -1810,7 +1791,7 @@ Director Contact: 9101026718"""
             else:
                 st.info("No student records found.")
 
-        # 5. TEACHER MANAGEMENT (PERMANENT DELETE FIXED)
+        # 5. TEACHER MANAGEMENT
         with adm_tab5:
             st.subheader("👨‍🏫 Teacher Management (Add / Fully Remove Faculty)")
             if not teacher_df.empty:
@@ -1848,18 +1829,10 @@ Director Contact: 9101026718"""
                         st.markdown(f'<div class="pink-badge">🗑️ Teacher {del_t_name} Deleted Permanently!</div>', unsafe_allow_html=True)
                         st.rerun()
 
-        # 6. DUES & BALANCE LEDGER (WITH ORPHAN FEE CLEANUP)
+        # 6. DUES & BALANCE LEDGER
         with adm_tab6:
             st.subheader("💰 Live Student Fee & Dues Balance Ledger")
             
-            # Orphan Ghost Fee Cleaner Button
-            if st.button("🧹 Clean Orphan / Ghost Fee Logs (Deletes Unlinked Fees)"):
-                valid_student_ids = student_df["Student ID"].tolist() if not student_df.empty else []
-                fee_df = fee_df[fee_df["Student ID"].isin(valid_student_ids)]
-                save_data(fee_df, FEE_LOG_FILE, "fees_db")
-                st.success("Orphan / Ghost fee payments cleaned successfully!")
-                st.rerun()
-                
             if not student_df.empty:
                 ledger_data = []
                 total_pending_all = 0.0
@@ -1870,10 +1843,10 @@ Director Contact: 9101026718"""
                     s_paid_logs = fee_df[fee_df["Student ID"] == sid]
                     tot_p = sum([float(a) for a in s_paid_logs["Amount Paid"] if a])
                     net_f = float(s["Net Fee"]) if s["Net Fee"] else 0.0
-                    due_b = net_f - tot_p
+                    due_b = max(0.0, net_f - tot_p)
                     
                     total_collected_all += tot_p
-                    total_pending_all += max(0.0, due_b)
+                    total_pending_all += due_b
                     
                     ledger_data.append({
                         "Roll ID": sid,
@@ -1899,6 +1872,8 @@ Director Contact: 9101026718"""
                     show_df = ld_df
                     
                 st.dataframe(show_df, use_container_width=True)
+            else:
+                st.info("No active students found in database.")
 
         # 7. CLASS LOGS & ACTIVITIES REVIEW
         with adm_tab7:
