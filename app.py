@@ -48,33 +48,61 @@ PHOTO_DIR = "student_photos"
 os.makedirs(PHOTO_DIR, exist_ok=True)
 
 # -------------------------------------------------------------
-# HIGH-SPEED MEMORY CACHE & ASYNC CLOUD SYNC ENGINE
+# ASYNC CLOUD SYNC & RECOVERY ENGINE
 # -------------------------------------------------------------
 def push_to_cloud_async(payload):
     def _worker():
         try:
-            requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=5, allow_redirects=True)
+            requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=8, allow_redirects=True)
         except Exception:
             pass
     t = threading.Thread(target=_worker)
     t.daemon = True
     t.start()
 
-def load_data_from_disk(file_path, columns):
-    if os.path.exists(file_path):
+def sync_from_cloud(sheet_name):
+    if GSHEET_WEBAPP_URL:
         try:
-            df = pd.read_csv(file_path, dtype=str)
-            for col in columns:
-                if col not in df.columns: df[col] = ""
-            return df
+            res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=6, allow_redirects=True)
+            if res.status_code == 200:
+                data = res.json()
+                if isinstance(data, list) and len(data) > 1:
+                    return data
         except Exception:
             pass
-    return pd.DataFrame(columns=columns)
+    return None
 
-def save_data(df, file_path, sheet_name=None, session_key=None):
-    if session_key:
-        st.session_state[session_key] = df.copy()
+def load_data(file_path, columns, sheet_name=None):
+    df_local = pd.DataFrame(columns=columns)
+    if os.path.exists(file_path):
+        try:
+            df_local = pd.read_csv(file_path, dtype=str)
+        except Exception:
+            pass
+            
+    if df_local.empty and sheet_name and not os.path.exists(f"{file_path}.initialized"):
+        cloud_raw = sync_from_cloud(sheet_name)
+        if cloud_raw and isinstance(cloud_raw, list) and len(cloud_raw) > 1:
+            try:
+                header = cloud_raw[0]
+                rows = cloud_raw[1:]
+                df_cloud = pd.DataFrame(rows, columns=header, dtype=str)
+                for col in columns:
+                    if col not in df_cloud.columns: df_cloud[col] = ""
+                df_cloud.to_csv(file_path, index=False)
+                return df_cloud
+            except Exception:
+                pass
+
+    for col in columns:
+        if col not in df_local.columns: df_local[col] = ""
+    return df_local
+
+def save_data(df, file_path, sheet_name=None):
     df.to_csv(file_path, index=False)
+    # Mark as user initialized so empty states don't force defaults
+    with open(f"{file_path}.initialized", "w") as f:
+        f.write("1")
     if GSHEET_WEBAPP_URL and sheet_name:
         records = [df.columns.tolist()] + df.fillna("").values.tolist()
         payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
@@ -132,82 +160,58 @@ exam_forms_cols = ["Date", "Student ID", "Student Name", "Course", "Exam Fee Amo
 courses_cols = ["Course Name", "Duration", "Fee (₹)", "Description"]
 dispatch_cols = ["Date", "Student ID", "Student Name", "Course", "Certificate No", "Marksheet Status", "Received By", "Contact No", "Handover Confirmed"]
 
-# -------------------------------------------------------------
-# INITIALIZE IN-MEMORY SESSION STATE DATA (RUNS ONCE = 0-LAG)
-# -------------------------------------------------------------
-if "data_initialized" not in st.session_state:
-    st.session_state["student_df"] = load_data_from_disk(STUDENT_MASTER_FILE, student_cols)
-    st.session_state["fee_df"] = load_data_from_disk(FEE_LOG_FILE, fee_cols)
-    st.session_state["att_df"] = load_data_from_disk(ATTENDANCE_FILE, attendance_cols)
-    st.session_state["teacher_df"] = load_data_from_disk(TEACHERS_FILE, teacher_cols)
-    st.session_state["teacher_att_df"] = load_data_from_disk(TEACHER_ATT_FILE, teacher_att_cols)
-    st.session_state["enquiry_df"] = load_data_from_disk(ENQUIRY_FILE, enquiry_cols)
-    st.session_state["sfpc_df"] = load_data_from_disk(SFPC_FILE, sfpc_cols)
-    st.session_state["creds_df"] = load_data_from_disk(CREDS_FILE, creds_cols)
-    st.session_state["feedback_df"] = load_data_from_disk(FEEDBACK_FILE, feedback_cols)
-    st.session_state["syllabus_df"] = load_data_from_disk(SYLLABUS_LOG_FILE, syllabus_cols)
-    st.session_state["marks_df"] = load_data_from_disk(MARKS_FILE, marks_cols)
-    st.session_state["notices_df"] = load_data_from_disk(NOTICES_FILE, notices_cols)
-    st.session_state["tasks_df"] = load_data_from_disk(TASKS_FILE, tasks_cols)
-    st.session_state["pc_alloc_df"] = load_data_from_disk(PC_ALLOC_FILE, pc_alloc_cols)
-    st.session_state["weak_notes_df"] = load_data_from_disk(WEAK_NOTES_FILE, weak_notes_cols)
-    st.session_state["exam_forms_df"] = load_data_from_disk(EXAM_FORMS_FILE, exam_forms_cols)
-    st.session_state["courses_df"] = load_data_from_disk(COURSES_FILE, courses_cols)
-    st.session_state["dispatch_df"] = load_data_from_disk(DISPATCH_FILE, dispatch_cols)
-    
-    # Defaults
-    if st.session_state["courses_df"].empty:
-        default_courses = [
-            {"Course Name": "PGDCA (Post Graduate Diploma in Computer Application)", "Duration": "12 Months", "Fee (₹)": "8500", "Description": "Fundamentals, Office, Tally Prime, Web Design, Python/C"},
-            {"Course Name": "ADCA (Advanced Diploma in Computer Application)", "Duration": "12 Months", "Fee (₹)": "7500", "Description": "Office, DTP, Tally Prime, HTML, Python Basics"},
-            {"Course Name": "DCA (Diploma in Computer Application)", "Duration": "6 Months", "Fee (₹)": "4500", "Description": "Fundamentals, Office, Access, Tally, Internet"},
-            {"Course Name": "DTP (Desktop Publishing)", "Duration": "3 Months", "Fee (₹)": "3500", "Description": "Photoshop, Pagemaker, CorelDraw, Assamese DTP"},
-            {"Course Name": "Tally Prime with GST", "Duration": "3 Months", "Fee (₹)": "4000", "Description": "Accounting, GST Billing, Inventory, Payroll"},
-            {"Course Name": "Certificate Course in Computer Basics", "Duration": "3 Months", "Fee (₹)": "2500", "Description": "Paint, Notepad, MS Office Basics, Internet"},
-            {"Course Name": "Class 9 English Coaching", "Duration": "12 Months", "Fee (₹)": "600", "Description": "Grammar, Literature, Writing Skills (Monthly)"},
-            {"Course Name": "Class 10 English Coaching", "Duration": "12 Months", "Fee (₹)": "700", "Description": "Grammar, Literature, Writing Skills (Monthly)"},
-            {"Course Name": "Class 11 English Coaching", "Duration": "12 Months", "Fee (₹)": "800", "Description": "Grammar, Literature, Writing Skills (Monthly)"},
-            {"Course Name": "Class 12 English Coaching", "Duration": "12 Months", "Fee (₹)": "900", "Description": "Grammar, Literature, Writing Skills (Monthly)"}
-        ]
-        st.session_state["courses_df"] = pd.DataFrame(default_courses)
-        save_data(st.session_state["courses_df"], COURSES_FILE, "courses_db", "courses_df")
+# Load Data
+student_df = load_data(STUDENT_MASTER_FILE, student_cols, "students_db")
+fee_df = load_data(FEE_LOG_FILE, fee_cols, "fees_db")
+att_df = load_data(ATTENDANCE_FILE, attendance_cols, "attendance_db")
+teacher_df = load_data(TEACHERS_FILE, teacher_cols, "teachers_db")
+teacher_att_df = load_data(TEACHER_ATT_FILE, teacher_att_cols, "teacher_attendance")
+enquiry_df = load_data(ENQUIRY_FILE, enquiry_cols, "enquiries_db")
+sfpc_df = load_data(SFPC_FILE, sfpc_cols, "sfpc_db")
+creds_df = load_data(CREDS_FILE, creds_cols, "creds_db")
+feedback_df = load_data(FEEDBACK_FILE, feedback_cols, "feedback_db")
+syllabus_df = load_data(SYLLABUS_LOG_FILE, syllabus_cols, "syllabus_logs")
+marks_df = load_data(MARKS_FILE, marks_cols, "marks_db")
+notices_df = load_data(NOTICES_FILE, notices_cols, "notices_db")
+tasks_df = load_data(TASKS_FILE, tasks_cols, "tasks_db")
+pc_alloc_df = load_data(PC_ALLOC_FILE, pc_alloc_cols, "pc_alloc_db")
+weak_notes_df = load_data(WEAK_NOTES_FILE, weak_notes_cols, "weak_notes_db")
+exam_forms_df = load_data(EXAM_FORMS_FILE, exam_forms_cols, "exam_forms_db")
+courses_df = load_data(COURSES_FILE, courses_cols, "courses_db")
+dispatch_df = load_data(DISPATCH_FILE, dispatch_cols, "dispatch_db")
 
-    if st.session_state["teacher_df"].empty:
-        default_teachers = [
-            {"Teacher ID": "TCH-01", "Name": "Chiranjeeb Hazarika", "Phone": "9101026718", "Qualification": "Director / Master Trainer", "Designation": "Director", "Shift Assigned": "All Shifts"},
-            {"Teacher ID": "TCH-02", "Name": "Senior Faculty", "Phone": "9876543210", "Qualification": "MCA / PGDCA", "Designation": "Instructor", "Shift Assigned": "Morning, Afternoon, Evening"}
-        ]
-        st.session_state["teacher_df"] = pd.DataFrame(default_teachers)
-        save_data(st.session_state["teacher_df"], TEACHERS_FILE, "teachers_db", "teacher_df")
+# Initialize Courses if not initialized yet
+if courses_df.empty and not os.path.exists(f"{COURSES_FILE}.initialized"):
+    default_courses = [
+        {"Course Name": "PGDCA (Post Graduate Diploma in Computer Application)", "Duration": "12 Months", "Fee (₹)": "8500", "Description": "Fundamentals, Office, Tally Prime, Web Design, Python/C"},
+        {"Course Name": "ADCA (Advanced Diploma in Computer Application)", "Duration": "12 Months", "Fee (₹)": "7500", "Description": "Office, DTP, Tally Prime, HTML, Python Basics"},
+        {"Course Name": "DCA (Diploma in Computer Application)", "Duration": "6 Months", "Fee (₹)": "4500", "Description": "Fundamentals, Office, Access, Tally, Internet"},
+        {"Course Name": "DTP (Desktop Publishing)", "Duration": "3 Months", "Fee (₹)": "3500", "Description": "Photoshop, Pagemaker, CorelDraw, Assamese DTP"},
+        {"Course Name": "Tally Prime with GST", "Duration": "3 Months", "Fee (₹)": "4000", "Description": "Accounting, GST Billing, Inventory, Payroll"},
+        {"Course Name": "Certificate Course in Computer Basics", "Duration": "3 Months", "Fee (₹)": "2500", "Description": "Paint, Notepad, MS Office Basics, Internet"},
+        {"Course Name": "Class 9 English Coaching", "Duration": "12 Months", "Fee (₹)": "600", "Description": "Grammar, Literature, Writing Skills (Monthly)"},
+        {"Course Name": "Class 10 English Coaching", "Duration": "12 Months", "Fee (₹)": "700", "Description": "Grammar, Literature, Writing Skills (Monthly)"},
+        {"Course Name": "Class 11 English Coaching", "Duration": "12 Months", "Fee (₹)": "800", "Description": "Grammar, Literature, Writing Skills (Monthly)"},
+        {"Course Name": "Class 12 English Coaching", "Duration": "12 Months", "Fee (₹)": "900", "Description": "Grammar, Literature, Writing Skills (Monthly)"}
+    ]
+    courses_df = pd.DataFrame(default_courses)
+    save_data(courses_df, COURSES_FILE, "courses_db")
 
-    if st.session_state["creds_df"].empty:
-        st.session_state["creds_df"] = pd.DataFrame([
-            {"Role": "Admin", "Password": "zaan123"},
-            {"Role": "Teacher", "Password": "teacher123"}
-        ])
-        save_data(st.session_state["creds_df"], CREDS_FILE, "creds_db", "creds_df")
-        
-    st.session_state["data_initialized"] = True
+# Initialize Teachers only once
+if teacher_df.empty and not os.path.exists(f"{TEACHERS_FILE}.initialized"):
+    default_teachers = [
+        {"Teacher ID": "TCH-01", "Name": "Chiranjeeb Hazarika", "Phone": "9101026718", "Qualification": "Director / Master Trainer", "Designation": "Director", "Shift Assigned": "All Shifts"},
+        {"Teacher ID": "TCH-02", "Name": "Senior Faculty", "Phone": "9876543210", "Qualification": "MCA / PGDCA", "Designation": "Instructor", "Shift Assigned": "Morning, Afternoon, Evening"}
+    ]
+    teacher_df = pd.DataFrame(default_teachers)
+    save_data(teacher_df, TEACHERS_FILE, "teachers_db")
 
-# Pointers to Session Data for Zero-Lag Execution
-student_df = st.session_state["student_df"]
-fee_df = st.session_state["fee_df"]
-att_df = st.session_state["att_df"]
-teacher_df = st.session_state["teacher_df"]
-teacher_att_df = st.session_state["teacher_att_df"]
-enquiry_df = st.session_state["enquiry_df"]
-sfpc_df = st.session_state["sfpc_df"]
-creds_df = st.session_state["creds_df"]
-feedback_df = st.session_state["feedback_df"]
-syllabus_df = st.session_state["syllabus_df"]
-marks_df = st.session_state["marks_df"]
-notices_df = st.session_state["notices_df"]
-tasks_df = st.session_state["tasks_df"]
-pc_alloc_df = st.session_state["pc_alloc_df"]
-weak_notes_df = st.session_state["weak_notes_df"]
-exam_forms_df = st.session_state["exam_forms_df"]
-courses_df = st.session_state["courses_df"]
-dispatch_df = st.session_state["dispatch_df"]
+if creds_df.empty:
+    creds_df = pd.DataFrame([
+        {"Role": "Admin", "Password": "zaan123"},
+        {"Role": "Teacher", "Password": "teacher123"}
+    ])
+    save_data(creds_df, CREDS_FILE, "creds_db")
 
 ADMIN_PWD = creds_df[creds_df["Role"] == "Admin"]["Password"].values[0] if "Admin" in creds_df["Role"].values else "zaan123"
 TEACHER_PWD = creds_df[creds_df["Role"] == "Teacher"]["Password"].values[0] if "Teacher" in creds_df["Role"].values else "teacher123"
@@ -547,9 +551,41 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# SIDEBAR NAVIGATION
+# SIDEBAR NAVIGATION & ONE-CLICK CLOUD SYNC
 # -------------------------------------------------------------
 st.sidebar.title("💻 Portal Navigation")
+
+# GLOBAL ONE-CLICK CLOUD SYNC IN SIDEBAR
+if st.sidebar.button("🔄 Sync & Reload Cloud Data", use_container_width=True):
+    # Wipe local cache files to pull direct fresh data from Google Sheet
+    for f_path, s_name, cols in [
+        (STUDENT_MASTER_FILE, "students_db", student_cols),
+        (FEE_LOG_FILE, "fees_db", fee_cols),
+        (ATTENDANCE_FILE, "attendance_db", attendance_cols),
+        (TEACHERS_FILE, "teachers_db", teacher_cols),
+        (TEACHER_ATT_FILE, "teacher_attendance", teacher_att_cols),
+        (ENQUIRY_FILE, "enquiries_db", enquiry_cols),
+        (SFPC_FILE, "sfpc_db", sfpc_cols),
+        (CREDS_FILE, "creds_db", creds_cols),
+        (MARKS_FILE, "marks_db", marks_cols),
+        (COURSES_FILE, "courses_db", courses_cols),
+        (DISPATCH_FILE, "dispatch_db", dispatch_cols),
+    ]:
+        cloud_data = sync_from_cloud(s_name)
+        if cloud_data and len(cloud_data) > 1:
+            try:
+                h = cloud_data[0]
+                r = cloud_data[1:]
+                df_sync = pd.DataFrame(r, columns=h, dtype=str)
+                for c in cols:
+                    if c not in df_sync.columns: df_sync[c] = ""
+                df_sync.to_csv(f_path, index=False)
+            except Exception:
+                pass
+    st.cache_data.clear()
+    st.sidebar.success("Cloud Data Synced!")
+    st.rerun()
+
 menu = st.sidebar.radio("Go To Module:", [
     "⚡ Quick Actions & Dashboard",
     "📜 Online Certificate Verification",
@@ -668,8 +704,8 @@ if menu == "⚡ Quick Actions & Dashboard":
                             "Village/Address": e_vill.upper(),
                             "Status": "New Lead"
                         }
-                        st.session_state["enquiry_df"] = pd.concat([st.session_state["enquiry_df"], pd.DataFrame([enq_row])], ignore_index=True)
-                        save_data(st.session_state["enquiry_df"], ENQUIRY_FILE, "enquiries_db", "enquiry_df")
+                        enquiry_df = pd.concat([enquiry_df, pd.DataFrame([enq_row])], ignore_index=True)
+                        save_data(enquiry_df, ENQUIRY_FILE, "enquiries_db")
                         
                         st.markdown(f"""
 <div class="green-badge">
@@ -812,8 +848,8 @@ elif menu == "📝 New Student Admission":
                         "Stage_Exam": "Not Appeared", "Stage_Cert_Status": "In Process", "Cert_Serial_No": "--",
                         "Cert_Arrival_Date": "--", "Cert_Handover_Date": "--", "Handover_Status": "Pending"
                     }
-                    st.session_state["student_df"] = pd.concat([st.session_state["student_df"], pd.DataFrame([new_row])], ignore_index=True)
-                    save_data(st.session_state["student_df"], STUDENT_MASTER_FILE, "students_db", "student_df")
+                    student_df = pd.concat([student_df, pd.DataFrame([new_row])], ignore_index=True)
+                    save_data(student_df, STUDENT_MASTER_FILE, "students_db")
                     st.balloons()
                     st.markdown(f"""
 <div class="green-badge">
@@ -823,7 +859,7 @@ elif menu == "📝 New Student Admission":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 4. STUDENT LOGIN PORTAL (WITH ID CARD & PASSBOOK PRINTER)
+# 4. STUDENT LOGIN PORTAL (WITH REAL-TIME FEES & PASSBOOK)
 # -------------------------------------------------------------
 elif menu == "🔑 Student Login Portal":
     st.header("🔑 Student Individual Dashboard & Digital Documents")
@@ -1188,8 +1224,8 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
                             "Student Name": sname_val, "PC Machine No": pc_no,
                             "Topic Practiced": sf_topic, "Teacher Incharge": sf_teacher
                         }
-                        st.session_state["sfpc_df"] = pd.concat([st.session_state["sfpc_df"], pd.DataFrame([new_sf])], ignore_index=True)
-                        save_data(st.session_state["sfpc_df"], SFPC_FILE, "sfpc_db", "sfpc_df")
+                        sfpc_df = pd.concat([sfpc_df, pd.DataFrame([new_sf])], ignore_index=True)
+                        save_data(sfpc_df, SFPC_FILE, "sfpc_db")
                         st.markdown('<div class="green-badge">✅ SFPC Practice Session Saved Successfully!</div>', unsafe_allow_html=True)
                         st.rerun()
             if not sfpc_df.empty:
@@ -1226,8 +1262,8 @@ elif menu == "💵 Fee Counter Desk":
                 if st.form_submit_button("🟢 Issue Receipt & Save Deposit"):
                     rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(fee_df)+1:03d}"
                     f_row = {"Receipt No": rc_num, "Student ID": sid, "Date": str(datetime.date.today()), "Amount Paid": str(pay_amt), "Payment Mode": pay_mode, "Collected_By": collector_nm, "Remarks": remarks}
-                    st.session_state["fee_df"] = pd.concat([st.session_state["fee_df"], pd.DataFrame([f_row])], ignore_index=True)
-                    save_data(st.session_state["fee_df"], FEE_LOG_FILE, "fees_db", "fee_df")
+                    fee_df = pd.concat([fee_df, pd.DataFrame([f_row])], ignore_index=True)
+                    save_data(fee_df, FEE_LOG_FILE, "fees_db")
                     st.markdown(f"""
 <div class="green-badge">
 🧾 <b>Money Receipt Issued!</b> Receipt No: <b>{rc_num}</b> | Amount: <b>₹{pay_amt}</b>
@@ -1301,8 +1337,8 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         "Net_Earning_Today": f"₹{net_batch_earning:.2f}",
                         "Remarks": "Punched In"
                     }
-                    st.session_state["teacher_att_df"] = pd.concat([st.session_state["teacher_att_df"], pd.DataFrame([new_t_att])], ignore_index=True)
-                    save_data(st.session_state["teacher_att_df"], TEACHER_ATT_FILE, "teacher_attendance", "teacher_att_df")
+                    teacher_att_df = pd.concat([teacher_att_df, pd.DataFrame([new_t_att])], ignore_index=True)
+                    save_data(teacher_att_df, TEACHER_ATT_FILE, "teacher_attendance")
                     
                     if is_late:
                         st.markdown(f"""
@@ -1323,11 +1359,11 @@ elif menu == "🔑 Teacher Portal & Attendance":
                 if st.button("🔴 Teacher Punch OUT Now", use_container_width=True):
                     today_str = str(datetime.date.today())
                     time_out_str = now_ist.strftime("%I:%M %p")
-                    idx = st.session_state["teacher_att_df"][(st.session_state["teacher_att_df"]["Date"] == today_str) & (st.session_state["teacher_att_df"]["Name"] == t_name_sel)].index
+                    idx = teacher_att_df[(teacher_att_df["Date"] == today_str) & (teacher_att_df["Name"] == t_name_sel)].index
                     if len(idx) > 0:
-                        st.session_state["teacher_att_df"].loc[idx[-1], "Time_Out"] = time_out_str
-                        st.session_state["teacher_att_df"].loc[idx[-1], "Remarks"] = "Completed"
-                        save_data(st.session_state["teacher_att_df"], TEACHER_ATT_FILE, "teacher_attendance", "teacher_att_df")
+                        teacher_att_df.loc[idx[-1], "Time_Out"] = time_out_str
+                        teacher_att_df.loc[idx[-1], "Remarks"] = "Completed"
+                        save_data(teacher_att_df, TEACHER_ATT_FILE, "teacher_attendance")
                         st.markdown(f'<div class="green-badge">✅ Punched OUT at {time_out_str}!</div>', unsafe_allow_html=True)
                     else:
                         st.warning("No Punch IN record found for today to punch out.")
@@ -1351,8 +1387,8 @@ elif menu == "🔑 Teacher Portal & Attendance":
                             "Time_In": now_time_ist, "Status": att_status,
                             "Late_Reason": "", "Sign_Mode": "Manual/QR", "Location_Verified": "Classroom"
                         }
-                        st.session_state["att_df"] = pd.concat([st.session_state["att_df"], pd.DataFrame([att_row])], ignore_index=True)
-                        save_data(st.session_state["att_df"], ATTENDANCE_FILE, "attendance_db", "att_df")
+                        att_df = pd.concat([att_df, pd.DataFrame([att_row])], ignore_index=True)
+                        save_data(att_df, ATTENDANCE_FILE, "attendance_db")
                         st.markdown(f'<div class="green-badge">✅ Attendance marked {att_status} for {att_sid} at {now_time_ist}!</div>', unsafe_allow_html=True)
                         st.rerun()
             if not att_df.empty:
@@ -1387,8 +1423,8 @@ elif menu == "🔑 Teacher Portal & Attendance":
                             "Total Marks": str(total_mks),
                             "Teacher Incharge": exam_teacher
                         }
-                        st.session_state["marks_df"] = pd.concat([st.session_state["marks_df"], pd.DataFrame([m_row])], ignore_index=True)
-                        save_data(st.session_state["marks_df"], MARKS_FILE, "marks_db", "marks_df")
+                        marks_df = pd.concat([marks_df, pd.DataFrame([m_row])], ignore_index=True)
+                        save_data(marks_df, MARKS_FILE, "marks_db")
                         st.markdown(f"""
 <div class="green-badge">
 🎉 <b>Exam Result Saved Successfully!</b><br>
@@ -1415,8 +1451,8 @@ Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <
                     if syl_topics:
                         topics_str = ", ".join(syl_topics)
                         s_row = {"Date": str(datetime.date.today()), "Course": syl_course, "Topics Covered": topics_str, "Class Type": syl_type, "Teacher Incharge": syl_teacher}
-                        st.session_state["syllabus_df"] = pd.concat([st.session_state["syllabus_df"], pd.DataFrame([s_row])], ignore_index=True)
-                        save_data(st.session_state["syllabus_df"], SYLLABUS_LOG_FILE, "syllabus_logs", "syllabus_df")
+                        syllabus_df = pd.concat([syllabus_df, pd.DataFrame([s_row])], ignore_index=True)
+                        save_data(syllabus_df, SYLLABUS_LOG_FILE, "syllabus_logs")
                         st.markdown(f'<div class="green-badge">✅ Syllabus entry saved: <b>{topics_str}</b></div>', unsafe_allow_html=True)
                         st.rerun()
                     else:
@@ -1433,8 +1469,8 @@ Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <
                 if st.form_submit_button("🟢 Assign Machine"):
                     if pc_sid:
                         pc_row = {"Date": str(datetime.date.today()), "Student ID": pc_sid.split(" - ")[0], "Student Name": pc_sid.split(" - ")[1], "PC Machine No": m_no, "Shift": pc_shift, "Teacher Incharge": "Faculty"}
-                        st.session_state["pc_alloc_df"] = pd.concat([st.session_state["pc_alloc_df"], pd.DataFrame([pc_row])], ignore_index=True)
-                        save_data(st.session_state["pc_alloc_df"], PC_ALLOC_FILE, "pc_alloc_db", "pc_alloc_df")
+                        pc_alloc_df = pd.concat([pc_alloc_df, pd.DataFrame([pc_row])], ignore_index=True)
+                        save_data(pc_alloc_df, PC_ALLOC_FILE, "pc_alloc_db")
                         st.markdown(f'<div class="green-badge">✅ Machine {m_no} allocated to {pc_sid}!</div>', unsafe_allow_html=True)
                         st.rerun()
 
@@ -1446,19 +1482,20 @@ Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <
                 if st.form_submit_button("🟢 Assign Task"):
                     if t_sid and task_txt:
                         tsk_row = {"Date": str(datetime.date.today()), "Student ID": t_sid.split(" - ")[0], "Student Name": t_sid.split(" - ")[1], "Task Assigned": task_txt, "Status": "Assigned", "Teacher Incharge": "Faculty"}
-                        st.session_state["tasks_df"] = pd.concat([st.session_state["tasks_df"], pd.DataFrame([tsk_row])], ignore_index=True)
-                        save_data(st.session_state["tasks_df"], TASKS_FILE, "tasks_db", "tasks_df")
+                        tasks_df = pd.concat([tasks_df, pd.DataFrame([tsk_row])], ignore_index=True)
+                        save_data(tasks_df, TASKS_FILE, "tasks_db")
                         st.markdown('<div class="green-badge">✅ Practical Task Assigned Successfully!</div>', unsafe_allow_html=True)
                         st.rerun()
 
 # -------------------------------------------------------------
-# 8. ADMIN CONTROL PANEL
+# 8. ADMIN CONTROL PANEL (WITH CASCADE DELETE & PRINTER)
 # -------------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
     pwd = st.text_input("Enter Director Admin Password", type="password", key="admin_pwd_main")
     if pwd == ADMIN_PWD:
         st.success("Welcome Director Chiranjeeb Hazarika Sir!")
+        
         adm_tab1, adm_tab2, adm_tab3, adm_tab4, adm_tab5, adm_tab6, adm_tab7, adm_tab8, adm_tab9 = st.tabs([
             "🪪 ID Card & Passbook Printer",
             "🏢 HP HO Registration & Export",
@@ -1629,13 +1666,13 @@ elif menu == "🔐 Admin Control Panel":
                             new_cert_no = st.text_input("Certificate Serial No (if received):", value=ho_s_rec["Cert_Serial_No"])
                             
                         if st.form_submit_button("🟢 Save HO Registration & Status"):
-                            idx_s = st.session_state["student_df"][st.session_state["student_df"]["Student ID"] == ho_sid_val].index
+                            idx_s = student_df[student_df["Student ID"] == ho_sid_val].index
                             if len(idx_s) > 0:
-                                st.session_state["student_df"].loc[idx_s[0], "HO_Reg_No"] = new_ho_reg
-                                st.session_state["student_df"].loc[idx_s[0], "Stage_AdmitCard"] = new_admit_stat
-                                st.session_state["student_df"].loc[idx_s[0], "Stage_Cert_Status"] = new_cert_stat
-                                st.session_state["student_df"].loc[idx_s[0], "Cert_Serial_No"] = new_cert_no
-                                save_data(st.session_state["student_df"], STUDENT_MASTER_FILE, "students_db", "student_df")
+                                student_df.loc[idx_s[0], "HO_Reg_No"] = new_ho_reg
+                                student_df.loc[idx_s[0], "Stage_AdmitCard"] = new_admit_stat
+                                student_df.loc[idx_s[0], "Stage_Cert_Status"] = new_cert_stat
+                                student_df.loc[idx_s[0], "Cert_Serial_No"] = new_cert_no
+                                save_data(student_df, STUDENT_MASTER_FILE, "students_db")
                                 st.markdown(f'<div class="green-badge">✅ HO Record for {ho_sid_val} Updated Successfully!</div>', unsafe_allow_html=True)
                                 st.rerun()
 
@@ -1701,15 +1738,15 @@ Director Contact: 9101026718"""
                             "Contact No": rec_contact,
                             "Handover Confirmed": "YES (Signed)"
                         }
-                        st.session_state["dispatch_df"] = pd.concat([st.session_state["dispatch_df"], pd.DataFrame([disp_row])], ignore_index=True)
-                        save_data(st.session_state["dispatch_df"], DISPATCH_FILE, "dispatch_db", "dispatch_df")
+                        dispatch_df = pd.concat([dispatch_df, pd.DataFrame([disp_row])], ignore_index=True)
+                        save_data(dispatch_df, DISPATCH_FILE, "dispatch_db")
                         
-                        idx_m = st.session_state["student_df"][st.session_state["student_df"]["Student ID"] == d_sid].index
+                        idx_m = student_df[student_df["Student ID"] == d_sid].index
                         if len(idx_m) > 0:
-                            st.session_state["student_df"].loc[idx_m[0], "Stage_Cert_Status"] = "Handed Over"
-                            st.session_state["student_df"].loc[idx_m[0], "Cert_Handover_Date"] = str(datetime.date.today())
-                            st.session_state["student_df"].loc[idx_m[0], "Handover_Status"] = "Delivered"
-                            save_data(st.session_state["student_df"], STUDENT_MASTER_FILE, "students_db", "student_df")
+                            student_df.loc[idx_m[0], "Stage_Cert_Status"] = "Handed Over"
+                            student_df.loc[idx_m[0], "Cert_Handover_Date"] = str(datetime.date.today())
+                            student_df.loc[idx_m[0], "Handover_Status"] = "Delivered"
+                            save_data(student_df, STUDENT_MASTER_FILE, "students_db")
                             
                         st.markdown(f'<div class="green-badge">✅ Certificate Handover Recorded in Digital Register for {d_name}!</div>', unsafe_allow_html=True)
                         st.rerun()
@@ -1720,9 +1757,9 @@ Director Contact: 9101026718"""
                 st.write("**Official Certificate Dispatch & Handover Register:**")
                 st.dataframe(dispatch_df, use_container_width=True)
 
-        # 4. STUDENT EDIT & DELETE
+        # 4. STUDENT EDIT & CASCADE DELETE (FIXES GHOST FEES)
         with adm_tab4:
-            st.subheader("📋 Student Master Management (Edit / Delete)")
+            st.subheader("📋 Student Master Management (Edit / Complete Cascade Delete)")
             if not student_df.empty:
                 st.dataframe(student_df[["Student ID", "Name", "Mobile No", "Course", "Net Fee", "Join Date", "HO_Reg_No", "Status"]], use_container_width=True)
                 
@@ -1743,28 +1780,43 @@ Director Contact: 9101026718"""
                             new_status = st.selectbox("Status", ["Active", "Completed", "Dropout"], index=0 if s_curr["Status"]=="Active" else 1)
                             
                         if st.form_submit_button("🟢 Update Student Record"):
-                            st.session_state["student_df"].loc[st.session_state["student_df"]["Student ID"] == e_sid, "Name"] = new_name.upper()
-                            st.session_state["student_df"].loc[st.session_state["student_df"]["Student ID"] == e_sid, "Mobile No"] = new_mobile
-                            st.session_state["student_df"].loc[st.session_state["student_df"]["Student ID"] == e_sid, "Net Fee"] = new_fee
-                            st.session_state["student_df"].loc[st.session_state["student_df"]["Student ID"] == e_sid, "Course"] = new_course
-                            st.session_state["student_df"].loc[st.session_state["student_df"]["Student ID"] == e_sid, "Status"] = new_status
-                            save_data(st.session_state["student_df"], STUDENT_MASTER_FILE, "students_db", "student_df")
+                            student_df.loc[student_df["Student ID"] == e_sid, "Name"] = new_name.upper()
+                            student_df.loc[student_df["Student ID"] == e_sid, "Mobile No"] = new_mobile
+                            student_df.loc[student_df["Student ID"] == e_sid, "Net Fee"] = new_fee
+                            student_df.loc[student_df["Student ID"] == e_sid, "Course"] = new_course
+                            student_df.loc[student_df["Student ID"] == e_sid, "Status"] = new_status
+                            save_data(student_df, STUDENT_MASTER_FILE, "students_db")
                             st.markdown('<div class="green-badge">✅ Student Record Updated Successfully!</div>', unsafe_allow_html=True)
                             st.rerun()
                             
-                    if st.button("🔴 Delete This Student Completely", key="del_s_btn"):
-                        st.session_state["student_df"] = st.session_state["student_df"][st.session_state["student_df"]["Student ID"] != e_sid]
-                        save_data(st.session_state["student_df"], STUDENT_MASTER_FILE, "students_db", "student_df")
-                        st.markdown(f'<div class="pink-badge">🗑️ Student {e_sid} Deleted Completely!</div>', unsafe_allow_html=True)
+                    if st.button("🔴 Delete Student & All Fee/Att Records (Complete Cleanup)", key="del_s_btn"):
+                        # Cascade delete across all tables
+                        student_df = student_df[student_df["Student ID"] != e_sid]
+                        fee_df = fee_df[fee_df["Student ID"] != e_sid]
+                        att_df = att_df[att_df["Student ID"] != e_sid]
+                        marks_df = marks_df[marks_df["Student ID"] != e_sid]
+                        sfpc_df = sfpc_df[sfpc_df["Student ID"] != e_sid]
+                        dispatch_df = dispatch_df[dispatch_df["Student ID"] != e_sid]
+                        
+                        save_data(student_df, STUDENT_MASTER_FILE, "students_db")
+                        save_data(fee_df, FEE_LOG_FILE, "fees_db")
+                        save_data(att_df, ATTENDANCE_FILE, "attendance_db")
+                        save_data(marks_df, MARKS_FILE, "marks_db")
+                        save_data(sfpc_df, SFPC_FILE, "sfpc_db")
+                        save_data(dispatch_df, DISPATCH_FILE, "dispatch_db")
+                        
+                        st.markdown(f'<div class="pink-badge">🗑️ Student {e_sid} & all associated fee/attendance records deleted completely!</div>', unsafe_allow_html=True)
                         st.rerun()
             else:
                 st.info("No student records found.")
 
-        # 5. TEACHER MANAGEMENT
+        # 5. TEACHER MANAGEMENT (PERMANENT DELETE FIXED)
         with adm_tab5:
-            st.subheader("👨‍🏫 Teacher Management (Add / Remove)")
+            st.subheader("👨‍🏫 Teacher Management (Add / Fully Remove Faculty)")
             if not teacher_df.empty:
                 st.dataframe(teacher_df, use_container_width=True)
+            else:
+                st.info("No faculty records found. You can add new teachers below.")
                 
             st.write("---")
             col_t1, col_t2 = st.columns(2)
@@ -1781,24 +1833,33 @@ Director Contact: 9101026718"""
                     if st.form_submit_button("🟢 Add Teacher"):
                         if t_nname:
                             new_t_row = {"Teacher ID": t_nid, "Name": t_nname, "Phone": t_nphone, "Qualification": t_nqual, "Designation": t_ndesig, "Shift Assigned": t_nshift}
-                            st.session_state["teacher_df"] = pd.concat([st.session_state["teacher_df"], pd.DataFrame([new_t_row])], ignore_index=True)
-                            save_data(st.session_state["teacher_df"], TEACHERS_FILE, "teachers_db", "teacher_df")
+                            teacher_df = pd.concat([teacher_df, pd.DataFrame([new_t_row])], ignore_index=True)
+                            save_data(teacher_df, TEACHERS_FILE, "teachers_db")
                             st.markdown(f'<div class="green-badge">✅ Faculty {t_nname} Added Successfully!</div>', unsafe_allow_html=True)
                             st.rerun()
                             
             with col_t2:
-                st.write("**🗑️ Remove Faculty:**")
+                st.write("**🗑️ Delete Faculty:**")
                 if not teacher_df.empty:
-                    del_t_name = st.selectbox("Select Teacher to Remove:", teacher_df["Name"].tolist())
-                    if st.button("🔴 Delete Selected Teacher", key="del_t_btn"):
-                        st.session_state["teacher_df"] = st.session_state["teacher_df"][st.session_state["teacher_df"]["Name"] != del_t_name]
-                        save_data(st.session_state["teacher_df"], TEACHERS_FILE, "teachers_db", "teacher_df")
-                        st.markdown(f'<div class="pink-badge">🗑️ Teacher {del_t_name} Removed!</div>', unsafe_allow_html=True)
+                    del_t_name = st.selectbox("Select Teacher to Delete:", teacher_df["Name"].tolist(), key="del_t_box")
+                    if st.button("🔴 Permanently Delete Selected Teacher", key="del_t_btn"):
+                        teacher_df = teacher_df[teacher_df["Name"] != del_t_name]
+                        save_data(teacher_df, TEACHERS_FILE, "teachers_db")
+                        st.markdown(f'<div class="pink-badge">🗑️ Teacher {del_t_name} Deleted Permanently!</div>', unsafe_allow_html=True)
                         st.rerun()
 
-        # 6. DUES & BALANCE LEDGER
+        # 6. DUES & BALANCE LEDGER (WITH ORPHAN FEE CLEANUP)
         with adm_tab6:
             st.subheader("💰 Live Student Fee & Dues Balance Ledger")
+            
+            # Orphan Ghost Fee Cleaner Button
+            if st.button("🧹 Clean Orphan / Ghost Fee Logs (Deletes Unlinked Fees)"):
+                valid_student_ids = student_df["Student ID"].tolist() if not student_df.empty else []
+                fee_df = fee_df[fee_df["Student ID"].isin(valid_student_ids)]
+                save_data(fee_df, FEE_LOG_FILE, "fees_db")
+                st.success("Orphan / Ghost fee payments cleaned successfully!")
+                st.rerun()
+                
             if not student_df.empty:
                 ledger_data = []
                 total_pending_all = 0.0
@@ -1895,8 +1956,8 @@ Director Contact: 9101026718"""
                                 st.error("A course with this name already exists! Use the Edit section to modify it.")
                             else:
                                 new_c_row = {"Course Name": c_nname, "Duration": c_ndur, "Fee (₹)": str(c_nfee), "Description": c_ndesc}
-                                st.session_state["courses_df"] = pd.concat([st.session_state["courses_df"], pd.DataFrame([new_c_row])], ignore_index=True)
-                                save_data(st.session_state["courses_df"], COURSES_FILE, "courses_db", "courses_df")
+                                courses_df = pd.concat([courses_df, pd.DataFrame([new_c_row])], ignore_index=True)
+                                save_data(courses_df, COURSES_FILE, "courses_db")
                                 st.markdown(f'<div class="green-badge">✅ Course "{c_nname}" Added Successfully!</div>', unsafe_allow_html=True)
                                 st.rerun()
                         else:
@@ -1923,13 +1984,13 @@ Director Contact: 9101026718"""
                             edit_cdesc = st.text_input("Topics / Description", value=c_data["Description"] if "Description" in c_data else "", key="c_edit_desc")
                             
                             if st.form_submit_button("🟢 Save Updated Course Details"):
-                                match_idx = st.session_state["courses_df"][st.session_state["courses_df"]["Course Name"] == sel_edit_c].index
+                                match_idx = courses_df[courses_df["Course Name"] == sel_edit_c].index
                                 if len(match_idx) > 0:
-                                    st.session_state["courses_df"].loc[match_idx[0], "Course Name"] = edit_cname
-                                    st.session_state["courses_df"].loc[match_idx[0], "Duration"] = edit_cdur
-                                    st.session_state["courses_df"].loc[match_idx[0], "Fee (₹)"] = str(edit_cfee)
-                                    st.session_state["courses_df"].loc[match_idx[0], "Description"] = edit_cdesc
-                                    save_data(st.session_state["courses_df"], COURSES_FILE, "courses_db", "courses_df")
+                                    courses_df.loc[match_idx[0], "Course Name"] = edit_cname
+                                    courses_df.loc[match_idx[0], "Duration"] = edit_cdur
+                                    courses_df.loc[match_idx[0], "Fee (₹)"] = str(edit_cfee)
+                                    courses_df.loc[match_idx[0], "Description"] = edit_cdesc
+                                    save_data(courses_df, COURSES_FILE, "courses_db")
                                     st.markdown(f'<div class="green-badge">✅ Course "{edit_cname}" Updated Successfully!</div>', unsafe_allow_html=True)
                                     st.rerun()
                 else:
@@ -1944,8 +2005,8 @@ Director Contact: 9101026718"""
                 with col_d2:
                     st.write("<br>", unsafe_allow_html=True)
                     if st.button("🔴 Delete Selected Course", key="del_c_btn_main"):
-                        st.session_state["courses_df"] = st.session_state["courses_df"][st.session_state["courses_df"]["Course Name"] != del_c_sel]
-                        save_data(st.session_state["courses_df"], COURSES_FILE, "courses_db", "courses_df")
+                        courses_df = courses_df[courses_df["Course Name"] != del_c_sel]
+                        save_data(courses_df, COURSES_FILE, "courses_db")
                         st.markdown(f'<div class="pink-badge">🗑️ Course "{del_c_sel}" Deleted Successfully!</div>', unsafe_allow_html=True)
                         st.rerun()
 
@@ -1957,11 +2018,11 @@ Director Contact: 9101026718"""
                 new_tch_pwd = st.text_input("New Teacher Portal Password:", value=TEACHER_PWD)
                 
                 if st.form_submit_button("🟢 Update Passwords"):
-                    st.session_state["creds_df"] = pd.DataFrame([
+                    creds_df = pd.DataFrame([
                         {"Role": "Admin", "Password": new_adm_pwd},
                         {"Role": "Teacher", "Password": new_tch_pwd}
                     ])
-                    save_data(st.session_state["creds_df"], CREDS_FILE, "creds_db", "creds_df")
+                    save_data(creds_df, CREDS_FILE, "creds_db")
                     st.markdown('<div class="green-badge">✅ Passwords Updated Successfully!</div>', unsafe_allow_html=True)
                     st.rerun()
 
