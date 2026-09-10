@@ -74,12 +74,10 @@ def sync_from_cloud(sheet_name):
     return None
 
 def load_data(file_path, columns, sheet_name=None):
-    # 1. First priority: Read directly from Google Sheet (Master Database)
     if sheet_name:
         cloud_raw = sync_from_cloud(sheet_name)
         if cloud_raw is not None and isinstance(cloud_raw, list):
             if len(cloud_raw) <= 1:
-                # Cloud sheet is empty
                 df_empty = pd.DataFrame(columns=columns)
                 df_empty.to_csv(file_path, index=False)
                 return df_empty
@@ -94,7 +92,6 @@ def load_data(file_path, columns, sheet_name=None):
                 df_cloud.to_csv(file_path, index=False)
                 return df_cloud
 
-    # 2. Fallback to local file if internet/cloud fails
     if os.path.exists(file_path):
         try:
             df_local = pd.read_csv(file_path, dtype=str)
@@ -167,7 +164,7 @@ exam_forms_cols = ["Date", "Student ID", "Student Name", "Course", "Exam Fee Amo
 courses_cols = ["Course Name", "Duration", "Fee (₹)", "Description"]
 dispatch_cols = ["Date", "Student ID", "Student Name", "Course", "Certificate No", "Marksheet Status", "Received By", "Contact No", "Handover Confirmed"]
 
-# Load Data from Google Sheets / Disk
+# Load Data
 student_df = load_data(STUDENT_MASTER_FILE, student_cols, "students_db")
 fee_df = load_data(FEE_LOG_FILE, fee_cols, "fees_db")
 att_df = load_data(ATTENDANCE_FILE, attendance_cols, "attendance_db")
@@ -187,9 +184,7 @@ exam_forms_df = load_data(EXAM_FORMS_FILE, exam_forms_cols, "exam_forms_db")
 courses_df = load_data(COURSES_FILE, courses_cols, "courses_db")
 dispatch_df = load_data(DISPATCH_FILE, dispatch_cols, "dispatch_db")
 
-# -------------------------------------------------------------
-# SANITIZATION: REMOVE ORPHAN / GHOST FEES OF DELETED STUDENTS
-# -------------------------------------------------------------
+# Auto-Sanitize Orphan Fees
 valid_student_ids = set(student_df["Student ID"].dropna().astype(str).str.strip().tolist()) if not student_df.empty else set()
 if not fee_df.empty:
     fee_df = fee_df[fee_df["Student ID"].astype(str).str.strip().isin(valid_student_ids)]
@@ -230,182 +225,229 @@ ALL_SYLLABUS_TOPICS = [
 ]
 
 # -------------------------------------------------------------
-# UDISE+ GOVT-STYLE THEME CSS
+# HIGH-END SLATE-NAVY MODERN PORTAL CSS (MATCHING REFERENCE)
 # -------------------------------------------------------------
 st.markdown("""
 <style>
+/* Main Dark Background */
 .stApp {
-    background-color: #F8FAFC;
+    background-color: #0B1120;
+    color: #E2E8F0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-.udise-topbar {
-    background-color: #1E293B;
-    color: white;
+
+/* Sleek Top Navigation Bar */
+.top-navbar {
+    background-color: #0F172A;
+    border-bottom: 1px solid #1E293B;
     padding: 12px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 3px solid #0284C7;
     margin-top: -60px;
     margin-left: -4rem;
     margin-right: -4rem;
-    margin-bottom: 18px;
+    margin-bottom: 24px;
 }
-.udise-logo {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: 0.8px;
-    color: #38BDF8;
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
-.udise-logo span {
-    color: #FFFFFF;
-    font-weight: 400;
-    font-size: 15px;
-    margin-left: 10px;
-    border-left: 1px solid #64748B;
-    padding-left: 10px;
-}
-.udise-user-badge {
-    background: #334155;
-    padding: 5px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    color: #E2E8F0;
-    border: 1px solid #475569;
-}
-.school-info-card {
-    background: #FFFFFF;
-    border-radius: 8px;
-    padding: 14px 20px;
-    border: 1px solid #CBD5E1;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-bottom: 20px;
-}
-.hero-side-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+.brand-badge {
+    background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%);
+    color: white;
+    font-weight: 900;
+    font-size: 18px;
+    width: 38px;
+    height: 38px;
     border-radius: 10px;
-    padding: 14px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-}
-.hero-side-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    background: #F8FAFC;
-    border-radius: 6px;
-    border-left: 3px solid #0284C7;
-    margin-bottom: 6px;
-}
-.action-box {
-    background: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    border-radius: 8px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
-    margin-bottom: 12px;
-}
-.action-icon {
-    background: #0284C7;
-    color: white;
-    width: 44px;
-    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
-    font-size: 20px;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
 }
-.support-card {
-    background: #0F172A;
-    color: white;
-    border-radius: 8px;
-    padding: 14px 18px;
+.brand-name {
+    font-size: 19px;
+    font-weight: 800;
+    color: #F8FAFC;
+    letter-spacing: 0.5px;
 }
-.support-item {
-    background: #1E293B;
-    padding: 8px 12px;
-    border-radius: 6px;
-    margin-top: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-}
-.pink-badge {
-    background: #FCE7F3;
-    color: #BE185D;
-    border: 1px solid #F472B6;
-    padding: 12px 16px;
-    border-radius: 8px;
+.brand-sub {
+    font-size: 11px;
+    color: #38BDF8;
     font-weight: 600;
-    margin-bottom: 12px;
 }
-.green-badge {
-    background: #DCFCE7;
-    color: #15803D;
-    border: 1.5px solid #22C55E;
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 5px rgba(34, 197, 94, 0.15);
-}
-.stepper-wrapper {
-    display: flex;
-    justify-content: space-between;
-    margin: 20px 0;
-    background: #FFFFFF;
-    padding: 16px 20px;
-    border-radius: 8px;
-    border: 1px solid #E2E8F0;
-}
-.stepper-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    flex: 1;
-}
-.step-counter {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: #E2E8F0;
-    color: #64748B;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    margin-bottom: 6px;
-}
-.step-counter.active {
+.nav-link-btn {
     background: #10B981;
     color: white;
-}
-.step-name {
-    font-size: 11px;
-    font-weight: 600;
-    color: #334155;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-block;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
 }
 
-/* ID CARD CSS */
+/* Reference Photo Style Hero Section */
+.hero-wrapper {
+    background: #0F172A;
+    border: 1px solid #1E293B;
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+/* Orange Glow Tag (Like UDISE+ Verified in photo) */
+.hero-tag-pill {
+    background: rgba(249, 115, 22, 0.12);
+    border: 1px solid rgba(249, 115, 22, 0.5);
+    color: #FB923C;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 20px;
+    display: inline-block;
+    letter-spacing: 0.8px;
+    margin-bottom: 14px;
+}
+
+.hero-main-title {
+    font-size: 32px;
+    font-weight: 900;
+    color: #FFFFFF;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.5px;
+}
+
+.hero-lead-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: #94A3B8;
+    max-width: 900px;
+    margin-bottom: 18px;
+}
+.hero-lead-text b {
+    color: #F8FAFC;
+}
+.hero-lead-text .highlight-orange {
+    color: #FB923C;
+    font-weight: 600;
+}
+.hero-lead-text .highlight-cyan {
+    color: #38BDF8;
+    font-weight: 600;
+}
+
+/* Badge Pills Row (Matching the photo) */
+.badge-pills-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+}
+.pill-item {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.pill-orange { background: #EA580C; color: white; }
+.pill-green { background: #059669; color: white; }
+.pill-blue { background: #2563EB; color: white; }
+.pill-purple { background: #7C3AED; color: white; }
+.pill-sky { background: #0284C7; color: white; }
+
+/* Content Cards (Left & Right Like Reference) */
+.portal-card {
+    background: #0F172A;
+    border: 1px solid #1E293B;
+    border-radius: 12px;
+    padding: 20px;
+    height: 100%;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1E293B;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+}
+.card-title-text {
+    font-size: 16px;
+    font-weight: 800;
+    color: #F8FAFC;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.card-sub-code {
+    font-size: 11px;
+    color: #38BDF8;
+    font-weight: bold;
+}
+
+/* Quick Info Row */
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid #1E293B;
+    font-size: 13px;
+}
+.info-label {
+    color: #94A3B8;
+    font-weight: 500;
+}
+.info-value {
+    color: #F1F5F9;
+    font-weight: 700;
+    text-align: right;
+}
+
+/* Buttons */
+div.stButton > button {
+    background-color: #10B981 !important;
+    color: white !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    border: none !important;
+    padding: 8px 18px !important;
+    transition: all 0.2s ease-in-out !important;
+}
+div.stButton > button:hover {
+    background-color: #059669 !important;
+    transform: scale(1.01) !important;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35) !important;
+}
+
+/* Metrics & Text Inputs in Dark Theme */
+div[data-testid="stMetric"] {
+    background: #0F172A;
+    border: 1px solid #1E293B;
+    padding: 14px;
+    border-radius: 10px;
+}
+div[data-testid="stMetricLabel"] { color: #94A3B8 !important; }
+div[data-testid="stMetricValue"] { color: #38BDF8 !important; font-weight: 800 !important; }
+
+/* Digital ID Card & Passbook Styling */
 .id-card-container {
     width: 360px;
     background: #FFFFFF;
     border-radius: 14px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
     overflow: hidden;
     border: 2px solid #0284C7;
     margin: 10px auto;
+    color: #0F172A;
 }
 .id-card-header {
     background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
@@ -414,142 +456,45 @@ st.markdown("""
     text-align: center;
     border-bottom: 3px solid #38BDF8;
 }
-.id-card-body {
-    padding: 16px;
-    text-align: center;
-}
-.id-photo {
-    width: 95px;
-    height: 95px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 3px solid #0284C7;
-    margin-top: -10px;
-}
-.id-name {
-    font-size: 17px;
-    font-weight: 800;
-    color: #0F172A;
-    margin: 8px 0 2px 0;
-    text-transform: uppercase;
-}
-.id-roll-badge {
-    background: #E0F2FE;
-    color: #0369A1;
-    font-weight: 700;
-    font-size: 12px;
-    padding: 3px 12px;
-    border-radius: 12px;
-    display: inline-block;
-    margin-bottom: 10px;
-}
-.id-details-table {
-    width: 100%;
-    font-size: 11.5px;
-    text-align: left;
-    color: #334155;
-    margin-bottom: 12px;
-}
-.id-details-table td {
-    padding: 4px 6px;
-}
-.id-card-footer {
-    background: #F8FAFC;
-    padding: 10px 14px;
-    border-top: 1px dashed #CBD5E1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+.id-card-body { padding: 16px; text-align: center; }
+.id-photo { width: 95px; height: 95px; border-radius: 50%; object-fit: cover; border: 3px solid #0284C7; margin-top: -10px; }
+.id-name { font-size: 17px; font-weight: 800; color: #0F172A; margin: 8px 0 2px 0; text-transform: uppercase; }
+.id-roll-badge { background: #E0F2FE; color: #0369A1; font-weight: 700; font-size: 12px; padding: 3px 12px; border-radius: 12px; display: inline-block; margin-bottom: 10px; }
+.id-details-table { width: 100%; font-size: 11.5px; text-align: left; color: #334155; margin-bottom: 12px; }
+.id-details-table td { padding: 4px 6px; }
+.id-card-footer { background: #F8FAFC; padding: 10px 14px; border-top: 1px dashed #CBD5E1; display: flex; justify-content: space-between; align-items: center; }
 
-/* PASSBOOK CSS */
 .passbook-card {
     background: #FFFFFF;
     border: 2px solid #334155;
     border-radius: 10px;
     padding: 18px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
     max-width: 750px;
     margin: 10px auto;
-}
-.passbook-header {
-    text-align: center;
-    border-bottom: 2px solid #0284C7;
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-}
-.passbook-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12.5px;
-    margin-top: 12px;
-}
-.passbook-table th {
-    background: #F1F5F9;
     color: #0F172A;
-    border: 1px solid #CBD5E1;
-    padding: 7px;
-    text-align: center;
-    font-weight: 700;
 }
-.passbook-table td {
-    border: 1px solid #E2E8F0;
-    padding: 7px;
-    text-align: center;
-    color: #334155;
-}
-
-div.stButton > button {
-    background-color: #047857 !important;
-    color: white !important;
-    border-radius: 6px !important;
-    font-weight: 600 !important;
-    border: none !important;
-    transition: all 0.2s ease-in-out !important;
-}
-div.stButton > button:hover {
-    background-color: #059669 !important;
-    transform: scale(1.01) !important;
-    box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3) !important;
-}
-div.stButton > button:active {
-    background-color: #10B981 !important;
-}
+.passbook-header { text-align: center; border-bottom: 2px solid #0284C7; padding-bottom: 8px; margin-bottom: 12px; }
+.passbook-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 12px; }
+.passbook-table th { background: #F1F5F9; color: #0F172A; border: 1px solid #CBD5E1; padding: 7px; text-align: center; font-weight: 700; }
+.passbook-table td { border: 1px solid #E2E8F0; padding: 7px; text-align: center; color: #334155; }
 </style>
 """, unsafe_allow_html=True)
 
-# Top Header Bar
+# Top Modern Navbar
 st.markdown("""
-<div class="udise-topbar">
-<div class="udise-logo">STC-ZTC+ <span>Enterprise Management Portal</span></div>
-<div style="display:flex; align-items:center; gap:15px;">
-<span style="font-size:12px; color:#94A3B8;">Academic Session: 2026-27</span>
-<div class="udise-user-badge">👤 Chiranjeeb Hazarika (DIRECTOR / ADMIN)</div>
-</div>
-</div>
-""", unsafe_allow_html=True)
-
-# Institutional Header Strip
-st.markdown("""
-<div class="school-info-card">
-<div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:15px;">
-<div>
-<div style="font-size:12px; color:#64748B;">🏛️ Institution:</div>
-<div style="font-size:15px; font-weight:700; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</div>
-</div>
-<div>
-<div style="font-size:12px; color:#64748B;">📋 Center Code:</div>
-<div style="font-size:15px; font-weight:700; color:#0284C7;">4159 (Kamarchuburi, Sonitpur)</div>
-</div>
-<div>
-<div style="font-size:12px; color:#64748B;">🏷️ Quality Standard:</div>
-<div style="font-size:15px; font-weight:700; color:#0F172A;">ISO 9001:2015 Certified Academy</div>
-</div>
-<div>
-<div style="font-size:12px; color:#64748B;">📍 Center Location:</div>
-<div style="font-size:15px; font-weight:700; color:#10B981;">Thelamara, Assam - 784149</div>
-</div>
-</div>
+<div class="top-navbar">
+    <div class="navbar-brand">
+        <div class="brand-badge">S</div>
+        <div>
+            <div class="brand-name">STC-ZTC Enterprise</div>
+            <div class="brand-sub">National Skill & Computer Education Portal</div>
+        </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:16px;">
+        <span style="font-size:12px; color:#94A3B8;">Academic Session: 2026-27</span>
+        <span class="nav-link-btn">● Portal Online</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -575,154 +520,148 @@ menu = st.sidebar.radio("Go To Module:", [
 ])
 
 # -------------------------------------------------------------
-# 1. QUICK ACTIONS & PUBLIC DASHBOARD
+# 1. QUICK ACTIONS & PUBLIC DASHBOARD (MATCHING THE REFERENCE PHOTO)
 # -------------------------------------------------------------
 if menu == "⚡ Quick Actions & Dashboard":
     dp2_b64 = get_image_base64("dp2")
-    col_h_left, col_h_mid, col_h_right = st.columns([1, 1.8, 1])
     
-    with col_h_left:
+    # Hero Section exactly like the reference image
+    st.markdown(f"""
+    <div class="hero-wrapper">
+        <div class="hero-tag-pill">
+            🛡️ GOVT REGD IT ACADEMY • SONITPUR, ASSAM
+        </div>
+        <h1 class="hero-main-title">Soft Tech Computers & ZTC Enterprise</h1>
+        <div class="hero-lead-text">
+            Soft Tech Computers & ZTC Enterprise is a recognized 
+            <span class="highlight-orange">ISO 9001:2015 Certified</span>, 
+            <span class="highlight-cyan">Digital India Skill Partner</span>, 
+            providing professional technical and computer software education. The institute operates under the official administrative accreditation code 
+            <span class="highlight-orange">4159</span> with nationwide recognized certificate validity.
+        </div>
+        <div class="badge-pills-row">
+            <div class="pill-item pill-orange"># CENTER CODE: 4159</div>
+            <div class="pill-item pill-green">✓ Operational & Active</div>
+            <div class="pill-item pill-blue">🏛️ ISO 9001:2015 Certified</div>
+            <div class="pill-item pill-purple">🎓 Sarva India Affiliated</div>
+            <div class="pill-item pill-sky">💻 100% Practical Lab</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 2-Column Info Cards Section (Matching Photo layout)
+    col_c1, col_c2 = st.columns([1.6, 1.2])
+    
+    with col_c1:
         st.markdown("""
-<div class="hero-side-card">
-<div style="font-size:13px; font-weight:bold; color:#0F172A; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px;">🏆 Institutional Standards</div>
-<div class="hero-side-item">
-<span style="font-size:18px;">🏛️</span>
-<div><b style="font-size:12px; color:#0F172A;">ISO 9001:2015</b><br><span style="font-size:11px; color:#64748B;">Certified IT Academy</span></div>
-</div>
-<div class="hero-side-item">
-<span style="font-size:18px;">🎯</span>
-<div><b style="font-size:12px; color:#0F172A;">Digital India Skill</b><br><span style="font-size:11px; color:#64748B;">Quality Technical Training</span></div>
-</div>
-<div class="hero-side-item">
-<span style="font-size:18px;">💻</span>
-<div><b style="font-size:12px; color:#0F172A;">100% Practical Lab</b><br><span style="font-size:11px; color:#64748B;">Dedicated Computer PCs</span></div>
-</div>
-</div>
-""", unsafe_allow_html=True)
+        <div class="portal-card">
+            <div class="card-header-flex">
+                <div class="card-title-text">
+                    🏛️ About Soft Tech Computers & ZTC
+                </div>
+                <div class="card-sub-code">
+                    ACCREDITED CODE: 4159
+                </div>
+            </div>
+            <p style="color:#94A3B8; font-size:13.5px; line-height:1.7; margin-bottom:14px;">
+                Soft Tech Computers & ZTC Enterprise is an established computer training academy providing structured education across <b style="color:#F8FAFC;">Diploma (DCA, ADCA), Post Graduate Diploma (PGDCA), DTP, Accounting with Tally Prime GST, Web Designing,</b> and professional High School English coaching.
+            </p>
+            <div style="background:#1E293B; border-radius:8px; padding:12px 16px; font-size:12.5px; color:#E2E8F0; border-left:3px solid #10B981;">
+                💡 <b>Academic Standards:</b> Every student receives practical computer terminal access, individualized practice sessions, verified examination admit cards, and Sarva India certificates with instant online verification.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-    with col_h_mid:
-        if dp2_b64:
-            st.markdown(f'<img src="{dp2_b64}" style="width:100%; max-height:220px; object-fit:contain; border-radius:10px; border:1px solid #CBD5E1; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">', unsafe_allow_html=True)
-        else:
-            st.markdown("""
-<div style="background:#0F172A; color:white; padding:30px; border-radius:10px; text-align:center;">
-<h3 style="margin:0; color:#38BDF8;">SOFT TECH COMPUTERS & ZTC</h3>
-<p style="margin:6px 0 0 0; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149</p>
-</div>
-""", unsafe_allow_html=True)
-            
-    with col_h_right:
-        st.markdown("""
-<div class="hero-side-card">
-<div style="font-size:13px; font-weight:bold; color:#0F172A; margin-bottom:6px; border-bottom:1px solid #E2E8F0; padding-bottom:4px;">📜 Recognition & Certs</div>
-<div class="hero-side-item" style="border-left-color:#10B981;">
-<span style="font-size:18px;">📋</span>
-<div><b style="font-size:12px; color:#0F172A;">Center Code: 4159</b><br><span style="font-size:11px; color:#64748B;">Govt Regd Accreditation</span></div>
-</div>
-<div class="hero-side-item" style="border-left-color:#10B981;">
-<span style="font-size:18px;">📜</span>
-<div><b style="font-size:12px; color:#0F172A;">Sarva India Certs</b><br><span style="font-size:11px; color:#64748B;">Valid Across India</span></div>
-</div>
-<div class="hero-side-item" style="border-left-color:#10B981;">
-<span style="font-size:18px;">🌐</span>
-<div><b style="font-size:12px; color:#0F172A;">Online Verification</b><br><span style="font-size:11px; color:#64748B;">Instant Roll ID Check</span></div>
-</div>
-</div>
-""", unsafe_allow_html=True)
+    with col_c2:
+        st.markdown(f"""
+        <div class="portal-card">
+            <div class="card-header-flex">
+                <div class="card-title-text">
+                    ℹ️ Quick Information
+                </div>
+                <div class="card-sub-code">
+                    INSTITUTION SUMMARY
+                </div>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Center Code:</span>
+                <span class="info-value" style="color:#38BDF8;">4159</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Quality Certification:</span>
+                <span class="info-value" style="color:#10B981;">ISO 9001:2015</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Affiliated Board:</span>
+                <span class="info-value">Sarva India (HP Head Office)</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Center Location:</span>
+                <span class="info-value">Kamarchuburi, Thelamara, Sonitpur</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">District & PIN:</span>
+                <span class="info-value">Sonitpur, Assam - 784149</span>
+            </div>
+            <div class="info-row" style="border-bottom:none;">
+                <span class="info-label">Director / Contact:</span>
+                <span class="info-value" style="color:#F59E0B;">Chiranjeeb Hazarika (9101026718)</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
     st.markdown("<br>", unsafe_allow_html=True)
     
-    col_s1, col_s2, col_s3, col_s4 = st.columns(4)
-    with col_s1:
-        st.metric("Institutional Certification", "ISO 9001:2015")
-    with col_s2:
-        st.metric("Authorized Center Code", "4159 (Assam)")
-    with col_s3:
+    # 4 Quick Metric Cards
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    with col_m1:
+        st.metric("Accredited Center", "4159 (Assam)")
+    with col_m2:
         st.metric("Enrolled Trainees", f"{len(student_df)} Active")
-    with col_s4:
-        st.metric("Govt Approved Courses", f"{len(courses_df)} Programs")
+    with col_m3:
+        st.metric("Institutional Certification", "ISO 9001:2015")
+    with col_m4:
+        st.metric("Recognized Programs", f"{len(courses_df)} Courses")
         
     st.markdown("<br>", unsafe_allow_html=True)
-    col_l, col_r = st.columns([2, 1])
     
-    with col_l:
-        st.markdown("""
-<div class="action-box">
-<div class="action-icon">📝</div>
-<div>
-<b style="font-size:15px; color:#0F172A;">Online Student Admission & Course Fee Enquiry Desk</b>
-<div style="font-size:12px; color:#64748B;">Submit your query to check official course duration and fee structure</div>
-</div>
-</div>
-""", unsafe_allow_html=True)
-        
-        with st.expander("📝 Click here to Submit Public Admission / Course Fee Enquiry", expanded=True):
-            with st.form("public_enquiry_form", clear_on_submit=True):
-                e_name = st.text_input("Candidate Full Name*")
-                e_mobile = st.text_input("Mobile Number (WhatsApp Enabled)*")
-                e_vill = st.text_input("Village / Town / Address*")
-                
-                course_list = courses_df["Course Name"].tolist() if not courses_df.empty else []
-                e_course = st.selectbox("Select Interested Course:*", course_list)
-                
-                if st.form_submit_button("🟢 Submit Enquiry & Check Course Fee"):
-                    if not e_name or not e_mobile:
-                        st.error("Please enter Name and Mobile Number!")
-                    else:
-                        c_match = courses_df[courses_df["Course Name"] == e_course]
-                        c_fee = c_match["Fee (₹)"].values[0] if not c_match.empty else "N/A"
-                        c_dur = c_match["Duration"].values[0] if not c_match.empty else "N/A"
-                        
-                        enq_row = {
-                            "Date": str(datetime.date.today()),
-                            "Name": e_name.upper(),
-                            "Mobile": e_mobile,
-                            "Course Interested": e_course,
-                            "Village/Address": e_vill.upper(),
-                            "Status": "New Lead"
-                        }
-                        enquiry_df = pd.concat([enquiry_df, pd.DataFrame([enq_row])], ignore_index=True)
-                        save_data(enquiry_df, ENQUIRY_FILE, "enquiries_db")
-                        
-                        st.markdown(f"""
-<div class="green-badge">
-🎉 <b>Enquiry Submitted Successfully!</b><br>
-<b>Selected Course:</b> {e_course}<br>
-<b>Duration:</b> {c_dur} | <b>Official Total Course Fee:</b> ₹{c_fee}<br>
-<i>Our academy office will contact you on {e_mobile} shortly!</i>
-</div>
-""", unsafe_allow_html=True)
-
-    with col_r:
-        st.markdown("""
-<div class="support-card">
-<div style="font-size:14px; font-weight:700; color:#38BDF8; display:flex; align-items:center; gap:8px;">📞 Center Support & Helplines</div>
-<div class="support-item">
-<div><b>Director / Head MIS</b><br><span style="color:#94A3B8; font-size:11px;">Chiranjeeb Hazarika</span></div>
-<div style="color:#38BDF8; font-weight:bold;">9101026718</div>
-</div>
-<div class="support-item">
-<div><b>Helpdesk / Center Location</b><br><span style="color:#94A3B8; font-size:11px;">Kamarchuburi, Sonitpur</span></div>
-<div style="color:#10B981; font-weight:bold;">PIN: 784149</div>
-</div>
-</div>
-""", unsafe_allow_html=True)
-        
-    st.markdown("---")
-    
-    st.subheader("🔒 Master Student Directory (Authorized Staff Access Only)")
-    with st.expander("🔑 Click to Unlock Master Database (Password Required)", expanded=False):
-        view_pwd = st.text_input("Enter Staff / Director Password:", type="password", key="dash_view_pwd")
-        if view_pwd in [ADMIN_PWD, TEACHER_PWD]:
-            st.success("Access Granted! Showing Master Database:")
-            if not student_df.empty:
-                st.dataframe(student_df, use_container_width=True)
-            else:
-                st.info("No records found in database.")
-        elif view_pwd:
-            st.error("Incorrect Password! Access denied for privacy reasons.")
-        else:
-            st.info("Personal contact numbers, addresses, and fee accounts are protected. Enter password to view.")
+    # Online Enquiry Form Box
+    with st.expander("📝 Click here to Submit Public Admission / Course Fee Enquiry", expanded=False):
+        with st.form("public_enquiry_form", clear_on_submit=True):
+            e_name = st.text_input("Candidate Full Name*")
+            e_mobile = st.text_input("Mobile Number (WhatsApp Enabled)*")
+            e_vill = st.text_input("Village / Town / Address*")
+            
+            course_list = courses_df["Course Name"].tolist() if not courses_df.empty else []
+            e_course = st.selectbox("Select Interested Course:*", course_list)
+            
+            if st.form_submit_button("🟢 Submit Enquiry & Check Course Fee"):
+                if not e_name or not e_mobile:
+                    st.error("Please enter Name and Mobile Number!")
+                else:
+                    c_match = courses_df[courses_df["Course Name"] == e_course]
+                    c_fee = c_match["Fee (₹)"].values[0] if not c_match.empty else "N/A"
+                    c_dur = c_match["Duration"].values[0] if not c_match.empty else "N/A"
+                    
+                    enq_row = {
+                        "Date": str(datetime.date.today()),
+                        "Name": e_name.upper(),
+                        "Mobile": e_mobile,
+                        "Course Interested": e_course,
+                        "Village/Address": e_vill.upper(),
+                        "Status": "New Lead"
+                    }
+                    enquiry_df = pd.concat([enquiry_df, pd.DataFrame([enq_row])], ignore_index=True)
+                    save_data(enquiry_df, ENQUIRY_FILE, "enquiries_db")
+                    
+                    st.markdown(f"""
+                    <div class="green-badge">
+                        🎉 <b>Enquiry Submitted Successfully!</b><br>
+                        <b>Selected Course:</b> {e_course}<br>
+                        <b>Duration:</b> {c_dur} | <b>Official Total Course Fee:</b> ₹{c_fee}<br>
+                        <i>Our academy office will contact you on {e_mobile} shortly!</i>
+                    </div>
+                    """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
 # 2. ONLINE CERTIFICATE VERIFICATION
@@ -736,12 +675,12 @@ elif menu == "📜 Online Certificate Verification":
             v_data = v_match.iloc[0]
             st.balloons()
             st.markdown(f"""
-<div class="green-badge">
-<h3 style="margin:0; color:#15803D;">✅ OFFICIAL RECORD VERIFIED</h3>
-<p style="margin:8px 0 0 0; font-size:15px;"><b>Candidate Name:</b> {v_data['Name']} | <b>Course:</b> {v_data['Course']} | <b>Roll ID:</b> {v_data['Student ID']}</p>
-<p style="margin:4px 0 0 0; font-size:13px; color:#15803D;">Center: Soft Tech Computers & ZTC (Code: 4159) | HP Reg No: {v_data['HO_Reg_No'] if v_data['HO_Reg_No'] else 'Registered'} | Status: {v_data['Status']}</p>
-</div>
-""", unsafe_allow_html=True)
+            <div class="green-badge">
+                <h3 style="margin:0; color:#10B981;">✅ OFFICIAL RECORD VERIFIED</h3>
+                <p style="margin:8px 0 0 0; font-size:15px;"><b>Candidate Name:</b> {v_data['Name']} | <b>Course:</b> {v_data['Course']} | <b>Roll ID:</b> {v_data['Student ID']}</p>
+                <p style="margin:4px 0 0 0; font-size:13px; color:#94A3B8;">Center: Soft Tech Computers & ZTC (Code: 4159) | HP Reg No: {v_data['HO_Reg_No'] if v_data['HO_Reg_No'] else 'Registered'} | Status: {v_data['Status']}</p>
+            </div>
+            """, unsafe_allow_html=True)
         else:
             st.error("❌ INVALID ROLL ID! No official matching record found in academy database.")
 
@@ -829,10 +768,10 @@ elif menu == "📝 New Student Admission":
                     save_data(student_df, STUDENT_MASTER_FILE, "students_db")
                     st.balloons()
                     st.markdown(f"""
-<div class="green-badge">
-🎉 <b>Candidate Registered Successfully!</b> Student ID: <b>{next_id}</b>
-</div>
-""", unsafe_allow_html=True)
+                    <div class="green-badge">
+                        🎉 <b>Candidate Registered Successfully!</b> Student ID: <b>{next_id}</b>
+                    </div>
+                    """, unsafe_allow_html=True)
                     st.rerun()
 
 # -------------------------------------------------------------
@@ -863,8 +802,6 @@ elif menu == "🔑 Student Login Portal":
         st.markdown("<br>", unsafe_allow_html=True)
         with st.expander("❓ Need Login Help / Retrieve Roll ID?", expanded=False):
             st.info("💡 **Note:** Your registered 10-digit mobile number provided during admission is your default password.")
-            st.markdown("---")
-            st.write("**🔍 Option 1: Find your Roll ID by Mobile Number**")
             find_mob = st.text_input("Enter your 10-digit Registered Mobile Number:", key="find_mob_in").strip()
             if st.button("Search My Roll ID"):
                 if find_mob:
@@ -872,26 +809,15 @@ elif menu == "🔑 Student Login Portal":
                     if not match_s.empty:
                         for _, row in match_s.iterrows():
                             st.markdown(f"""
-<div class="green-badge">
-✅ <b>Student Record Found:</b><br>
-<b>Name:</b> {row['Name']}<br>
-<b>Roll ID:</b> <span style="font-size:18px; color:#047857;"><b>{row['Student ID']}</b></span><br>
-<b>Password:</b> <i>Your 10-digit Mobile Number ({find_mob})</i>
-</div>
-""", unsafe_allow_html=True)
+                            <div class="green-badge">
+                                ✅ <b>Student Record Found:</b><br>
+                                <b>Name:</b> {row['Name']}<br>
+                                <b>Roll ID:</b> <span style="font-size:18px; color:#10B981;"><b>{row['Student ID']}</b></span><br>
+                                <b>Password:</b> <i>Your 10-digit Mobile Number ({find_mob})</i>
+                            </div>
+                            """, unsafe_allow_html=True)
                     else:
                         st.error("No student found with this mobile number. Please contact director support below.")
-                        
-            st.markdown("---")
-            st.write("**💬 Option 2: Direct WhatsApp Support**")
-            wa_link = "https://wa.me/919101026718?text=Hello%20Director%20Sir,%20I%20forgot%20my%20Student%20Portal%20Login%20Details%20(STC%20Portal).%20Please%20help."
-            st.markdown(f"""
-<a href="{wa_link}" target="_blank" style="text-decoration:none;">
-<div style="background-color:#25D366; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; text-align:center; display:inline-block;">
-📲 Message Director Sir on WhatsApp (+91 9101026718)
-</div>
-</a>
-""", unsafe_allow_html=True)
     else:
         s_id = st.session_state["logged_student_id"]
         s_match = student_df[student_df["Student ID"] == s_id]
@@ -902,38 +828,13 @@ elif menu == "🔑 Student Login Portal":
         s = s_match.iloc[0]
         
         st.markdown(f"""
-<div class="green-badge">
-Welcome back, <b>{s['Name']}</b> | Roll ID: <b>{s['Student ID']}</b> | Course: <b>{s['Course']}</b>
-</div>
-""", unsafe_allow_html=True)
+        <div class="green-badge">
+            Welcome back, <b>{s['Name']}</b> | Roll ID: <b>{s['Student ID']}</b> | Course: <b>{s['Course']}</b>
+        </div>
+        """, unsafe_allow_html=True)
         
         ho_reg = s["HO_Reg_No"] if s["HO_Reg_No"] and s["HO_Reg_No"] != "Pending" else "In Process"
         c_status = s["Stage_Cert_Status"] if s["Stage_Cert_Status"] else "In Process"
-        
-        st.markdown(f"""
-<div class="stepper-wrapper">
-<div class="stepper-item">
-<div class="step-counter active">1</div>
-<div class="step-name">Admission<br><span style="color:#10B981;">✓ Confirmed</span></div>
-</div>
-<div class="stepper-item">
-<div class="step-counter {'active' if ho_reg != 'In Process' else ''}">2</div>
-<div class="step-name">HP HO Reg<br><span style="color:#0284C7;">{ho_reg}</span></div>
-</div>
-<div class="stepper-item">
-<div class="step-counter {'active' if s['Stage_AdmitCard'] == 'Generated' else ''}">3</div>
-<div class="step-name">Admit Card<br><span style="color:#64748B;">{s['Stage_AdmitCard']}</span></div>
-</div>
-<div class="stepper-item">
-<div class="step-counter {'active' if 'Arrived' in c_status or 'Delivered' in c_status else ''}">4</div>
-<div class="step-name">Certificate<br><span style="color:#10B981;">{c_status}</span></div>
-</div>
-<div class="stepper-item">
-<div class="step-counter {'active' if s['Handover_Status'] == 'Delivered' else ''}">5</div>
-<div class="step-name">Handover<br><span style="color:#64748B;">{s['Handover_Status']}</span></div>
-</div>
-</div>
-""", unsafe_allow_html=True)
         
         # Calculations
         p_logs = fee_df[fee_df["Student ID"] == s_id]
@@ -971,41 +872,41 @@ Welcome back, <b>{s['Name']}</b> | Roll ID: <b>{s['Student ID']}</b> | Course: <
             barcode_url = f"https://quickchart.io/barcode?type=code128&text={s['Student ID']}&width=180&height=36"
             
             st.markdown(f"""
-<div class="id-card-container">
-<div class="id-card-header">
-<div style="font-size:14px; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">SOFT TECH COMPUTERS & ZTC</div>
-<div style="font-size:10px; color:#E2E8F0;">ISO 9001:2015 Certified | Center Code: 4159</div>
-<div style="font-size:9.5px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur - 784149</div>
-</div>
-<div class="id-card-body">
-<img src="{photo_src}" class="id-photo"><br>
-<div class="id-name">{s['Name']}</div>
-<div class="id-roll-badge">ROLL ID: {s['Student ID']}</div>
-<table class="id-details-table">
-<tr><td><b>Course:</b></td><td>{s['Course']}</td></tr>
-<tr><td><b>Father:</b></td><td>{s['Father Name']}</td></tr>
-<tr><td><b>Mobile:</b></td><td>{s['Mobile No']}</td></tr>
-<tr><td><b>Shift/Batch:</b></td><td>{s['Shift']}</td></tr>
-<tr><td><b>Validity:</b></td><td>{s['Validity Date']}</td></tr>
-</table>
-<div style="display:flex; justify-content:space-around; align-items:center; margin-top:6px;">
-<div>
-<img src="{qr_url}" style="width:75px; height:75px; border:1px solid #CBD5E1; padding:2px; border-radius:4px;"><br>
-<span style="font-size:9px; color:#64748B;">Attendance QR</span>
-</div>
-<div style="text-align:right;">
-<img src="{barcode_url}" style="width:140px; height:30px;"><br>
-<div style="border-top:1px solid #0F172A; width:100px; margin-top:8px; margin-left:auto;"></div>
-<span style="font-size:9.5px; color:#0F172A; font-weight:bold;">Director Sign</span>
-</div>
-</div>
-</div>
-<div class="id-card-footer">
-<span style="font-size:9px; color:#64748B;">Affiliated with Sarva India (HP)</span>
-<span style="font-size:9px; font-weight:bold; color:#10B981;">● ACTIVE TRAINEE</span>
-</div>
-</div>
-""", unsafe_allow_html=True)
+            <div class="id-card-container">
+                <div class="id-card-header">
+                    <div style="font-size:14px; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">SOFT TECH COMPUTERS & ZTC</div>
+                    <div style="font-size:10px; color:#E2E8F0;">ISO 9001:2015 Certified | Center Code: 4159</div>
+                    <div style="font-size:9.5px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur - 784149</div>
+                </div>
+                <div class="id-card-body">
+                    <img src="{photo_src}" class="id-photo"><br>
+                    <div class="id-name">{s['Name']}</div>
+                    <div class="id-roll-badge">ROLL ID: {s['Student ID']}</div>
+                    <table class="id-details-table">
+                        <tr><td><b>Course:</b></td><td>{s['Course']}</td></tr>
+                        <tr><td><b>Father:</b></td><td>{s['Father Name']}</td></tr>
+                        <tr><td><b>Mobile:</b></td><td>{s['Mobile No']}</td></tr>
+                        <tr><td><b>Shift/Batch:</b></td><td>{s['Shift']}</td></tr>
+                        <tr><td><b>Validity:</b></td><td>{s['Validity Date']}</td></tr>
+                    </table>
+                    <div style="display:flex; justify-content:space-around; align-items:center; margin-top:6px;">
+                        <div>
+                            <img src="{qr_url}" style="width:75px; height:75px; border:1px solid #CBD5E1; padding:2px; border-radius:4px;"><br>
+                            <span style="font-size:9px; color:#64748B;">Attendance QR</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <img src="{barcode_url}" style="width:140px; height:30px;"><br>
+                            <div style="border-top:1px solid #0F172A; width:100px; margin-top:8px; margin-left:auto;"></div>
+                            <span style="font-size:9.5px; color:#0F172A; font-weight:bold;">Director Sign</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="id-card-footer">
+                    <span style="font-size:9px; color:#64748B;">Affiliated with Sarva India (HP)</span>
+                    <span style="font-size:9px; font-weight:bold; color:#10B981;">● ACTIVE TRAINEE</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
         with s_tab2:
             st.subheader("💳 Student Fee Installment Passbook Card")
@@ -1016,91 +917,91 @@ Welcome back, <b>{s['Name']}</b> | Roll ID: <b>{s['Student ID']}</b> | Course: <
                 current_running_paid += amt
                 running_due = max(0.0, net_f - current_running_paid)
                 rows_html += f"""
-<tr>
-<td><b>{idx}</b></td>
-<td>{row['Date']}</td>
-<td>{row['Receipt No']}</td>
-<td style="color:#047857; font-weight:bold;">₹{amt:.2f}</td>
-<td style="color:#DC2626; font-weight:bold;">₹{running_due:.2f}</td>
-<td>{row['Payment Mode']}</td>
-<td>{row['Collected_By']}</td>
-</tr>
-"""
+                <tr>
+                    <td><b>{idx}</b></td>
+                    <td>{row['Date']}</td>
+                    <td>{row['Receipt No']}</td>
+                    <td style="color:#047857; font-weight:bold;">₹{amt:.2f}</td>
+                    <td style="color:#DC2626; font-weight:bold;">₹{running_due:.2f}</td>
+                    <td>{row['Payment Mode']}</td>
+                    <td>{row['Collected_By']}</td>
+                </tr>
+                """
             if not rows_html:
                 rows_html = "<tr><td colspan='7' style='color:#64748B;'>No installment payments deposited yet.</td></tr>"
                 
             st.markdown(f"""
-<div class="passbook-card">
-<div class="passbook-header">
-<h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
-<p style="margin:2px 0 0 0; font-size:11.5px; color:#64748B;">Accredited Center Code: 4159 | An ISO 9001:2015 Certified Academy</p>
-<h4 style="margin:6px 0 0 0; color:#0284C7; text-transform:uppercase;">OFFICIAL STUDENT FEE INSTALLMENT PASSBOOK CARD</h4>
-</div>
-<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; background:#F8FAFC; padding:10px; border-radius:6px; border:1px solid #E2E8F0;">
-<div>
-<b>Candidate Name:</b> {s['Name']}<br>
-<b>Roll ID:</b> {s['Student ID']}<br>
-<b>Course:</b> {s['Course']}
-</div>
-<div style="text-align:right;">
-<b>Total Course Fee:</b> ₹{net_f:.2f}<br>
-<b>Total Deposited:</b> <span style="color:#047857; font-weight:bold;">₹{tot_paid:.2f}</span><br>
-<b>Net Due Balance:</b> <span style="color:#DC2626; font-weight:bold;">₹{due_f:.2f}</span>
-</div>
-</div>
-<table class="passbook-table">
-<thead>
-<tr>
-<th>Inst #</th>
-<th>Date</th>
-<th>Receipt No</th>
-<th>Amount Paid</th>
-<th>Balance Due</th>
-<th>Pay Mode</th>
-<th>Authorized Sign</th>
-</tr>
-</thead>
-<tbody>
-{rows_html}
-</tbody>
-</table>
-<div style="display:flex; justify-content:space-between; margin-top:25px; font-size:11px; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:8px;">
-<span>Student / Guardian Copy</span>
-<span style="font-weight:bold; color:#0F172A;">Authorized Cashier / Director Signature</span>
-</div>
-</div>
-""", unsafe_allow_html=True)
+            <div class="passbook-card">
+                <div class="passbook-header">
+                    <h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
+                    <p style="margin:2px 0 0 0; font-size:11.5px; color:#64748B;">Accredited Center Code: 4159 | An ISO 9001:2015 Certified Academy</p>
+                    <h4 style="margin:6px 0 0 0; color:#0284C7; text-transform:uppercase;">OFFICIAL STUDENT FEE INSTALLMENT PASSBOOK CARD</h4>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; background:#F8FAFC; padding:10px; border-radius:6px; border:1px solid #E2E8F0;">
+                    <div>
+                        <b>Candidate Name:</b> {s['Name']}<br>
+                        <b>Roll ID:</b> {s['Student ID']}<br>
+                        <b>Course:</b> {s['Course']}
+                    </div>
+                    <div style="text-align:right;">
+                        <b>Total Course Fee:</b> ₹{net_f:.2f}<br>
+                        <b>Total Deposited:</b> <span style="color:#047857; font-weight:bold;">₹{tot_paid:.2f}</span><br>
+                        <b>Net Due Balance:</b> <span style="color:#DC2626; font-weight:bold;">₹{due_f:.2f}</span>
+                    </div>
+                </div>
+                <table class="passbook-table">
+                    <thead>
+                        <tr>
+                            <th>Inst #</th>
+                            <th>Date</th>
+                            <th>Receipt No</th>
+                            <th>Amount Paid</th>
+                            <th>Balance Due</th>
+                            <th>Pay Mode</th>
+                            <th>Authorized Sign</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows_html}
+                    </tbody>
+                </table>
+                <div style="display:flex; justify-content:space-between; margin-top:25px; font-size:11px; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:8px;">
+                    <span>Student / Guardian Copy</span>
+                    <span style="font-weight:bold; color:#0F172A;">Authorized Cashier / Director Signature</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
         with s_tab3:
             st.subheader("🎫 Official Examination Admit Card")
             st.markdown(f"""
-<div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:10px; padding:20px; max-width:700px; margin:auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-<div style="text-align:center; border-bottom:2px solid #0284C7; padding-bottom:10px;">
-<h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
-<p style="margin:2px 0 0 0; font-size:12px; color:#64748B;">Accredited Center Code: 4159 | Affiliated with Sarva India (HP Head Office)</p>
-<h4 style="margin:8px 0 0 0; color:#0284C7; text-transform:uppercase;">Official Examination Admit Card</h4>
-</div>
-<div style="display:flex; justify-content:space-between; margin-top:15px; font-size:14px; line-height:1.8;">
-<div>
-<b>Candidate Name:</b> {s['Name']}<br>
-<b>Roll ID:</b> {s['Student ID']}<br>
-<b>HP Reg No:</b> {ho_reg}<br>
-<b>Course:</b> {s['Course']}<br>
-<b>Batch Time:</b> {s['Shift']}
-</div>
-<div style="text-align:right;">
-<b>Exam Center:</b> STC Lab (Code: 4159)<br>
-<b>Center Location:</b> Thelamara, Sonitpur<br>
-<b>Academic Year:</b> {s['Session']}<br>
-<b>Validity:</b> {s['Validity Date']}
-</div>
-</div>
-<div style="margin-top:20px; border-top:1px dashed #CBD5E1; padding-top:10px; font-size:11px; color:#64748B; display:flex; justify-content:space-between;">
-<span>Candidate Signature</span>
-<span>Authorized Center Seal & Signature</span>
-</div>
-</div>
-""", unsafe_allow_html=True)
+            <div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:10px; padding:20px; max-width:700px; margin:auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05); color:#0F172A;">
+                <div style="text-align:center; border-bottom:2px solid #0284C7; padding-bottom:10px;">
+                    <h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
+                    <p style="margin:2px 0 0 0; font-size:12px; color:#64748B;">Accredited Center Code: 4159 | Affiliated with Sarva India (HP Head Office)</p>
+                    <h4 style="margin:8px 0 0 0; color:#0284C7; text-transform:uppercase;">Official Examination Admit Card</h4>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-top:15px; font-size:14px; line-height:1.8;">
+                    <div>
+                        <b>Candidate Name:</b> {s['Name']}<br>
+                        <b>Roll ID:</b> {s['Student ID']}<br>
+                        <b>HP Reg No:</b> {ho_reg}<br>
+                        <b>Course:</b> {s['Course']}<br>
+                        <b>Batch Time:</b> {s['Shift']}
+                    </div>
+                    <div style="text-align:right;">
+                        <b>Exam Center:</b> STC Lab (Code: 4159)<br>
+                        <b>Center Location:</b> Thelamara, Sonitpur<br>
+                        <b>Academic Year:</b> {s['Session']}<br>
+                        <b>Validity:</b> {s['Validity Date']}
+                    </div>
+                </div>
+                <div style="margin-top:20px; border-top:1px dashed #CBD5E1; padding-top:10px; font-size:11px; color:#64748B; display:flex; justify-content:space-between;">
+                    <span>Candidate Signature</span>
+                    <span>Authorized Center Seal & Signature</span>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
             
         with s_tab4:
             st.subheader("📸 Classroom Attendance Log")
@@ -1175,16 +1076,16 @@ elif menu == "🎯 Sunday Free Practice Class (SFPC)":
                     
                     if is_eligible:
                         st.markdown("""
-<div class="green-badge" style="font-size:16px;">
-🎉 <b>APPROVED: Candidate is 100% ELIGIBLE for Sunday Free Practice Class (SFPC)!</b>
-</div>
-""", unsafe_allow_html=True)
+                        <div class="green-badge" style="font-size:16px;">
+                            🎉 <b>APPROVED: Candidate is 100% ELIGIBLE for Sunday Free Practice Class (SFPC)!</b>
+                        </div>
+                        """, unsafe_allow_html=True)
                     else:
                         st.markdown("""
-<div class="pink-badge" style="font-size:16px;">
-❌ <b>NOT ELIGIBLE:</b> Student does not satisfy all 3 mandatory SFPC criteria. Please clear pending dues/attendance.
-</div>
-""", unsafe_allow_html=True)
+                        <div class="pink-badge" style="font-size:16px;">
+                            ❌ <b>NOT ELIGIBLE:</b> Student does not satisfy all 3 mandatory SFPC criteria. Please clear pending dues/attendance.
+                        </div>
+                        """, unsafe_allow_html=True)
                 else:
                     st.error("❌ Authentication Failed: Invalid Roll ID or Password!")
                 
@@ -1230,10 +1131,10 @@ elif menu == "💵 Fee Counter Desk":
             due = max(0.0, net - total_paid)
             
             st.markdown(f"""
-<div style="background:#FFFFFF; border-left:4px solid #0284C7; padding:12px 16px; border-radius:6px; margin:10px 0; border:1px solid #E2E8F0;">
-<b>Student:</b> {s_rec['Name']} | <b>Course Fee:</b> ₹{net:.2f} | <b>Paid:</b> ₹{total_paid:.2f} | <b>Due Balance:</b> <span style="color:#EF4444; font-weight:bold;">₹{due:.2f}</span>
-</div>
-""", unsafe_allow_html=True)
+            <div style="background:#0F172A; border-left:4px solid #38BDF8; padding:14px 18px; border-radius:8px; margin:14px 0; border:1px solid #1E293B;">
+                <b>Student:</b> {s_rec['Name']} | <b>Course Fee:</b> ₹{net:.2f} | <b>Paid:</b> ₹{total_paid:.2f} | <b>Due Balance:</b> <span style="color:#EF4444; font-weight:bold;">₹{due:.2f}</span>
+            </div>
+            """, unsafe_allow_html=True)
             
             with st.form("fee_collect_form", clear_on_submit=True):
                 pay_amt = st.number_input("Amount Paid (₹)", min_value=100.0, step=100.0)
@@ -1247,10 +1148,10 @@ elif menu == "💵 Fee Counter Desk":
                     fee_df = pd.concat([fee_df, pd.DataFrame([f_row])], ignore_index=True)
                     save_data(fee_df, FEE_LOG_FILE, "fees_db")
                     st.markdown(f"""
-<div class="green-badge">
-🧾 <b>Money Receipt Issued!</b> Receipt No: <b>{rc_num}</b> | Amount: <b>₹{pay_amt}</b>
-</div>
-""", unsafe_allow_html=True)
+                    <div class="green-badge">
+                        🧾 <b>Money Receipt Issued!</b> Receipt No: <b>{rc_num}</b> | Amount: <b>₹{pay_amt}</b>
+                    </div>
+                    """, unsafe_allow_html=True)
                     st.rerun()
 
 # -------------------------------------------------------------
@@ -1274,12 +1175,6 @@ elif menu == "🔑 Teacher Portal & Attendance":
             st.subheader("⏰ Teacher Shift Attendance (Late Penalty & Daily Earning)")
             now_ist = datetime.datetime.now(IST)
             st.info(f"🕒 **Current IST Real-Time:** `{now_ist.strftime('%I:%M:%S %p (%d-%B-%Y)')}`")
-            
-            st.markdown("""
-<div style="background:#F1F5F9; border:1px solid #CBD5E1; padding:10px 14px; border-radius:6px; font-size:13px; margin-bottom:12px;">
-💡 <b>Salary Rule:</b> 3 Batches (90+90+90 = 270 Mins) = <b>₹230 / Day</b> (₹76.67 per 90-min batch | ₹0.852/Min). Late arrival automatically calculates penalty deduction.
-</div>
-""", unsafe_allow_html=True)
             
             t_name_sel = st.selectbox("Select Teacher Name:", teacher_df["Name"].tolist() if not teacher_df.empty else ["Director Chiranjeeb Hazarika"])
             t_shift_sel = st.selectbox("Assigned Shift:", [
@@ -1307,34 +1202,15 @@ elif menu == "🔑 Teacher Portal & Attendance":
                     late_val = f"{late_by} Mins" if is_late else "0"
                     
                     new_t_att = {
-                        "Date": today_str,
-                        "Teacher ID": t_name_sel,
-                        "Name": t_name_sel,
-                        "Shift": t_shift_sel,
-                        "Time_In": time_in_str,
-                        "Time_Out": "--",
-                        "Status": stat_val,
-                        "Late_Mins": late_val,
+                        "Date": today_str, "Teacher ID": t_name_sel, "Name": t_name_sel,
+                        "Shift": t_shift_sel, "Time_In": time_in_str, "Time_Out": "--",
+                        "Status": stat_val, "Late_Mins": late_val,
                         "Penalty_Deduction": f"₹{penalty_amt:.2f}",
-                        "Net_Earning_Today": f"₹{net_batch_earning:.2f}",
-                        "Remarks": "Punched In"
+                        "Net_Earning_Today": f"₹{net_batch_earning:.2f}", "Remarks": "Punched In"
                     }
                     teacher_att_df = pd.concat([teacher_att_df, pd.DataFrame([new_t_att])], ignore_index=True)
                     save_data(teacher_att_df, TEACHER_ATT_FILE, "teacher_attendance")
-                    
-                    if is_late:
-                        st.markdown(f"""
-<div class="pink-badge">
-🚨 <b>RED ALERT (LATE PUNCH):</b> Punched In at <b>{time_in_str}</b> (Late by <b>{late_by} mins</b>)!<br>
-<b>Penalty Deducted:</b> ₹{penalty_amt:.2f} | <b>Net Shift Earning:</b> ₹{net_batch_earning:.2f} / ₹{base_batch_pay:.2f}
-</div>
-""", unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"""
-<div class="green-badge">
-✅ <b>Punched IN On-Time at {time_in_str}!</b> Net Shift Earning: <b>₹{base_batch_pay:.2f}</b>
-</div>
-""", unsafe_allow_html=True)
+                    st.markdown(f'<div class="green-badge">✅ Teacher {t_name_sel} punched in at {time_in_str}!</div>', unsafe_allow_html=True)
                     st.rerun()
                     
             with col_p2:
@@ -1352,7 +1228,6 @@ elif menu == "🔑 Teacher Portal & Attendance":
                     st.rerun()
                     
             if not teacher_att_df.empty:
-                st.write("**Recent Teacher Punch & Earning Records:**")
                 st.dataframe(teacher_att_df.tail(10), use_container_width=True)
 
         with t_tab2:
@@ -1371,7 +1246,7 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         }
                         att_df = pd.concat([att_df, pd.DataFrame([att_row])], ignore_index=True)
                         save_data(att_df, ATTENDANCE_FILE, "attendance_db")
-                        st.markdown(f'<div class="green-badge">✅ Attendance marked {att_status} for {att_sid} at {now_time_ist}!</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="green-badge">✅ Attendance marked {att_status} for {att_sid}!</div>', unsafe_allow_html=True)
                         st.rerun()
             if not att_df.empty:
                 st.dataframe(att_df.tail(15), use_container_width=True)
@@ -1397,32 +1272,18 @@ elif menu == "🔑 Teacher Portal & Attendance":
                         sname_val = exam_sid.split(" - ")[1]
                         m_row = {
                             "Date": str(datetime.date.today()),
-                            "Student ID": sid_val,
-                            "Student Name": sname_val,
-                            "Course/Subject": exam_course,
-                            "Test Topic": exam_topic,
-                            "Marks Obtained": str(marks_obt),
-                            "Total Marks": str(total_mks),
+                            "Student ID": sid_val, "Student Name": sname_val,
+                            "Course/Subject": exam_course, "Test Topic": exam_topic,
+                            "Marks Obtained": str(marks_obt), "Total Marks": str(total_mks),
                             "Teacher Incharge": exam_teacher
                         }
                         marks_df = pd.concat([marks_df, pd.DataFrame([m_row])], ignore_index=True)
                         save_data(marks_df, MARKS_FILE, "marks_db")
-                        st.markdown(f"""
-<div class="green-badge">
-🎉 <b>Exam Result Saved Successfully!</b><br>
-Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <b>{marks_obt} / {total_mks}</b>
-</div>
-""", unsafe_allow_html=True)
+                        st.markdown('<div class="green-badge">✅ Marks Recorded Successfully!</div>', unsafe_allow_html=True)
                         st.rerun()
-                    else:
-                        st.error("Please enter Exam/Test Topic details!")
-                        
-            if not marks_df.empty:
-                st.write("**Recent Exam / Test Records:**")
-                st.dataframe(marks_df.tail(15), use_container_width=True)
 
         with t_tab4:
-            st.subheader("Record Daily Syllabus Coverage (Multi-Select Allowed)")
+            st.subheader("Record Daily Syllabus Coverage")
             with st.form("syl_multi_form", clear_on_submit=True):
                 syl_course = st.selectbox("Course:", courses_df["Course Name"].tolist() if not courses_df.empty else [])
                 syl_topics = st.multiselect("Topics Covered in Today's Class:*", ALL_SYLLABUS_TOPICS, default=[ALL_SYLLABUS_TOPICS[0]])
@@ -1435,12 +1296,8 @@ Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <
                         s_row = {"Date": str(datetime.date.today()), "Course": syl_course, "Topics Covered": topics_str, "Class Type": syl_type, "Teacher Incharge": syl_teacher}
                         syllabus_df = pd.concat([syllabus_df, pd.DataFrame([s_row])], ignore_index=True)
                         save_data(syllabus_df, SYLLABUS_LOG_FILE, "syllabus_logs")
-                        st.markdown(f'<div class="green-badge">✅ Syllabus entry saved: <b>{topics_str}</b></div>', unsafe_allow_html=True)
+                        st.markdown('<div class="green-badge">✅ Syllabus entry saved!</div>', unsafe_allow_html=True)
                         st.rerun()
-                    else:
-                        st.error("Please select at least one topic!")
-            if not syllabus_df.empty:
-                st.dataframe(syllabus_df.tail(10), use_container_width=True)
 
         with t_tab5:
             st.subheader("Daily Computer Machine Allocation")
@@ -1453,7 +1310,7 @@ Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <
                         pc_row = {"Date": str(datetime.date.today()), "Student ID": pc_sid.split(" - ")[0], "Student Name": pc_sid.split(" - ")[1], "PC Machine No": m_no, "Shift": pc_shift, "Teacher Incharge": "Faculty"}
                         pc_alloc_df = pd.concat([pc_alloc_df, pd.DataFrame([pc_row])], ignore_index=True)
                         save_data(pc_alloc_df, PC_ALLOC_FILE, "pc_alloc_db")
-                        st.markdown(f'<div class="green-badge">✅ Machine {m_no} allocated to {pc_sid}!</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="green-badge">✅ Machine {m_no} allocated!</div>', unsafe_allow_html=True)
                         st.rerun()
 
         with t_tab6:
@@ -1470,7 +1327,7 @@ Candidate: <b>{sname_val} ({sid_val})</b> | Test: <b>{exam_topic}</b> | Score: <
                         st.rerun()
 
 # -------------------------------------------------------------
-# 8. ADMIN CONTROL PANEL
+# 8. ADMIN CONTROL PANEL (WITH COMPLETE CASCADE DELETE)
 # -------------------------------------------------------------
 elif menu == "🔐 Admin Control Panel":
     st.header("🔐 Director Admin Control Panel")
@@ -1490,7 +1347,7 @@ elif menu == "🔐 Admin Control Panel":
             "🔑 Change Passwords"
         ])
         
-        # 1. ID CARD & PASSBOOK PRINTER DESK
+        # 1. ID CARD & PASSBOOK PRINTER
         with adm_tab1:
             st.subheader("🪪 Official ID Card & Fee Installment Passbook Print Desk")
             if not student_df.empty:
@@ -1498,7 +1355,6 @@ elif menu == "🔐 Admin Control Panel":
                 if sel_p_sid:
                     p_sid = sel_p_sid.split(" - ")[0]
                     p_stu = student_df[student_df["Student ID"] == p_sid].iloc[0]
-                    
                     doc_type = st.radio("Select Document to Print / Preview:", ["🪪 Digital Student ID Card", "💳 Fee Installment Passbook Card"], horizontal=True)
                     
                     if doc_type == "🪪 Digital Student ID Card":
@@ -1507,42 +1363,41 @@ elif menu == "🔐 Admin Control Panel":
                         barcode_url_adm = f"https://quickchart.io/barcode?type=code128&text={p_stu['Student ID']}&width=180&height=36"
                         
                         st.markdown(f"""
-<div class="id-card-container">
-<div class="id-card-header">
-<div style="font-size:14px; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">SOFT TECH COMPUTERS & ZTC</div>
-<div style="font-size:10px; color:#E2E8F0;">ISO 9001:2015 Certified | Center Code: 4159</div>
-<div style="font-size:9.5px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur - 784149</div>
-</div>
-<div class="id-card-body">
-<img src="{photo_src_adm}" class="id-photo"><br>
-<div class="id-name">{p_stu['Name']}</div>
-<div class="id-roll-badge">ROLL ID: {p_stu['Student ID']}</div>
-<table class="id-details-table">
-<tr><td><b>Course:</b></td><td>{p_stu['Course']}</td></tr>
-<tr><td><b>Father:</b></td><td>{p_stu['Father Name']}</td></tr>
-<tr><td><b>Mobile:</b></td><td>{p_stu['Mobile No']}</td></tr>
-<tr><td><b>Shift/Batch:</b></td><td>{p_stu['Shift']}</td></tr>
-<tr><td><b>Validity:</b></td><td>{p_stu['Validity Date']}</td></tr>
-</table>
-<div style="display:flex; justify-content:space-around; align-items:center; margin-top:6px;">
-<div>
-<img src="{qr_url_adm}" style="width:75px; height:75px; border:1px solid #CBD5E1; padding:2px; border-radius:4px;"><br>
-<span style="font-size:9px; color:#64748B;">Attendance QR</span>
-</div>
-<div style="text-align:right;">
-<img src="{barcode_url_adm}" style="width:140px; height:30px;"><br>
-<div style="border-top:1px solid #0F172A; width:100px; margin-top:8px; margin-left:auto;"></div>
-<span style="font-size:9.5px; color:#0F172A; font-weight:bold;">Director Sign</span>
-</div>
-</div>
-</div>
-<div class="id-card-footer">
-<span style="font-size:9px; color:#64748B;">Affiliated with Sarva India (HP)</span>
-<span style="font-size:9px; font-weight:bold; color:#10B981;">● AUTHORIZED ID</span>
-</div>
-</div>
-""", unsafe_allow_html=True)
-                        
+                        <div class="id-card-container">
+                            <div class="id-card-header">
+                                <div style="font-size:14px; font-weight:800; color:#38BDF8; letter-spacing:0.5px;">SOFT TECH COMPUTERS & ZTC</div>
+                                <div style="font-size:10px; color:#E2E8F0;">ISO 9001:2015 Certified | Center Code: 4159</div>
+                                <div style="font-size:9.5px; color:#94A3B8;">Kamarchuburi, Thelamara, Sonitpur - 784149</div>
+                            </div>
+                            <div class="id-card-body">
+                                <img src="{photo_src_adm}" class="id-photo"><br>
+                                <div class="id-name">{p_stu['Name']}</div>
+                                <div class="id-roll-badge">ROLL ID: {p_stu['Student ID']}</div>
+                                <table class="id-details-table">
+                                    <tr><td><b>Course:</b></td><td>{p_stu['Course']}</td></tr>
+                                    <tr><td><b>Father:</b></td><td>{p_stu['Father Name']}</td></tr>
+                                    <tr><td><b>Mobile:</b></td><td>{p_stu['Mobile No']}</td></tr>
+                                    <tr><td><b>Shift/Batch:</b></td><td>{p_stu['Shift']}</td></tr>
+                                    <tr><td><b>Validity:</b></td><td>{p_stu['Validity Date']}</td></tr>
+                                </table>
+                                <div style="display:flex; justify-content:space-around; align-items:center; margin-top:6px;">
+                                    <div>
+                                        <img src="{qr_url_adm}" style="width:75px; height:75px; border:1px solid #CBD5E1; padding:2px; border-radius:4px;"><br>
+                                        <span style="font-size:9px; color:#64748B;">Attendance QR</span>
+                                    </div>
+                                    <div style="text-align:right;">
+                                        <img src="{barcode_url_adm}" style="width:140px; height:30px;"><br>
+                                        <div style="border-top:1px solid #0F172A; width:100px; margin-top:8px; margin-left:auto;"></div>
+                                        <span style="font-size:9.5px; color:#0F172A; font-weight:bold;">Director Sign</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="id-card-footer">
+                                <span style="font-size:9px; color:#64748B;">Affiliated with Sarva India (HP)</span>
+                                <span style="font-size:9px; font-weight:bold; color:#10B981;">● AUTHORIZED ID</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
                     else:
                         stu_p_logs = fee_df[fee_df["Student ID"] == p_sid]
                         adm_tot_paid = sum([float(amt) for amt in stu_p_logs["Amount Paid"] if amt])
@@ -1556,60 +1411,60 @@ elif menu == "🔐 Admin Control Panel":
                             curr_run_paid += amt
                             run_due = max(0.0, adm_net_f - curr_run_paid)
                             rows_html_adm += f"""
-<tr>
-<td><b>{idx}</b></td>
-<td>{row['Date']}</td>
-<td>{row['Receipt No']}</td>
-<td style="color:#047857; font-weight:bold;">₹{amt:.2f}</td>
-<td style="color:#DC2626; font-weight:bold;">₹{run_due:.2f}</td>
-<td>{row['Payment Mode']}</td>
-<td>{row['Collected_By']}</td>
-</tr>
-"""
+                            <tr>
+                                <td><b>{idx}</b></td>
+                                <td>{row['Date']}</td>
+                                <td>{row['Receipt No']}</td>
+                                <td style="color:#047857; font-weight:bold;">₹{amt:.2f}</td>
+                                <td style="color:#DC2626; font-weight:bold;">₹{run_due:.2f}</td>
+                                <td>{row['Payment Mode']}</td>
+                                <td>{row['Collected_By']}</td>
+                            </tr>
+                            """
                         if not rows_html_adm:
                             rows_html_adm = "<tr><td colspan='7' style='color:#64748B;'>No installment payments deposited yet.</td></tr>"
                             
                         st.markdown(f"""
-<div class="passbook-card">
-<div class="passbook-header">
-<h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
-<p style="margin:2px 0 0 0; font-size:11.5px; color:#64748B;">Accredited Center Code: 4159 | An ISO 9001:2015 Certified Academy</p>
-<h4 style="margin:6px 0 0 0; color:#0284C7; text-transform:uppercase;">OFFICIAL STUDENT FEE INSTALLMENT PASSBOOK CARD</h4>
-</div>
-<div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; background:#F8FAFC; padding:10px; border-radius:6px; border:1px solid #E2E8F0;">
-<div>
-<b>Candidate Name:</b> {p_stu['Name']}<br>
-<b>Roll ID:</b> {p_stu['Student ID']}<br>
-<b>Course:</b> {p_stu['Course']}
-</div>
-<div style="text-align:right;">
-<b>Total Course Fee:</b> ₹{adm_net_f:.2f}<br>
-<b>Total Deposited:</b> <span style="color:#047857; font-weight:bold;">₹{adm_tot_paid:.2f}</span><br>
-<b>Net Due Balance:</b> <span style="color:#DC2626; font-weight:bold;">₹{adm_due_f:.2f}</span>
-</div>
-</div>
-<table class="passbook-table">
-<thead>
-<tr>
-<th>Inst #</th>
-<th>Date</th>
-<th>Receipt No</th>
-<th>Amount Paid</th>
-<th>Balance Due</th>
-<th>Pay Mode</th>
-<th>Authorized Sign</th>
-</tr>
-</thead>
-<tbody>
-{rows_html_adm}
-</tbody>
-</table>
-<div style="display:flex; justify-content:space-between; margin-top:25px; font-size:11px; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:8px;">
-<span>Student / Guardian Copy</span>
-<span style="font-weight:bold; color:#0F172A;">Authorized Cashier / Director Signature</span>
-</div>
-</div>
-""", unsafe_allow_html=True)
+                        <div class="passbook-card">
+                            <div class="passbook-header">
+                                <h3 style="margin:0; color:#0F172A;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
+                                <p style="margin:2px 0 0 0; font-size:11.5px; color:#64748B;">Accredited Center Code: 4159 | An ISO 9001:2015 Certified Academy</p>
+                                <h4 style="margin:6px 0 0 0; color:#0284C7; text-transform:uppercase;">OFFICIAL STUDENT FEE INSTALLMENT PASSBOOK CARD</h4>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:10px; background:#F8FAFC; padding:10px; border-radius:6px; border:1px solid #E2E8F0;">
+                                <div>
+                                    <b>Candidate Name:</b> {p_stu['Name']}<br>
+                                    <b>Roll ID:</b> {p_stu['Student ID']}<br>
+                                    <b>Course:</b> {p_stu['Course']}
+                                </div>
+                                <div style="text-align:right;">
+                                    <b>Total Course Fee:</b> ₹{adm_net_f:.2f}<br>
+                                    <b>Total Deposited:</b> <span style="color:#047857; font-weight:bold;">₹{adm_tot_paid:.2f}</span><br>
+                                    <b>Net Due Balance:</b> <span style="color:#DC2626; font-weight:bold;">₹{adm_due_f:.2f}</span>
+                                </div>
+                            </div>
+                            <table class="passbook-table">
+                                <thead>
+                                    <tr>
+                                        <th>Inst #</th>
+                                        <th>Date</th>
+                                        <th>Receipt No</th>
+                                        <th>Amount Paid</th>
+                                        <th>Balance Due</th>
+                                        <th>Pay Mode</th>
+                                        <th>Authorized Sign</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {rows_html_adm}
+                                </tbody>
+                            </table>
+                            <div style="display:flex; justify-content:space-between; margin-top:25px; font-size:11px; color:#64748B; border-top:1px dashed #CBD5E1; padding-top:8px;">
+                                <span>Student / Guardian Copy</span>
+                                <span style="font-weight:bold; color:#0F172A;">Authorized Cashier / Director Signature</span>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
             else:
                 st.info("No student records available to print.")
 
@@ -1631,7 +1486,6 @@ elif menu == "🔐 Admin Control Panel":
                     )
                     
             st.write("---")
-            st.markdown("#### ✏️ Update Candidate HP HO Registration & Status")
             if not student_df.empty:
                 sel_ho_sid = st.selectbox("Select Candidate to Update HO Record:", student_df["Student ID"] + " - " + student_df["Name"], key="sel_ho_s")
                 if sel_ho_sid:
@@ -1655,15 +1509,13 @@ elif menu == "🔐 Admin Control Panel":
                                 student_df.loc[idx_s[0], "Stage_Cert_Status"] = new_cert_stat
                                 student_df.loc[idx_s[0], "Cert_Serial_No"] = new_cert_no
                                 save_data(student_df, STUDENT_MASTER_FILE, "students_db")
-                                st.markdown(f'<div class="green-badge">✅ HO Record for {ho_sid_val} Updated Successfully!</div>', unsafe_allow_html=True)
+                                st.markdown('<div class="green-badge">✅ HO Record Updated!</div>', unsafe_allow_html=True)
                                 st.rerun()
 
         # 3. WHATSAPP NOTICE & DISPATCH REGISTER
         with adm_tab3:
             st.subheader("📢 Certificate Arrival Announcement & Handover Record Book")
-            st.markdown("#### 💬 1-Click WhatsApp Group Notice Generator")
             arrived_students = student_df[student_df["Stage_Cert_Status"].str.contains("Arrived", na=False)]
-            
             if not arrived_students.empty:
                 st.write(f"Found **{len(arrived_students)} Candidates** whose certificates have arrived at the center:")
                 st.dataframe(arrived_students[["Student ID", "Name", "Course", "Cert_Serial_No", "Stage_Cert_Status"]], use_container_width=True)
@@ -1680,27 +1532,24 @@ Dear Students, your official Sarva India Certificates & Marksheets have safely a
 📍 *Please visit our center to sign the official dispatch register and collect your original certificates.*
 Time: 09:00 AM - 05:00 PM
 Director Contact: 9101026718"""
-                
                 wa_encoded = urllib.parse.quote(raw_wa_msg)
                 wa_broadcast_link = f"https://wa.me/?text={wa_encoded}"
-                
                 st.markdown(f"""
-<a href="{wa_broadcast_link}" target="_blank" style="text-decoration:none;">
-<div style="background-color:#25D366; color:white; padding:12px 20px; border-radius:8px; font-weight:bold; text-align:center; display:inline-block; margin:10px 0;">
-📲 Share Certificate Arrival List to WhatsApp Group Now
-</div>
-</a>
-""", unsafe_allow_html=True)
+                <a href="{wa_broadcast_link}" target="_blank" style="text-decoration:none;">
+                    <div style="background-color:#25D366; color:white; padding:12px 20px; border-radius:8px; font-weight:bold; text-align:center; display:inline-block; margin:10px 0;">
+                        📲 Share Certificate Arrival List to WhatsApp Group Now
+                    </div>
+                </a>
+                """, unsafe_allow_html=True)
             else:
-                st.info("No candidates marked as 'Arrived at Center' yet. Update certificate arrival in HP HO tab.")
+                st.info("No candidates marked as 'Arrived at Center' yet.")
                 
             st.write("---")
-            st.markdown("#### 📜 Digital Certificate Handover Log (Student Record Book)")
             with st.form("dispatch_handover_form", clear_on_submit=True):
                 disp_sid = st.selectbox("Select Student Collecting Certificate:", student_df["Student ID"] + " - " + student_df["Name"]) if not student_df.empty else None
                 c_serial = st.text_input("Certificate Serial No*")
                 m_stat = st.selectbox("Marksheet Attached:", ["Certificate + Marksheet", "Certificate Only", "Marksheet Only"])
-                rec_by = st.text_input("Collected By (Self / Father / Guardian)*", value="Self")
+                rec_by = st.text_input("Collected By*", value="Self")
                 rec_contact = st.text_input("Receiver Contact Phone No*")
                 
                 if st.form_submit_button("🟢 Confirm Handover & Save to Dispatch Book"):
@@ -1710,15 +1559,9 @@ Director Contact: 9101026718"""
                         d_course = student_df[student_df["Student ID"] == d_sid]["Course"].values[0] if not student_df.empty else "N/A"
                         
                         disp_row = {
-                            "Date": str(datetime.date.today()),
-                            "Student ID": d_sid,
-                            "Student Name": d_name,
-                            "Course": d_course,
-                            "Certificate No": c_serial,
-                            "Marksheet Status": m_stat,
-                            "Received By": rec_by,
-                            "Contact No": rec_contact,
-                            "Handover Confirmed": "YES (Signed)"
+                            "Date": str(datetime.date.today()), "Student ID": d_sid, "Student Name": d_name,
+                            "Course": d_course, "Certificate No": c_serial, "Marksheet Status": m_stat,
+                            "Received By": rec_by, "Contact No": rec_contact, "Handover Confirmed": "YES (Signed)"
                         }
                         dispatch_df = pd.concat([dispatch_df, pd.DataFrame([disp_row])], ignore_index=True)
                         save_data(dispatch_df, DISPATCH_FILE, "dispatch_db")
@@ -1730,16 +1573,10 @@ Director Contact: 9101026718"""
                             student_df.loc[idx_m[0], "Handover_Status"] = "Delivered"
                             save_data(student_df, STUDENT_MASTER_FILE, "students_db")
                             
-                        st.markdown(f'<div class="green-badge">✅ Certificate Handover Recorded in Digital Register for {d_name}!</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="green-badge">✅ Certificate Handover Recorded for {d_name}!</div>', unsafe_allow_html=True)
                         st.rerun()
-                    else:
-                        st.error("Please enter Certificate Serial No!")
-                        
-            if not dispatch_df.empty:
-                st.write("**Official Certificate Dispatch & Handover Register:**")
-                st.dataframe(dispatch_df, use_container_width=True)
 
-        # 4. STUDENT EDIT & COMPLETE CASCADE DELETE
+        # 4. STUDENT EDIT & CASCADE DELETE
         with adm_tab4:
             st.subheader("📋 Student Master Management (Edit / Complete Cascade Delete)")
             if not student_df.empty:
@@ -1751,7 +1588,6 @@ Director Contact: 9101026718"""
                     s_curr = student_df[student_df["Student ID"] == e_sid].iloc[0]
                     
                     with st.form("edit_student_form"):
-                        st.write(f"Editing Record for: **{s_curr['Name']}** ({e_sid})")
                         col_e1, col_e2 = st.columns(2)
                         with col_e1:
                             new_name = st.text_input("Student Name", value=s_curr["Name"])
@@ -1768,7 +1604,7 @@ Director Contact: 9101026718"""
                             student_df.loc[student_df["Student ID"] == e_sid, "Course"] = new_course
                             student_df.loc[student_df["Student ID"] == e_sid, "Status"] = new_status
                             save_data(student_df, STUDENT_MASTER_FILE, "students_db")
-                            st.markdown('<div class="green-badge">✅ Student Record Updated Successfully!</div>', unsafe_allow_html=True)
+                            st.markdown('<div class="green-badge">✅ Student Record Updated!</div>', unsafe_allow_html=True)
                             st.rerun()
                             
                     if st.button("🔴 Delete Student & All Fee/Att Records (Complete Cleanup)", key="del_s_btn"):
@@ -1797,7 +1633,7 @@ Director Contact: 9101026718"""
             if not teacher_df.empty:
                 st.dataframe(teacher_df, use_container_width=True)
             else:
-                st.info("No faculty records found. You can add new teachers below.")
+                st.info("No faculty records found.")
                 
             st.write("---")
             col_t1, col_t2 = st.columns(2)
@@ -1816,7 +1652,7 @@ Director Contact: 9101026718"""
                             new_t_row = {"Teacher ID": t_nid, "Name": t_nname, "Phone": t_nphone, "Qualification": t_nqual, "Designation": t_ndesig, "Shift Assigned": t_nshift}
                             teacher_df = pd.concat([teacher_df, pd.DataFrame([new_t_row])], ignore_index=True)
                             save_data(teacher_df, TEACHERS_FILE, "teachers_db")
-                            st.markdown(f'<div class="green-badge">✅ Faculty {t_nname} Added Successfully!</div>', unsafe_allow_html=True)
+                            st.markdown(f'<div class="green-badge">✅ Faculty {t_nname} Added!</div>', unsafe_allow_html=True)
                             st.rerun()
                             
             with col_t2:
@@ -1826,13 +1662,12 @@ Director Contact: 9101026718"""
                     if st.button("🔴 Permanently Delete Selected Teacher", key="del_t_btn"):
                         teacher_df = teacher_df[teacher_df["Name"] != del_t_name]
                         save_data(teacher_df, TEACHERS_FILE, "teachers_db")
-                        st.markdown(f'<div class="pink-badge">🗑️ Teacher {del_t_name} Deleted Permanently!</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="pink-badge">🗑️ Teacher {del_t_name} Deleted!</div>', unsafe_allow_html=True)
                         st.rerun()
 
         # 6. DUES & BALANCE LEDGER
         with adm_tab6:
             st.subheader("💰 Live Student Fee & Dues Balance Ledger")
-            
             if not student_df.empty:
                 ledger_data = []
                 total_pending_all = 0.0
@@ -1849,28 +1684,19 @@ Director Contact: 9101026718"""
                     total_pending_all += due_b
                     
                     ledger_data.append({
-                        "Roll ID": sid,
-                        "Student Name": s["Name"],
-                        "Mobile": s["Mobile No"],
-                        "Course": s["Course"],
-                        "Net Fee (₹)": f"{net_f:.2f}",
-                        "Total Paid (₹)": f"{tot_p:.2f}",
-                        "Due Balance (₹)": f"{due_b:.2f}",
+                        "Roll ID": sid, "Student Name": s["Name"], "Mobile": s["Mobile No"],
+                        "Course": s["Course"], "Net Fee (₹)": f"{net_f:.2f}",
+                        "Total Paid (₹)": f"{tot_p:.2f}", "Due Balance (₹)": f"{due_b:.2f}",
                         "Payment Status": "Cleared" if due_b <= 0 else "Pending Due"
                     })
                     
                 ld_df = pd.DataFrame(ledger_data)
-                
                 c_m1, c_m2 = st.columns(2)
                 c_m1.metric("Total Fee Collected", f"₹{total_collected_all:,.2f}")
                 c_m2.metric("Total Pending Dues from Students", f"₹{total_pending_all:,.2f}", delta="-Pending", delta_color="inverse")
                 
                 only_dues = st.checkbox("Show Only Students with Pending Dues", value=True)
-                if only_dues:
-                    show_df = ld_df[ld_df["Payment Status"] == "Pending Due"]
-                else:
-                    show_df = ld_df
-                    
+                show_df = ld_df[ld_df["Payment Status"] == "Pending Due"] if only_dues else ld_df
                 st.dataframe(show_df, use_container_width=True)
             else:
                 st.info("No active students found in database.")
@@ -1878,45 +1704,21 @@ Director Contact: 9101026718"""
         # 7. CLASS LOGS & ACTIVITIES REVIEW
         with adm_tab7:
             st.subheader("📖 Daily Activities, Attendance & Exam Marks")
-            c_sub1, c_sub2, c_sub3, c_sub4, c_sub5 = st.tabs(["📝 Exam Marks", "⏰ Teacher Attendance", "📚 Syllabus Covered", "💻 PC Allocations", "📋 Tasks Assigned"])
-            
+            c_sub1, c_sub2, c_sub3 = st.tabs(["📝 Exam Marks", "⏰ Teacher Attendance", "📚 Syllabus Covered"])
             with c_sub1:
-                if not marks_df.empty:
-                    st.dataframe(marks_df, use_container_width=True)
-                else:
-                    st.info("No exam marks recorded yet.")
+                st.dataframe(marks_df, use_container_width=True) if not marks_df.empty else st.info("No exam marks.")
             with c_sub2:
-                if not teacher_att_df.empty:
-                    st.dataframe(teacher_att_df, use_container_width=True)
-                else:
-                    st.info("No teacher attendance punched yet.")
+                st.dataframe(teacher_att_df, use_container_width=True) if not teacher_att_df.empty else st.info("No teacher attendance.")
             with c_sub3:
-                if not syllabus_df.empty:
-                    st.dataframe(syllabus_df, use_container_width=True)
-                else:
-                    st.info("No syllabus logs recorded yet.")
-            with c_sub4:
-                if not pc_alloc_df.empty:
-                    st.dataframe(pc_alloc_df, use_container_width=True)
-                else:
-                    st.info("No PC allocations recorded.")
-            with c_sub5:
-                if not tasks_df.empty:
-                    st.dataframe(tasks_df, use_container_width=True)
-                else:
-                    st.info("No tasks recorded.")
+                st.dataframe(syllabus_df, use_container_width=True) if not syllabus_df.empty else st.info("No syllabus logs.")
 
         # 8. COURSE MASTER SETTINGS
         with adm_tab8:
             st.subheader("📚 Course Master Management (Add / Edit / Delete)")
             if not courses_df.empty:
                 st.dataframe(courses_df, use_container_width=True)
-            else:
-                st.info("No courses registered in catalog.")
                 
-            st.write("---")
             col_cadd, col_cedit = st.columns(2)
-            
             with col_cadd:
                 st.markdown("#### ➕ Add New Course")
                 with st.form("course_add_form", clear_on_submit=True):
@@ -1924,65 +1726,21 @@ Director Contact: 9101026718"""
                     c_ndur = st.selectbox("Duration", ["12 Months", "6 Months", "3 Months", "2 Months", "45 Days"], key="c_add_dur")
                     c_nfee = st.number_input("Course Fee (₹)*", min_value=100.0, value=3500.0, step=100.0, key="c_add_fee")
                     c_ndesc = st.text_input("Topics / Description", key="c_add_desc")
-                    
                     if st.form_submit_button("🟢 Add Course Now"):
                         if c_nname:
-                            if c_nname in courses_df["Course Name"].values:
-                                st.error("A course with this name already exists! Use the Edit section to modify it.")
-                            else:
-                                new_c_row = {"Course Name": c_nname, "Duration": c_ndur, "Fee (₹)": str(c_nfee), "Description": c_ndesc}
-                                courses_df = pd.concat([courses_df, pd.DataFrame([new_c_row])], ignore_index=True)
-                                save_data(courses_df, COURSES_FILE, "courses_db")
-                                st.markdown(f'<div class="green-badge">✅ Course "{c_nname}" Added Successfully!</div>', unsafe_allow_html=True)
-                                st.rerun()
-                        else:
-                            st.error("Please enter Course Name!")
-            
+                            new_c_row = {"Course Name": c_nname, "Duration": c_ndur, "Fee (₹)": str(c_nfee), "Description": c_ndesc}
+                            courses_df = pd.concat([courses_df, pd.DataFrame([new_c_row])], ignore_index=True)
+                            save_data(courses_df, COURSES_FILE, "courses_db")
+                            st.markdown(f'<div class="green-badge">✅ Course Added!</div>', unsafe_allow_html=True)
+                            st.rerun()
             with col_cedit:
-                st.markdown("#### ✏️ Edit Existing Course")
+                st.markdown("#### 🗑️ Delete Course")
                 if not courses_df.empty:
-                    sel_edit_c = st.selectbox("Select Course to Modify:", courses_df["Course Name"].tolist(), key="sel_edit_c_box")
-                    if sel_edit_c:
-                        c_data = courses_df[courses_df["Course Name"] == sel_edit_c].iloc[0]
-                        with st.form("course_edit_form"):
-                            edit_cname = st.text_input("Course Name / Title*", value=c_data["Course Name"])
-                            dur_opts = ["12 Months", "6 Months", "3 Months", "2 Months", "45 Days"]
-                            dur_idx = dur_opts.index(c_data["Duration"]) if c_data["Duration"] in dur_opts else 0
-                            edit_cdur = st.selectbox("Duration", dur_opts, index=dur_idx, key="c_edit_dur")
-                            
-                            try:
-                                curr_fval = float(c_data["Fee (₹)"])
-                            except Exception:
-                                curr_fval = 3500.0
-                                
-                            edit_cfee = st.number_input("Course Fee (₹)*", min_value=100.0, value=curr_fval, step=100.0, key="c_edit_fee")
-                            edit_cdesc = st.text_input("Topics / Description", value=c_data["Description"] if "Description" in c_data else "", key="c_edit_desc")
-                            
-                            if st.form_submit_button("🟢 Save Updated Course Details"):
-                                match_idx = courses_df[courses_df["Course Name"] == sel_edit_c].index
-                                if len(match_idx) > 0:
-                                    courses_df.loc[match_idx[0], "Course Name"] = edit_cname
-                                    courses_df.loc[match_idx[0], "Duration"] = edit_cdur
-                                    courses_df.loc[match_idx[0], "Fee (₹)"] = str(edit_cfee)
-                                    courses_df.loc[match_idx[0], "Description"] = edit_cdesc
-                                    save_data(courses_df, COURSES_FILE, "courses_db")
-                                    st.markdown(f'<div class="green-badge">✅ Course "{edit_cname}" Updated Successfully!</div>', unsafe_allow_html=True)
-                                    st.rerun()
-                else:
-                    st.info("No courses available to edit.")
-                    
-            st.write("---")
-            st.markdown("#### 🗑️ Delete Course")
-            if not courses_df.empty:
-                col_d1, col_d2 = st.columns([3, 1])
-                with col_d1:
                     del_c_sel = st.selectbox("Select Course to Delete:", courses_df["Course Name"].tolist(), key="del_c_box")
-                with col_d2:
-                    st.write("<br>", unsafe_allow_html=True)
                     if st.button("🔴 Delete Selected Course", key="del_c_btn_main"):
                         courses_df = courses_df[courses_df["Course Name"] != del_c_sel]
                         save_data(courses_df, COURSES_FILE, "courses_db")
-                        st.markdown(f'<div class="pink-badge">🗑️ Course "{del_c_sel}" Deleted Successfully!</div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="pink-badge">🗑️ Course Deleted!</div>', unsafe_allow_html=True)
                         st.rerun()
 
         # 9. CHANGE PASSWORDS
@@ -1991,22 +1749,21 @@ Director Contact: 9101026718"""
             with st.form("pwd_change_form"):
                 new_adm_pwd = st.text_input("New Director Admin Password:", value=ADMIN_PWD)
                 new_tch_pwd = st.text_input("New Teacher Portal Password:", value=TEACHER_PWD)
-                
                 if st.form_submit_button("🟢 Update Passwords"):
                     creds_df = pd.DataFrame([
                         {"Role": "Admin", "Password": new_adm_pwd},
                         {"Role": "Teacher", "Password": new_tch_pwd}
                     ])
                     save_data(creds_df, CREDS_FILE, "creds_db")
-                    st.markdown('<div class="green-badge">✅ Passwords Updated Successfully!</div>', unsafe_allow_html=True)
+                    st.markdown('<div class="green-badge">✅ Passwords Updated!</div>', unsafe_allow_html=True)
                     st.rerun()
 
 # -------------------------------------------------------------
 # FOOTER
 # -------------------------------------------------------------
 st.markdown("""
-<div style="text-align:center; padding:20px; font-size:12px; color:#64748B; border-top:1px solid #CBD5E1; margin-top:40px;">
-Official Enterprise Management System | Soft Tech Computers & ZTC Enterprise © 2026<br>
-An ISO 9001:2015 Certified Institution | Center Code: 4159 | Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149
+<div style="text-align:center; padding:24px; font-size:12px; color:#64748B; border-top:1px solid #1E293B; margin-top:50px;">
+    Official Enterprise Management System | Soft Tech Computers & ZTC Enterprise © 2026<br>
+    An ISO 9001:2015 Certified Institution | Center Code: 4159 | Kamarchuburi, Near Thelamara, Sonitpur, Assam - 784149
 </div>
 """, unsafe_allow_html=True)
