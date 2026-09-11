@@ -228,9 +228,7 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', ("Chiranjeeb Hazarika (Director)", "9101026718", "ztcenterprise@gmail.com", "MCA / IT Specialist", "Director / Center Head", "All Shifts", "Kamarchuburi, Thelamara, Sonitpur", "ID-4159", str(datetime.date.today())))
     
-    # -------------------------------------------------------------
-    # CLOUD AUTO-RESTORATION (If local database is freshly awakened)
-    # -------------------------------------------------------------
+    # Cloud Auto-Restoration if local is empty
     check_s = c.execute("SELECT COUNT(*) FROM students").fetchone()[0]
     if check_s == 0:
         df_cloud_s = fetch_sheet_data("students_db")
@@ -239,18 +237,12 @@ def init_db():
                 try:
                     c.execute('''
                         INSERT OR IGNORE INTO students (
-                            student_id, name, father_name, mother_name, gender, dob, mobile,
-                            address_vill, po, ps, pin, district, course, join_date, total_fee,
-                            net_fee, shift, status, lifecycle_stage, ho_reg_no, cert_serial_no
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            student_id, name, father_name, mobile, course, net_fee, shift, status, lifecycle_stage
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
-                        r.get("Student ID", ""), r.get("Name", ""), r.get("Father Name", ""), r.get("Mother Name", ""),
-                        r.get("Gender", "Male"), r.get("DOB", ""), r.get("Mobile No", ""), r.get("Vill Town", ""),
-                        r.get("PO", ""), r.get("PS", ""), r.get("PIN", ""), r.get("District", ""),
-                        r.get("Course", ""), r.get("Join Date", str(datetime.date.today())),
-                        float(r.get("Total Fee", 2550.0) or 2550.0), float(r.get("Net Fee", 2550.0) or 2550.0),
-                        r.get("Shift", "Morning"), r.get("Status", "Active"), r.get("Stage_Cert_Status", "Admission"),
-                        r.get("HO_Reg_No", "Pending"), r.get("Cert_Serial_No", "--")
+                        r.get("Student ID", ""), r.get("Name", ""), r.get("Father Name", ""), r.get("Mobile No", ""),
+                        r.get("Course", ""), float(r.get("Net Fee", 2550.0) or 2550.0),
+                        r.get("Shift", "Morning"), r.get("Status", "Active"), r.get("Stage", "Admission")
                     ))
                 except Exception:
                     pass
@@ -260,7 +252,6 @@ def init_db():
 
 init_db()
 
-# Synchronize current tables to cloud
 def sync_all_to_cloud(conn):
     try:
         st_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id as 'Student ID', name as 'Name', father_name as 'Father Name', mobile as 'Mobile No', course as 'Course', net_fee as 'Net Fee', shift as 'Shift', status as 'Status', lifecycle_stage as 'Stage' FROM students").fetchall()])
@@ -503,7 +494,7 @@ if menu == "🌐 Public Dashboard & Enquiry":
                     st.error("Please fill Name and Mobile Number!")
 
 # -------------------------------------------------------------
-# 2. STUDENT SELF-SERVICE PORTAL (WITH WHATSAPP FORGOT PASS HELP)
+# 2. STUDENT SELF-SERVICE PORTAL
 # -------------------------------------------------------------
 elif menu == "🔑 Student Self-Service Portal":
     st.subheader("🔑 Student Dashboard (Attendance, Daily Learning, Marks & Passbook)")
@@ -530,7 +521,6 @@ elif menu == "🔑 Student Self-Service Portal":
                     st.error("❌ Invalid Roll ID or Mobile Number!")
                     
         with col_btn2:
-            # 1-Click WhatsApp Help Link for Forgotten Roll/Password
             wa_help_msg = "নমস্কাৰ ছাৰ, মই Soft Tech Computers & ZTC Academy-ৰ ছাত্ৰ। মই মোৰ লগ-ইন ৰোল নম্বৰ বা মোবাইল নম্বৰ পাহৰিছোঁ। অনুগ্ৰহ কৰি মোক সহায় কৰিবনে?"
             wa_help_url = f"https://wa.me/919101026718?text={urllib.parse.quote(wa_help_msg)}"
             st.markdown(f"""
@@ -719,7 +709,6 @@ elif menu == "💵 TuFee Fast Counter":
                              (rc_num, sel_sid, today_str, pay_amt, pay_mode, collector, remarks))
                 conn.commit()
                 
-                # Auto Sync to Cloud
                 sync_all_to_cloud(conn)
                 
                 new_due = max(0.0, due_b - pay_amt)
@@ -820,7 +809,6 @@ elif menu == "📝 New Candidate Admission":
                     ))
                     conn.commit()
                     
-                    # Auto sync to Cloud
                     sync_all_to_cloud(conn)
                     
                     st.success(f"🎉 Candidate Registered Successfully! Roll ID: {next_id}")
@@ -982,7 +970,7 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
                     st.error("Please enter Name, Phone, and Complete Address!")
 
 # -------------------------------------------------------------
-# 7. DIRECTOR MASTER COMMAND CENTER (100% SECURE & FULL CONTROL)
+# 7. DIRECTOR MASTER COMMAND CENTER (WITH LIVE CLOUD TEST)
 # -------------------------------------------------------------
 elif menu == "🔐 Director Master Command Center":
     st.subheader("🔐 Director Master Command Center (Executive Control)")
@@ -999,7 +987,7 @@ elif menu == "🔐 Director Master Command Center":
             "📊 Executive Morning Briefing",
             "✏️ Edit & Remove Students",
             "💰 Financials & Fee Dues",
-            "💾 1-Click Excel Backup",
+            "💾 1-Click Excel & Cloud Test",
             "🛡️ Security & Password Change"
         ])
         
@@ -1143,9 +1131,20 @@ Director Contact: 9101026718"""
                 st.success("🎉 All enrolled students have completely cleared their fees!")
 
         with dir_t4:
-            st.write("##### 💾 1-Click Institute Complete Database Backup")
-            st.info("Download complete real-time data to Excel/CSV for offline records and data security.")
+            st.write("##### 💾 1-Click Excel Backup & Live Cloud Sync Test")
+            st.info("Download complete real-time data to Excel/CSV or test live background Google Sheet connectivity.")
             
+            if st.button("🌐 Test Live Google Sheet Connection Now"):
+                try:
+                    res_test = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name=students_db", timeout=5)
+                    if res_test.status_code == 200:
+                        st.success(f"✅ Google Sheet Connected Successfully! Response Code: {res_test.status_code} (Active Cloud Sync)")
+                    else:
+                        st.error(f"⚠️ Response received but status code: {res_test.status_code}")
+                except Exception as e:
+                    st.error(f"❌ Connection Failed: {e}")
+                    
+            st.markdown("<br>", unsafe_allow_html=True)
             c_exp1, c_exp2, c_exp3 = st.columns(3)
             with c_exp1:
                 df_st = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id, name, father_name, mobile, course, shift, net_fee, join_date, lifecycle_stage, ho_reg_no, cert_serial_no FROM students").fetchall()])
