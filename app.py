@@ -217,24 +217,6 @@ div[data-testid="stMetric"] {
     border-radius: 10px;
 }
 div[data-testid="stMetricValue"] { color: #38BDF8 !important; font-weight: 800 !important; }
-.stepper-box {
-    display: flex;
-    justify-content: space-between;
-    background: #1E293B;
-    padding: 14px 18px;
-    border-radius: 10px;
-    margin-bottom: 18px;
-}
-.stepper-node {
-    text-align: center;
-    flex: 1;
-    font-size: 11.5px;
-    font-weight: 600;
-}
-.stepper-node.active {
-    color: #10B981;
-    font-weight: 800;
-}
 .passbook-box {
     background: #FFFFFF;
     border: 2px solid #334155;
@@ -673,9 +655,9 @@ elif menu == "📝 Admission & Lifecycle Management":
                     st.rerun()
 
 # -------------------------------------------------------------
-# 5. FACULTY ATTENDANCE & SALARY (₹230/DAY)
+# 5. FACULTY ATTENDANCE & SALARY (REPLACED CLEAN TITLE)
 # -------------------------------------------------------------
-elif menu == "⏰ Faculty Attendance & Salary (₹230/Day)":
+elif menu == "⏰ Faculty Attendance & Salary":
     st.subheader("⏰ Faculty Shift Punch & Automated Salary Engine")
     now_ist = datetime.datetime.now(IST)
     st.info(f"🕒 **Current IST Clock:** `{now_ist.strftime('%I:%M:%S %p (%d-%B-%Y)')}`")
