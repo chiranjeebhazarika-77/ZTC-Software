@@ -49,7 +49,7 @@ def fetch_sheet_data(sheet_name):
     return None
 
 # -------------------------------------------------------------
-# DATABASE ENGINE (SQLITE + AUTO-RECOVERY ON SERVER SLEEP)
+# DATABASE ENGINE (SQLITE + AUTO-RECOVERY)
 # -------------------------------------------------------------
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
@@ -220,7 +220,6 @@ def init_db():
         )
     ''')
     
-    # Check default teacher
     check_t = c.execute("SELECT COUNT(*) FROM teachers").fetchone()[0]
     if check_t == 0:
         c.execute('''
@@ -228,7 +227,6 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', ("Chiranjeeb Hazarika (Director)", "9101026718", "ztcenterprise@gmail.com", "MCA / IT Specialist", "Director / Center Head", "All Shifts", "Kamarchuburi, Thelamara, Sonitpur", "ID-4159", str(datetime.date.today())))
     
-    # Cloud Auto-Restoration if local is empty
     check_s = c.execute("SELECT COUNT(*) FROM students").fetchone()[0]
     if check_s == 0:
         df_cloud_s = fetch_sheet_data("students_db")
@@ -400,7 +398,11 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Navigation
+conn = get_db_connection()
+
+# -------------------------------------------------------------
+# SIDEBAR WITH PROMINENT LIVE TEST & CLOUD SYNC
+# -------------------------------------------------------------
 st.sidebar.title("💻 Portal Navigation")
 menu = st.sidebar.radio("Select Module:", [
     "🌐 Public Dashboard & Enquiry",
@@ -412,7 +414,21 @@ menu = st.sidebar.radio("Select Module:", [
     "🔐 Director Master Command Center"
 ])
 
-conn = get_db_connection()
+st.sidebar.markdown("---")
+st.sidebar.write("### ☁️ Cloud & Google Sheet")
+if st.sidebar.button("🌐 Test Live Google Sheet Connection", use_container_width=True):
+    try:
+        res_test = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name=students_db", timeout=6)
+        if res_test.status_code == 200:
+            st.sidebar.success(f"✅ Connected! Status: 200 OK (Google Sheet Live)")
+        else:
+            st.sidebar.warning(f"⚠️ Response Code: {res_test.status_code}")
+    except Exception as e:
+        st.sidebar.error(f"❌ Connection Error: {e}")
+
+if st.sidebar.button("🔄 Push All Data to Google Sheet Now", use_container_width=True):
+    sync_all_to_cloud(conn)
+    st.sidebar.success("🚀 All current student & fee records pushed to Google Sheet!")
 
 # -------------------------------------------------------------
 # 1. PUBLIC DASHBOARD & ENQUIRY
@@ -808,9 +824,7 @@ elif menu == "📝 New Candidate Admission":
                         "Admission", "Pending", "--", photo_b64
                     ))
                     conn.commit()
-                    
                     sync_all_to_cloud(conn)
-                    
                     st.success(f"🎉 Candidate Registered Successfully! Roll ID: {next_id}")
                     st.rerun()
                 except sqlite3.IntegrityError:
@@ -970,7 +984,7 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
                     st.error("Please enter Name, Phone, and Complete Address!")
 
 # -------------------------------------------------------------
-# 7. DIRECTOR MASTER COMMAND CENTER (WITH LIVE CLOUD TEST)
+# 7. DIRECTOR MASTER COMMAND CENTER
 # -------------------------------------------------------------
 elif menu == "🔐 Director Master Command Center":
     st.subheader("🔐 Director Master Command Center (Executive Control)")
@@ -987,7 +1001,7 @@ elif menu == "🔐 Director Master Command Center":
             "📊 Executive Morning Briefing",
             "✏️ Edit & Remove Students",
             "💰 Financials & Fee Dues",
-            "💾 1-Click Excel & Cloud Test",
+            "💾 1-Click Excel Backup",
             "🛡️ Security & Password Change"
         ])
         
@@ -1131,20 +1145,9 @@ Director Contact: 9101026718"""
                 st.success("🎉 All enrolled students have completely cleared their fees!")
 
         with dir_t4:
-            st.write("##### 💾 1-Click Excel Backup & Live Cloud Sync Test")
-            st.info("Download complete real-time data to Excel/CSV or test live background Google Sheet connectivity.")
+            st.write("##### 💾 1-Click Institute Complete Database Backup")
+            st.info("Download complete real-time data to Excel/CSV for offline records and data security.")
             
-            if st.button("🌐 Test Live Google Sheet Connection Now"):
-                try:
-                    res_test = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name=students_db", timeout=5)
-                    if res_test.status_code == 200:
-                        st.success(f"✅ Google Sheet Connected Successfully! Response Code: {res_test.status_code} (Active Cloud Sync)")
-                    else:
-                        st.error(f"⚠️ Response received but status code: {res_test.status_code}")
-                except Exception as e:
-                    st.error(f"❌ Connection Failed: {e}")
-                    
-            st.markdown("<br>", unsafe_allow_html=True)
             c_exp1, c_exp2, c_exp3 = st.columns(3)
             with c_exp1:
                 df_st = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id, name, father_name, mobile, course, shift, net_fee, join_date, lifecycle_stage, ho_reg_no, cert_serial_no FROM students").fetchall()])
