@@ -16,6 +16,7 @@ st.set_page_config(
 
 IST = pytz.timezone('Asia/Kolkata')
 DB_FILE = "ztc_academy.db"
+ADMIN_PIN = "zaan123"
 
 # -------------------------------------------------------------
 # LIGHTNING-FAST LOCAL DATABASE ENGINE (SQLITE)
@@ -28,6 +29,17 @@ def get_db_connection():
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
+    # Teachers Master
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS teachers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE,
+            phone TEXT,
+            designation TEXT,
+            shift TEXT,
+            join_date TEXT
+        )
+    ''')
     # Students Master
     c.execute('''
         CREATE TABLE IF NOT EXISTS students (
@@ -71,6 +83,19 @@ def init_db():
             FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE CASCADE
         )
     ''')
+    # Daily Student Teaching Log (Theory / Practical / Both)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS daily_class_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT,
+            student_id TEXT,
+            teacher_name TEXT,
+            topic TEXT,
+            class_type TEXT,
+            remarks TEXT,
+            FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE CASCADE
+        )
+    ''')
     # Exam / Test Marks
     c.execute('''
         CREATE TABLE IF NOT EXISTS marks (
@@ -81,16 +106,6 @@ def init_db():
             total_marks REAL,
             date TEXT,
             FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE CASCADE
-        )
-    ''')
-    # Syllabus Covered Log
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS syllabus_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            course TEXT,
-            topic_name TEXT,
-            date TEXT,
-            teacher_name TEXT
         )
     ''')
     # Teacher Attendance & Daily Salary Punch
@@ -119,24 +134,32 @@ def init_db():
             address TEXT
         )
     ''')
+    
+    # Default Teacher if empty
+    check_t = c.execute("SELECT COUNT(*) FROM teachers").fetchone()[0]
+    if check_t == 0:
+        c.execute("INSERT INTO teachers (name, phone, designation, shift, join_date) VALUES (?, ?, ?, ?, ?)",
+                  ("Chiranjeeb Hazarika (Director)", "9101026718", "Director / Head", "All Shifts", str(datetime.date.today())))
     conn.commit()
     conn.close()
 
 init_db()
 
 # -------------------------------------------------------------
-# HIGH-END SLATE-NAVY MODERN PORTAL CSS
+# HIGH-CONTRAST LIGHT & CRISP THEME CSS (CLEAN & READABLE)
 # -------------------------------------------------------------
 st.markdown("""
 <style>
+/* Clean Off-White Background */
 .stApp {
-    background-color: #0B1120;
-    color: #E2E8F0;
+    background-color: #F8FAFC;
+    color: #0F172A;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+/* Crisp Top Bar */
 .top-navbar {
-    background-color: #0F172A;
-    border-bottom: 1px solid #1E293B;
+    background: #FFFFFF;
+    border-bottom: 2px solid #E2E8F0;
     padding: 14px 24px;
     display: flex;
     justify-content: space-between;
@@ -145,36 +168,38 @@ st.markdown("""
     margin-left: -4rem;
     margin-right: -4rem;
     margin-bottom: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
+/* White & Bright Hero Card */
 .hero-wrapper {
-    background: #0F172A;
-    border: 1px solid #1E293B;
-    border-radius: 14px;
-    padding: 24px 28px;
-    margin-bottom: 24px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 .hero-tag-pill {
-    background: rgba(249, 115, 22, 0.12);
-    border: 1px solid rgba(249, 115, 22, 0.5);
-    color: #FB923C;
+    background: #FFF7ED;
+    border: 1px solid #F97316;
+    color: #C2410C;
     font-size: 11px;
-    font-weight: 700;
-    padding: 5px 14px;
+    font-weight: 800;
+    padding: 4px 14px;
     border-radius: 20px;
     display: inline-block;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 .hero-main-title {
-    font-size: 30px;
+    font-size: 28px;
     font-weight: 900;
-    color: #FFFFFF;
+    color: #0F172A;
     margin: 0 0 8px 0;
 }
 .pill-item {
     font-size: 11.5px;
     font-weight: 700;
-    padding: 6px 14px;
+    padding: 5px 12px;
     border-radius: 6px;
     display: inline-flex;
     margin-right: 8px;
@@ -182,25 +207,38 @@ st.markdown("""
 }
 .pill-orange { background: #EA580C; color: white; }
 .pill-green { background: #059669; color: white; }
-.pill-blue { background: #2563EB; color: white; }
+.pill-blue { background: #0284C7; color: white; }
+
+/* Light Content Cards */
 .portal-card {
-    background: #0F172A;
-    border: 1px solid #1E293B;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
     border-radius: 12px;
-    padding: 20px;
-    height: 100%;
+    padding: 18px;
     margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 .card-header-flex {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #1E293B;
-    padding-bottom: 10px;
-    margin-bottom: 14px;
+    border-bottom: 1px solid #E2E8F0;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
 }
+/* High-Contrast Inputs & Dataframes */
+div[data-testid="stMetric"] {
+    background: #FFFFFF !important;
+    border: 1px solid #CBD5E1 !important;
+    padding: 14px !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+div[data-testid="stMetricLabel"] { color: #475569 !important; font-weight: 600 !important; }
+div[data-testid="stMetricValue"] { color: #0284C7 !important; font-weight: 900 !important; }
+
 div.stButton > button {
-    background-color: #10B981 !important;
+    background-color: #059669 !important;
     color: white !important;
     border-radius: 6px !important;
     font-weight: 700 !important;
@@ -208,15 +246,8 @@ div.stButton > button {
     padding: 8px 18px !important;
 }
 div.stButton > button:hover {
-    background-color: #059669 !important;
+    background-color: #047857 !important;
 }
-div[data-testid="stMetric"] {
-    background: #0F172A;
-    border: 1px solid #1E293B;
-    padding: 14px;
-    border-radius: 10px;
-}
-div[data-testid="stMetricValue"] { color: #38BDF8 !important; font-weight: 800 !important; }
 .passbook-box {
     background: #FFFFFF;
     border: 2px solid #334155;
@@ -236,7 +267,7 @@ div[data-testid="stMetricValue"] { color: #38BDF8 !important; font-weight: 800 !
     padding: 7px;
     text-align: center;
 }
-.passbook-table th { background: #F1F5F9; font-weight: 700; }
+.passbook-table th { background: #F1F5F9; font-weight: 700; color: #0F172A; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -244,13 +275,16 @@ div[data-testid="stMetricValue"] { color: #38BDF8 !important; font-weight: 800 !
 st.markdown("""
 <div class="top-navbar">
     <div style="display:flex; align-items:center; gap:12px;">
-        <span style="background:#10B981; color:white; font-weight:900; padding:6px 12px; border-radius:8px; font-size:16px;">STC</span>
+        <span style="background:#0284C7; color:white; font-weight:900; padding:6px 12px; border-radius:8px; font-size:16px;">STC</span>
         <div>
-            <b style="font-size:17px; color:#F8FAFC;">Soft Tech Computers & ZTC Enterprise</b><br>
-            <span style="font-size:11px; color:#38BDF8;">ISO 9001:2015 Certified | Center Code: 4159 (Kamarchuburi, Sonitpur)</span>
+            <b style="font-size:17px; color:#0F172A;">Soft Tech Computers & ZTC Enterprise</b><br>
+            <span style="font-size:11px; color:#64748B;">ISO 9001:2015 Certified | Center Code: 4159 (Kamarchuburi, Thelamara)</span>
         </div>
     </div>
-    <div style="font-size:12px; color:#94A3B8;">Session: <b>2026-27</b> | <span style="color:#10B981;">● Online Engine</span></div>
+    <div style="font-size:12px; color:#475569; text-align:right;">
+        Academic Session: <b style="color:#0F172A;">2026-27</b><br>
+        <span style="color:#059669; font-weight:bold;">● System Live (Zero-Lag Engine)</span>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -259,28 +293,29 @@ st.sidebar.title("💻 Portal Navigation")
 menu = st.sidebar.radio("Select Module:", [
     "🌐 Public Dashboard & Enquiry",
     "🔑 Student Self-Service Portal",
-    "💵 TuFee Fast Counter & Dues",
+    "📚 Daily Class Activity (Practical/Theory)",
+    "💵 TuFee Fast Counter",
     "📝 Admission & Lifecycle Management",
-    "⏰ Faculty Attendance & Salary",
-    "📚 Syllabus Covered & Homework Desk"
+    "👨‍🏫 Faculty Desk & Attendance",
+    "🔐 Director Financial Locker (Private)"
 ])
 
 conn = get_db_connection()
 
 # -------------------------------------------------------------
-# 1. PUBLIC DASHBOARD & ADMISSION ENQUIRY
+# 1. PUBLIC DASHBOARD & ENQUIRY
 # -------------------------------------------------------------
 if menu == "🌐 Public Dashboard & Enquiry":
     st.markdown("""
     <div class="hero-wrapper">
         <div class="hero-tag-pill">🛡️ GOVT REGD IT ACADEMY • SONITPUR, ASSAM</div>
         <h1 class="hero-main-title">Soft Tech Computers & ZTC Enterprise</h1>
-        <p style="color:#94A3B8; font-size:14px; line-height:1.7; margin:0 0 14px 0;">
-            An accredited institution under Center Code <b style="color:#FB923C;">4159</b> providing ISO 9001:2015 certified technical computer courses with Sarva India nationwide accreditation. Practical oriented computer software training for youth empowerment.
+        <p style="color:#475569; font-size:14px; line-height:1.7; margin:0 0 12px 0;">
+            An accredited institution under Center Code <b style="color:#C2410C;">4159</b> providing ISO 9001:2015 certified technical computer courses with Sarva India nationwide accreditation.
         </p>
         <div>
             <span class="pill-item pill-orange"># CENTER CODE: 4159</span>
-            <span class="pill-item pill-green">✓ Operational & Active</span>
+            <span class="pill-item pill-green">✓ Operational & Verified</span>
             <span class="pill-item pill-blue">🏛️ ISO 9001:2015 Certified</span>
         </div>
     </div>
@@ -291,16 +326,15 @@ if menu == "🌐 Public Dashboard & Enquiry":
         st.markdown("""
         <div class="portal-card">
             <div class="card-header-flex">
-                <b style="color:#F8FAFC; font-size:16px;">🏛️ Institutional Information & Courses</b>
-                <span style="color:#38BDF8; font-size:11px; font-weight:bold;">CODE: 4159</span>
+                <b style="color:#0F172A; font-size:16px;">🏛️ Accredited Career Programs</b>
+                <span style="color:#0284C7; font-size:11px; font-weight:bold;">CENTER: 4159</span>
             </div>
-            <p style="color:#94A3B8; font-size:13.5px; line-height:1.7;">
-                Soft Tech Computers & ZTC Enterprise offers Govt-recognized computer certification programs:
-                <br>• <b>PGDCA / ADCA:</b> 12 Months Advanced Diploma
-                <br>• <b>DCA:</b> 6 Months Computer Application
-                <br>• <b>Tally Prime with GST:</b> Professional Accounting & Billing
-                <br>• <b>DTP:</b> Desktop Publishing (Photoshop, Pagemaker, DTP)
-                <br>• <b>High School English Coaching:</b> Class 9 to 12
+            <p style="color:#475569; font-size:13.5px; line-height:1.7;">
+                • <b>PGDCA / ADCA:</b> 12 Months Advanced Diploma with Programming & DTP<br>
+                • <b>DCA:</b> 6 Months Fundamental Computing & Office Automation<br>
+                • <b>Tally Prime with GST:</b> Commercial Accounting, Billing & Taxation<br>
+                • <b>DTP:</b> Graphic Designing (Photoshop, Pagemaker, CorelDraw)<br>
+                • <b>English Coaching:</b> Class 9 to 12 Board Curriculum
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -309,10 +343,10 @@ if menu == "🌐 Public Dashboard & Enquiry":
         st.markdown("""
         <div class="portal-card">
             <div class="card-header-flex">
-                <b style="color:#F8FAFC; font-size:16px;">ℹ️ Center Contact & Location</b>
-                <span style="color:#10B981; font-size:11px; font-weight:bold;">VERIFIED</span>
+                <b style="color:#0F172A; font-size:16px;">ℹ️ Official Center Details</b>
+                <span style="color:#059669; font-size:11px; font-weight:bold;">ACCREDITED</span>
             </div>
-            <div style="font-size:13px; line-height:2.0; color:#E2E8F0;">
+            <div style="font-size:13px; line-height:2.0; color:#334155;">
                 📍 <b>Location:</b> Kamarchuburi, Thelamara, Sonitpur<br>
                 📮 <b>PIN Code:</b> 784149, Assam<br>
                 📞 <b>Director:</b> Chiranjeeb Hazarika (9101026718)<br>
@@ -351,7 +385,7 @@ if menu == "🌐 Public Dashboard & Enquiry":
 # 2. STUDENT SELF-SERVICE PORTAL
 # -------------------------------------------------------------
 elif menu == "🔑 Student Self-Service Portal":
-    st.subheader("🔑 Student Dashboard (Attendance, Marks, Syllabus Covered & Fees)")
+    st.subheader("🔑 Student Dashboard (Attendance, Daily Learning, Marks & Passbook)")
     
     if "s_auth_id" not in st.session_state:
         st.session_state["s_auth_id"] = None
@@ -375,26 +409,10 @@ elif menu == "🔑 Student Self-Service Portal":
         s = conn.execute("SELECT * FROM students WHERE student_id = ?", (sid,)).fetchone()
         
         st.markdown(f"""
-        <div style="background:#0F172A; border:1px solid #1E293B; border-radius:10px; padding:16px 20px; margin-bottom:15px;">
-            <b style="font-size:18px; color:#FFFFFF;">Welcome, {s['name']}</b> | Roll ID: <b style="color:#38BDF8;">{s['student_id']}</b> | Course: <b>{s['course']}</b>
+        <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; padding:16px 20px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
+            <b style="font-size:18px; color:#0F172A;">Welcome, {s['name']}</b> | Roll ID: <b style="color:#0284C7;">{s['student_id']}</b> | Course: <b>{s['course']}</b>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Lifecycle Pipeline Stepper
-        curr_stage = s["lifecycle_stage"] if s["lifecycle_stage"] else "Admission"
-        stages = ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"]
-        
-        st.write("**Student Lifecycle Progress:**")
-        stepper_cols = st.columns(6)
-        for idx, stg in enumerate(stages):
-            is_done = stages.index(curr_stage) >= idx if curr_stage in stages else False
-            stepper_cols[idx].markdown(f"""
-            <div style="text-align:center; background:{'#059669' if is_done else '#1E293B'}; color:white; padding:8px 4px; border-radius:6px; font-size:11px; font-weight:bold;">
-                {'✓ ' if is_done else ''}{stg}
-            </div>
-            """, unsafe_allow_html=True)
-            
-        st.markdown("<br>", unsafe_allow_html=True)
         
         # Calculations: Attendance, Marks, Fees
         att_rows = conn.execute("SELECT * FROM attendance WHERE student_id = ?", (sid,)).fetchall()
@@ -407,29 +425,27 @@ elif menu == "🔑 Student Self-Service Portal":
         net_f = s["net_fee"] if s["net_fee"] else 0.0
         due_f = max(0.0, net_f - tot_paid)
         
-        marks_rows = conn.execute("SELECT * FROM marks WHERE student_id = ?", (sid,)).fetchall()
-        
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Attendance Score", f"{att_pct:.1f}%", f"{present_days}/{tot_days} Days")
-        c2.metric("Total Fee Paid", f"₹{tot_paid:,.2f}", f"Net: ₹{net_f:,.2f}")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Classroom Attendance", f"{att_pct:.1f}%", f"{present_days}/{tot_days} Days")
+        c2.metric("Fee Deposited", f"₹{tot_paid:,.2f}", f"Net: ₹{net_f:,.2f}")
         c3.metric("Remaining Due", f"₹{due_f:,.2f}", delta="-Due" if due_f > 0 else "Cleared", delta_color="inverse")
-        c4.metric("Current Stage", curr_stage)
         
         st.markdown("---")
         
-        tab_a, tab_b, tab_c, tab_d = st.tabs(["📚 What I Learned (Syllabus Covered)", "📝 Exam & Test Marks", "📸 Attendance Log", "💳 Installment Passbook"])
+        tab_a, tab_b, tab_c, tab_d = st.tabs(["📚 What I Learned (Daily Practical/Theory)", "📝 My Test Marks", "📸 Attendance Log", "💳 Fee Passbook"])
         
         with tab_a:
-            st.write(f"**Topics Covered by Faculty for Course ({s['course']}):**")
-            syl_rows = conn.execute("SELECT * FROM syllabus_logs WHERE course = ? ORDER BY id DESC", (s["course"],)).fetchall()
-            if syl_rows:
-                syl_df = pd.DataFrame([dict(r) for r in syl_rows])
-                st.dataframe(syl_df[["date", "topic_name", "teacher_name"]], use_container_width=True)
+            st.write("**Topics Practiced & Learned in Class:**")
+            c_logs = conn.execute("SELECT * FROM daily_class_logs WHERE student_id = ? ORDER BY id DESC", (sid,)).fetchall()
+            if c_logs:
+                cl_df = pd.DataFrame([dict(r) for r in c_logs])
+                st.dataframe(cl_df[["date", "topic", "class_type", "teacher_name", "remarks"]], use_container_width=True)
             else:
-                st.info("No syllabus logs entered for this course yet.")
+                st.info("No individual class practice records logged yet.")
                 
         with tab_b:
-            st.write("**Unit Tests & Exam Results:**")
+            st.write("**Unit Tests & Examination Results:**")
+            marks_rows = conn.execute("SELECT * FROM marks WHERE student_id = ?", (sid,)).fetchall()
             if marks_rows:
                 m_df = pd.DataFrame([dict(r) for r in marks_rows])
                 st.dataframe(m_df[["date", "test_topic", "marks_obtained", "total_marks"]], use_container_width=True)
@@ -437,7 +453,7 @@ elif menu == "🔑 Student Self-Service Portal":
                 st.info("No test marks recorded yet.")
                 
         with tab_c:
-            st.write("**Classroom Attendance History:**")
+            st.write("**Attendance History:**")
             if att_rows:
                 a_df = pd.DataFrame([dict(r) for r in att_rows])
                 st.dataframe(a_df[["date", "time_in", "status"]], use_container_width=True)
@@ -445,20 +461,19 @@ elif menu == "🔑 Student Self-Service Portal":
                 st.info("No attendance records logged yet.")
                 
         with tab_d:
-            st.write("**Student Fee Passbook Ledger:**")
             rows_html = ""
             run_paid = 0.0
             for idx, r in enumerate(fee_rows, 1):
                 run_paid += r["amount"]
                 rows_html += f"<tr><td>{idx}</td><td>{r['date']}</td><td>{r['receipt_no']}</td><td style='color:#059669; font-weight:bold;'>₹{r['amount']:.2f}</td><td style='color:#DC2626;'>₹{max(0.0, net_f - run_paid):.2f}</td><td>{r['mode']}</td><td>{r['collector']}</td></tr>"
             if not rows_html:
-                rows_html = "<tr><td colspan='7'>No fee payments deposited yet.</td></tr>"
+                rows_html = "<tr><td colspan='7'>No fee deposits recorded yet.</td></tr>"
                 
             st.markdown(f"""
             <div class="passbook-box">
                 <div style="text-align:center; border-bottom:2px solid #0284C7; padding-bottom:6px;">
                     <h3 style="margin:0;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
-                    <span style="font-size:11px; color:#64748B;">Official Student Installment Passbook</span>
+                    <span style="font-size:11px; color:#64748B;">Student Fee Installment Passbook</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:12.5px; margin:10px 0; background:#F8FAFC; padding:8px;">
                     <div><b>Candidate:</b> {s['name']}<br><b>Roll ID:</b> {s['student_id']}</div>
@@ -476,49 +491,97 @@ elif menu == "🔑 Student Self-Service Portal":
             st.rerun()
 
 # -------------------------------------------------------------
-# 3. TUFEE FAST COUNTER & DUES (WITH 1-CLICK WHATSAPP)
+# 3. DAILY CLASS ACTIVITY (PRACTICAL / THEORY / BOTH)
 # -------------------------------------------------------------
-elif menu == "💵 TuFee Fast Counter & Dues":
-    st.subheader("💵 TuFee Instant Fee Collection & 1-Click WhatsApp Desk")
+elif menu == "📚 Daily Class Activity (Practical/Theory)":
+    st.subheader("📚 Daily Classroom Activity & Practical Lab Register")
+    st.write("শিক্ষকে আজি কোন ছাত্ৰক কি শিকালে (প্ৰেক্টিকেল, থিয়ৰী নে দুয়োটা) তাৰ এন্ট্ৰি:")
     
-    t_f1, t_f2 = st.tabs(["⚡ Collect Fee & Send WhatsApp Receipt", "📢 Dues Ledger & WhatsApp Reminder"])
+    tab_cl1, tab_cl2 = st.tabs(["📝 Record Today's Class for Student", "📋 Review Daily Class History"])
     
-    with t_f1:
-        students = conn.execute("SELECT * FROM students").fetchall()
-        if students:
-            s_options = [f"{r['student_id']} - {r['name']} ({r['mobile']})" for r in students]
-            sel_s = st.selectbox("Select Candidate:", s_options)
-            sel_sid = sel_s.split(" - ")[0]
-            s_data = conn.execute("SELECT * FROM students WHERE student_id = ?", (sel_sid,)).fetchone()
+    teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
+    students_list = conn.execute("SELECT student_id, name FROM students").fetchall()
+    
+    with tab_cl1:
+        if students_list:
+            with st.form("daily_class_form", clear_on_submit=True):
+                col_c1, col_c2 = st.columns(2)
+                with col_c1:
+                    sel_st = st.selectbox("Select Student:*", [f"{r['student_id']} - {r['name']}" for r in students_list])
+                    sel_tch = st.selectbox("Teacher Incharge:*", teachers_list)
+                    class_mode = st.radio("Session Type / Mode:*", ["Practical Lab Only", "Theory Lecture Only", "Both (Theory + Practical)"], horizontal=True)
+                with col_c2:
+                    today_topic = st.text_input("Topic Covered (e.g. MS Word Resume, Tally GST Billing, Photoshop Tools)*")
+                    class_remarks = st.text_input("Teacher Feedback / Lab Performance", value="Completed Exercise Well")
+                    
+                if st.form_submit_button("🟢 Save Today's Class Entry"):
+                    if today_topic:
+                        sid_val = sel_st.split(" - ")[0]
+                        conn.execute('''
+                            INSERT INTO daily_class_logs (date, student_id, teacher_name, topic, class_type, remarks)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ''', (str(datetime.date.today()), sid_val, sel_tch, today_topic, class_mode, class_remarks))
+                        conn.commit()
+                        st.success(f"✅ Recorded {class_mode} on '{today_topic}' for {sel_st}!")
+                        st.rerun()
+                    else:
+                        st.error("Please enter Topic Covered!")
+        else:
+            st.info("No students registered yet.")
             
-            p_rows = conn.execute("SELECT * FROM fees WHERE student_id = ?", (sel_sid,)).fetchall()
-            tot_p = sum([r["amount"] for r in p_rows])
-            net_f = s_data["net_fee"] if s_data["net_fee"] else 0.0
-            due_b = max(0.0, net_f - tot_p)
+    with tab_cl2:
+        st.write("**Recent Classroom Practice Logs:**")
+        all_logs = conn.execute('''
+            SELECT d.date, d.student_id, s.name as student_name, d.teacher_name, d.topic, d.class_type, d.remarks
+            FROM daily_class_logs d
+            LEFT JOIN students s ON d.student_id = s.student_id
+            ORDER BY d.id DESC LIMIT 20
+        ''').fetchall()
+        if all_logs:
+            st.dataframe(pd.DataFrame([dict(r) for r in all_logs]), use_container_width=True)
+        else:
+            st.info("No class logs recorded yet.")
+
+# -------------------------------------------------------------
+# 4. TUFEE FAST COUNTER (COLLECT & WHATSAPP RECEIPT ONLY)
+# -------------------------------------------------------------
+elif menu == "💵 TuFee Fast Counter":
+    st.subheader("💵 TuFee Instant Counter (Collect Fee & Send WhatsApp Receipt)")
+    students = conn.execute("SELECT * FROM students").fetchall()
+    
+    if students:
+        s_options = [f"{r['student_id']} - {r['name']} ({r['mobile']})" for r in students]
+        sel_s = st.selectbox("Select Candidate to Collect Fee:", s_options)
+        sel_sid = sel_s.split(" - ")[0]
+        s_data = conn.execute("SELECT * FROM students WHERE student_id = ?", (sel_sid,)).fetchone()
+        
+        p_rows = conn.execute("SELECT * FROM fees WHERE student_id = ?", (sel_sid,)).fetchall()
+        tot_p = sum([r["amount"] for r in p_rows])
+        net_f = s_data["net_fee"] if s_data["net_fee"] else 0.0
+        due_b = max(0.0, net_f - tot_p)
+        
+        st.info(f"Student: **{s_data['name']}** | Course Fee: **₹{net_f:.2f}** | Current Due: **₹{due_b:.2f}**")
+        
+        teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
+        
+        with st.form("counter_fee_form", clear_on_submit=True):
+            pay_amt = st.number_input("Deposit Amount (₹)*", min_value=50.0, step=100.0, value=500.0)
+            pay_mode = st.selectbox("Payment Mode", ["Cash", "UPI / GPay", "Bank Transfer"])
+            collector = st.selectbox("Collected By (Teacher/Staff):", teachers_list)
+            remarks = st.text_input("Remarks", value="Course Installment Fee")
             
-            col_inf1, col_inf2, col_inf3 = st.columns(3)
-            col_inf1.metric("Course Net Fee", f"₹{net_f:.2f}")
-            col_inf2.metric("Total Deposited", f"₹{tot_p:.2f}")
-            col_inf3.metric("Current Due", f"₹{due_b:.2f}", delta="-Due" if due_b > 0 else "Cleared", delta_color="inverse")
-            
-            with st.form("quick_fee_form", clear_on_submit=True):
-                pay_amt = st.number_input("Deposit Amount (₹)*", min_value=50.0, step=100.0, value=500.0)
-                pay_mode = st.selectbox("Payment Mode", ["Cash", "UPI / GPay", "Bank Transfer"])
-                collector = st.text_input("Collector Name", value="Chiranjeeb Hazarika")
-                remarks = st.text_input("Remarks", value="Course Installment Fee")
+            if st.form_submit_button("🟢 Collect Fee & Issue Receipt"):
+                rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(conn.execute('SELECT id FROM fees').fetchall())+1:03d}"
+                today_str = str(datetime.date.today())
+                conn.execute("INSERT INTO fees (receipt_no, student_id, date, amount, mode, collector, remarks) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                             (rc_num, sel_sid, today_str, pay_amt, pay_mode, collector, remarks))
+                conn.commit()
                 
-                if st.form_submit_button("🟢 Collect Fee & Save"):
-                    rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(conn.execute('SELECT id FROM fees').fetchall())+1:03d}"
-                    today_str = str(datetime.date.today())
-                    conn.execute("INSERT INTO fees (receipt_no, student_id, date, amount, mode, collector, remarks) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                 (rc_num, sel_sid, today_str, pay_amt, pay_mode, collector, remarks))
-                    conn.commit()
-                    
-                    new_due = max(0.0, due_b - pay_amt)
-                    st.success(f"🧾 Receipt Issued: {rc_num} | Amount: ₹{pay_amt}")
-                    
-                    # 1-Click WhatsApp Receipt Link
-                    raw_msg = f"""🧾 *OFFICIAL FEE RECEIPT - SOFT TECH COMPUTERS & ZTC*
+                new_due = max(0.0, due_b - pay_amt)
+                st.success(f"🧾 Receipt Issued: {rc_num} | Amount: ₹{pay_amt}")
+                
+                # Direct WhatsApp Link
+                raw_msg = f"""🧾 *OFFICIAL FEE RECEIPT - SOFT TECH COMPUTERS & ZTC*
 (Center Code: 4159 | Kamarchuburi, Sonitpur)
 
 Dear {s_data['name']}, your course installment fee has been successfully received.
@@ -528,58 +591,24 @@ Dear {s_data['name']}, your course installment fee has been successfully receive
 • Course: *{s_data['course']}*
 • Amount Paid: *₹{pay_amt:.2f}* ({pay_mode})
 • Remaining Due Balance: *₹{new_due:.2f}*
+• Collected By: *{collector}*
 • Date: *{today_str}*
 
 Thank you for learning with Soft Tech Computers & ZTC!
 Contact: 9101026718"""
-                    wa_url = f"https://wa.me/91{s_data['mobile']}?text={urllib.parse.quote(raw_msg)}"
-                    st.markdown(f"""
-                    <a href="{wa_url}" target="_blank" style="text-decoration:none;">
-                        <div style="background-color:#25D366; color:white; padding:10px 18px; border-radius:6px; font-weight:bold; display:inline-block; margin-top:8px;">
-                            📲 Send Official WhatsApp Receipt to Candidate (+91 {s_data['mobile']})
-                        </div>
-                    </a>
-                    """, unsafe_allow_html=True)
-        else:
-            st.info("No students found. Please register a student first.")
-            
-    with t_f2:
-        st.write("**Candidate Outstanding Fee Dues Ledger:**")
-        students_all = conn.execute("SELECT * FROM students").fetchall()
-        dues_list = []
-        for s_item in students_all:
-            s_id = s_item["student_id"]
-            paid_sum = sum([r["amount"] for r in conn.execute("SELECT amount FROM fees WHERE student_id = ?", (s_id,)).fetchall()])
-            net_amt = s_item["net_fee"] if s_item["net_fee"] else 0.0
-            due_amt = max(0.0, net_amt - paid_sum)
-            if due_amt > 0:
-                raw_rem = f"""📢 *FEE DUE REMINDER - SOFT TECH COMPUTERS & ZTC*
-Dear {s_item['name']} ({s_item['student_id']}),
-This is a gentle reminder that your installment fee of *₹{due_amt:.2f}* for course *{s_item['course']}* is currently pending.
-Kindly clear your due balance at the center counter.
-Director Contact: 9101026718"""
-                rem_link = f"https://wa.me/91{s_item['mobile']}?text={urllib.parse.quote(raw_rem)}"
-                dues_list.append({
-                    "Roll ID": s_id,
-                    "Name": s_item["name"],
-                    "Mobile": s_item["mobile"],
-                    "Course": s_item["course"],
-                    "Net Fee": f"₹{net_amt:.2f}",
-                    "Paid": f"₹{paid_sum:.2f}",
-                    "Due Balance": f"₹{due_amt:.2f}",
-                    "WhatsApp Reminder Link": rem_link
-                })
-        if dues_list:
-            dues_df = pd.DataFrame(dues_list)
-            st.dataframe(dues_df[["Roll ID", "Name", "Mobile", "Course", "Net Fee", "Paid", "Due Balance"]], use_container_width=True)
-            st.write("**Click to Send Direct WhatsApp Reminders:**")
-            for d in dues_list:
-                st.markdown(f"• **{d['Name']}** (Due: {d['Due Balance']}): [📲 Send WhatsApp Reminder]({d['WhatsApp Reminder Link']})")
-        else:
-            st.success("🎉 All enrolled students have completely cleared their fees!")
+                wa_url = f"https://wa.me/91{s_data['mobile']}?text={urllib.parse.quote(raw_msg)}"
+                st.markdown(f"""
+                <a href="{wa_url}" target="_blank" style="text-decoration:none;">
+                    <div style="background-color:#25D366; color:white; padding:10px 18px; border-radius:6px; font-weight:bold; display:inline-block; margin-top:8px;">
+                        📲 Send Official WhatsApp Receipt to Student (+91 {s_data['mobile']})
+                    </div>
+                </a>
+                """, unsafe_allow_html=True)
+    else:
+        st.info("No students registered yet.")
 
 # -------------------------------------------------------------
-# 4. ADMISSION & LIFECYCLE MANAGEMENT
+# 5. ADMISSION & LIFECYCLE MANAGEMENT
 # -------------------------------------------------------------
 elif menu == "📝 Admission & Lifecycle Management":
     st.subheader("📝 Candidate Admission & Student Lifecycle Progression")
@@ -626,7 +655,7 @@ elif menu == "📝 Admission & Lifecycle Management":
             t_sid = target_s.split(" - ")[0]
             s_rec = conn.execute("SELECT * FROM students WHERE student_id = ?", (t_sid,)).fetchone()
             
-            st.write(f"Candidate: **{s_rec['name']}** | Current Stage: <b style='color:#10B981;'>{s_rec['lifecycle_stage']}</b>", unsafe_allow_html=True)
+            st.write(f"Candidate: **{s_rec['name']}** | Current Stage: <b style='color:#059669;'>{s_rec['lifecycle_stage']}</b>", unsafe_allow_html=True)
             
             col_stg1, col_stg2 = st.columns(2)
             with col_stg1:
@@ -650,133 +679,171 @@ elif menu == "📝 Admission & Lifecycle Management":
                     conn.execute("DELETE FROM fees WHERE student_id = ?", (t_sid,))
                     conn.execute("DELETE FROM attendance WHERE student_id = ?", (t_sid,))
                     conn.execute("DELETE FROM marks WHERE student_id = ?", (t_sid,))
+                    conn.execute("DELETE FROM daily_class_logs WHERE student_id = ?", (t_sid,))
                     conn.commit()
                     st.success(f"Candidate {t_sid} and all linked records deleted completely!")
                     st.rerun()
 
 # -------------------------------------------------------------
-# 5. FACULTY ATTENDANCE & SALARY (REPLACED CLEAN TITLE)
+# 6. FACULTY DESK, ADD TEACHER & ATTENDANCE
 # -------------------------------------------------------------
-elif menu == "⏰ Faculty Attendance & Salary":
-    st.subheader("⏰ Faculty Shift Punch & Automated Salary Engine")
+elif menu == "👨‍🏫 Faculty Desk & Attendance":
+    st.subheader("👨‍🏫 Faculty Management & Shift Attendance Punch")
     now_ist = datetime.datetime.now(IST)
     st.info(f"🕒 **Current IST Clock:** `{now_ist.strftime('%I:%M:%S %p (%d-%B-%Y)')}`")
     
-    st.markdown("""
-    <div style="background:#0F172A; border:1px solid #1E293B; border-radius:8px; padding:12px 16px; font-size:13px; margin-bottom:14px;">
-        💡 <b>Salary Rule:</b> 3 Batches (90+90+90 = 270 Mins) = <b>₹230 / Day</b> (₹76.67 per 90-min batch | ₹0.852/Min). Late arrival automatically calculates penalty deduction.
-    </div>
-    """, unsafe_allow_html=True)
+    t_tab1, t_tab2 = st.tabs(["⏰ Teacher Daily Punch (In/Out)", "➕ Add New Teacher / Faculty"])
     
-    t_name = st.selectbox("Select Teacher Name:", ["Senior Instructor", "Assistant Faculty", "Guest Faculty"])
-    t_shift = st.selectbox("Assigned Shift:", [
-        "Morning (06:30 - 08:00 AM)",
-        "Afternoon (04:00 - 05:30 PM)",
-        "Evening (05:30 - 07:00 PM)"
-    ])
-    
-    shift_start_mins = 6 * 60 + 30 if "Morning" in t_shift else (16 * 60 if "Afternoon" in t_shift else 17 * 60 + 30)
-    current_mins = now_ist.hour * 60 + now_ist.minute
-    late_by = max(0, current_mins - shift_start_mins)
-    is_late = late_by > 5
-    
-    base_batch_pay = 230.0 / 3.0
-    per_min_rate = 230.0 / 270.0
-    penalty_amt = round(min(late_by * per_min_rate, base_batch_pay), 2) if is_late else 0.0
-    net_batch_earning = round(max(0.0, base_batch_pay - penalty_amt), 2)
-    
-    col_tp1, col_tp2 = st.columns(2)
-    with col_tp1:
-        if st.button("🟢 Teacher Punch IN Now", use_container_width=True):
-            today_str = str(datetime.date.today())
-            time_str = now_ist.strftime("%I:%M %p")
-            stat_val = "Late" if is_late else "On-Time"
-            conn.execute('''
-                INSERT INTO teacher_punches (teacher_name, date, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (t_name, today_str, t_shift, time_str, "--", late_by, penalty_amt, net_batch_earning, stat_val))
-            conn.commit()
-            if is_late:
-                st.warning(f"🚨 Late by {late_by} mins! Penalty: ₹{penalty_amt:.2f} | Net Shift Pay: ₹{net_batch_earning:.2f}")
-            else:
-                st.success(f"✅ On-Time Punch IN at {time_str}! Shift Pay: ₹{base_batch_pay:.2f}")
-            st.rerun()
+    with t_tab1:
+        teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
+        if teachers_list:
+            t_name = st.selectbox("Select Teacher Name:", teachers_list)
+            t_shift = st.selectbox("Assigned Shift:", [
+                "Morning (06:30 - 08:00 AM)",
+                "Afternoon (04:00 - 05:30 PM)",
+                "Evening (05:30 - 07:00 PM)"
+            ])
             
-    with col_tp2:
-        if st.button("🔴 Teacher Punch OUT Now", use_container_width=True):
-            today_str = str(datetime.date.today())
-            time_str = now_ist.strftime("%I:%M %p")
-            conn.execute("UPDATE teacher_punches SET time_out = ? WHERE teacher_name = ? AND date = ? AND time_out = '--'",
-                         (time_str, t_name, today_str))
-            conn.commit()
-            st.success(f"✅ Punched OUT at {time_str}!")
-            st.rerun()
+            shift_start_mins = 6 * 60 + 30 if "Morning" in t_shift else (16 * 60 if "Afternoon" in t_shift else 17 * 60 + 30)
+            current_mins = now_ist.hour * 60 + now_ist.minute
+            late_by = max(0, current_mins - shift_start_mins)
+            is_late = late_by > 5
             
-    st.markdown("---")
-    st.write("**Recent Teacher Shift & Earning Logs:**")
-    t_logs = conn.execute("SELECT * FROM teacher_punches ORDER BY id DESC LIMIT 10").fetchall()
-    if t_logs:
-        st.dataframe(pd.DataFrame([dict(r) for r in t_logs]), use_container_width=True)
+            base_batch_pay = 230.0 / 3.0
+            per_min_rate = 230.0 / 270.0
+            penalty_amt = round(min(late_by * per_min_rate, base_batch_pay), 2) if is_late else 0.0
+            net_batch_earning = round(max(0.0, base_batch_pay - penalty_amt), 2)
+            
+            col_tp1, col_tp2 = st.columns(2)
+            with col_tp1:
+                if st.button("🟢 Teacher Punch IN Now", use_container_width=True):
+                    today_str = str(datetime.date.today())
+                    time_str = now_ist.strftime("%I:%M %p")
+                    stat_val = "Late" if is_late else "On-Time"
+                    conn.execute('''
+                        INSERT INTO teacher_punches (teacher_name, date, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (t_name, today_str, t_shift, time_str, "--", late_by, penalty_amt, net_batch_earning, stat_val))
+                    conn.commit()
+                    if is_late:
+                        st.warning(f"🚨 Late by {late_by} mins! Penalty: ₹{penalty_amt:.2f} | Net Shift Pay: ₹{net_batch_earning:.2f}")
+                    else:
+                        st.success(f"✅ On-Time Punch IN at {time_str}! Shift Pay: ₹{base_batch_pay:.2f}")
+                    st.rerun()
+                    
+            with col_tp2:
+                if st.button("🔴 Teacher Punch OUT Now", use_container_width=True):
+                    today_str = str(datetime.date.today())
+                    time_str = now_ist.strftime("%I:%M %p")
+                    conn.execute("UPDATE teacher_punches SET time_out = ? WHERE teacher_name = ? AND date = ? AND time_out = '--'",
+                                 (time_str, t_name, today_str))
+                    conn.commit()
+                    st.success(f"✅ Punched OUT at {time_str}!")
+                    st.rerun()
+                    
+            st.markdown("---")
+            st.write("**Recent Teacher Shift Logs:**")
+            t_logs = conn.execute("SELECT teacher_name, date, shift, time_in, time_out, late_mins, status FROM teacher_punches ORDER BY id DESC LIMIT 10").fetchall()
+            if t_logs:
+                st.dataframe(pd.DataFrame([dict(r) for r in t_logs]), use_container_width=True)
+        else:
+            st.warning("No teachers registered yet. Please add a teacher in Tab 2.")
+            
+    with t_tab2:
+        st.write("**➕ Register New Faculty / Teacher:**")
+        with st.form("new_teacher_form", clear_on_submit=True):
+            nt_name = st.text_input("Teacher Full Name*")
+            nt_phone = st.text_input("Mobile Number*")
+            nt_desig = st.selectbox("Designation", ["Computer Instructor", "Lab Assistant", "Guest Lecturer"])
+            nt_shift = st.selectbox("Preferred Shift", ["All Shifts", "Morning Shift", "Evening Shift"])
+            
+            if st.form_submit_button("🟢 Register Teacher"):
+                if nt_name and nt_phone:
+                    try:
+                        conn.execute("INSERT INTO teachers (name, phone, designation, shift, join_date) VALUES (?, ?, ?, ?, ?)",
+                                     (nt_name.strip(), nt_phone.strip(), nt_desig, nt_shift, str(datetime.date.today())))
+                        conn.commit()
+                        st.success(f"🎉 Teacher {nt_name} Registered Successfully!")
+                        st.rerun()
+                    except sqlite3.IntegrityError:
+                        st.error("🚨 Teacher with this name is already registered!")
+                else:
+                    st.error("Please enter Name and Phone number!")
+                    
+        st.write("**Current Faculty List:**")
+        all_teachers = conn.execute("SELECT * FROM teachers").fetchall()
+        if all_teachers:
+            st.dataframe(pd.DataFrame([dict(r) for r in all_teachers]), use_container_width=True)
 
 # -------------------------------------------------------------
-# 6. SYLLABUS COVERED & HOMEWORK DESK
+# 7. DIRECTOR FINANCIAL LOCKER (100% PRIVATE)
 # -------------------------------------------------------------
-elif menu == "📚 Syllabus Covered & Homework Desk":
-    st.subheader("📚 Daily Syllabus Covered & Student Unit Test Marks")
+elif menu == "🔐 Director Financial Locker (Private)":
+    st.subheader("🔐 Director Private Financial Locker & Dues Tracker")
+    st.write("এই টেবটো কেৱল ডিৰেক্টৰৰ ব্যক্তিগত ব্যৱহাৰৰ বাবে। শিক্ষক বা আন কোনোৱে কালেকচন চাব নোৱাৰে।")
     
-    t_s1, t_s2 = st.tabs(["📖 Record Today's Topics Covered", "📝 Record Unit Test / Exam Marks"])
-    
-    with t_s1:
-        with st.form("syl_form", clear_on_submit=True):
-            s_course = st.selectbox("Course:", ["PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"])
-            s_topic = st.text_input("Topics Taught in Class Today (e.g. MS Excel Formulas, Tally GST Invoice, C Basics)*")
-            s_teacher = st.text_input("Faculty Incharge", value="Chiranjeeb Hazarika")
-            if st.form_submit_button("🟢 Save Topic to Course"):
-                if s_topic:
-                    conn.execute("INSERT INTO syllabus_logs (course, topic_name, date, teacher_name) VALUES (?, ?, ?, ?)",
-                                 (s_course, s_topic, str(datetime.date.today()), s_teacher))
-                    conn.commit()
-                    st.success(f"✅ Topic recorded for {s_course}!")
-                    st.rerun()
-                else:
-                    st.error("Please enter Topic Name!")
-        s_all = conn.execute("SELECT * FROM syllabus_logs ORDER BY id DESC LIMIT 15").fetchall()
-        if s_all:
-            st.dataframe(pd.DataFrame([dict(r) for r in s_all]), use_container_width=True)
-            
-    with t_s2:
-        students_m = conn.execute("SELECT student_id, name FROM students").fetchall()
-        if students_m:
-            with st.form("marks_form", clear_on_submit=True):
-                m_sid = st.selectbox("Select Candidate:", [f"{r['student_id']} - {r['name']}" for r in students_m])
-                m_topic = st.text_input("Test / Exam Title (e.g. MS Word Practical Test, Unit-1 Exam)*")
-                col_m1, col_m2 = st.columns(2)
-                with col_m1:
-                    m_obt = st.number_input("Marks Obtained*", min_value=0.0, max_value=100.0, value=40.0)
-                with col_m2:
-                    m_tot = st.number_input("Total Marks*", min_value=1.0, max_value=100.0, value=50.0)
-                    
-                if st.form_submit_button("🟢 Post Marks to Student Record"):
-                    sid_val = m_sid.split(" - ")[0]
-                    if m_topic:
-                        conn.execute("INSERT INTO marks (student_id, test_topic, marks_obtained, total_marks, date) VALUES (?, ?, ?, ?, ?)",
-                                     (sid_val, m_topic, m_obt, m_tot, str(datetime.date.today())))
-                        conn.commit()
-                        st.success(f"✅ Marks posted for {m_sid}!")
-                        st.rerun()
-                    else:
-                        st.error("Please enter Test Name!")
-            m_all = conn.execute("SELECT * FROM marks ORDER BY id DESC LIMIT 15").fetchall()
-            if m_all:
-                st.dataframe(pd.DataFrame([dict(r) for r in m_all]), use_container_width=True)
+    adm_pass = st.text_input("Enter Director Security Password:", type="password")
+    if adm_pass == ADMIN_PIN:
+        st.success("Authorized Director Access Granted! (Welcome Chiranjeeb Hazarika Sir)")
+        
+        all_fees = conn.execute("SELECT * FROM fees").fetchall()
+        total_collected = sum([r["amount"] for r in all_fees])
+        
+        students_all = conn.execute("SELECT * FROM students").fetchall()
+        total_expected = sum([r["net_fee"] for r in students_all if r["net_fee"]])
+        total_due = max(0.0, total_expected - total_collected)
+        
+        col_m1, col_m2, col_m3 = st.columns(3)
+        col_m1.metric("Total Fee Collected (Net)", f"₹{total_collected:,.2f}")
+        col_m2.metric("Total Pending Dues", f"₹{total_due:,.2f}", delta="-Pending", delta_color="inverse")
+        col_m3.metric("Total Active Trainees", f"{len(students_all)} Students")
+        
+        st.markdown("---")
+        st.write("**💰 Complete Student Outstanding Dues Ledger:**")
+        dues_list = []
+        for s_item in students_all:
+            s_id = s_item["student_id"]
+            paid_sum = sum([r["amount"] for r in conn.execute("SELECT amount FROM fees WHERE student_id = ?", (s_id,)).fetchall()])
+            net_amt = s_item["net_fee"] if s_item["net_fee"] else 0.0
+            due_amt = max(0.0, net_amt - paid_sum)
+            if due_amt > 0:
+                raw_rem = f"""📢 *FEE DUE REMINDER - SOFT TECH COMPUTERS & ZTC*
+Dear {s_item['name']} ({s_item['student_id']}),
+This is a gentle reminder that your installment fee of *₹{due_amt:.2f}* for course *{s_item['course']}* is currently pending.
+Kindly clear your due balance at the center counter.
+Director Contact: 9101026718"""
+                rem_link = f"https://wa.me/91{s_item['mobile']}?text={urllib.parse.quote(raw_rem)}"
+                dues_list.append({
+                    "Roll ID": s_id,
+                    "Name": s_item["name"],
+                    "Mobile": s_item["mobile"],
+                    "Course": s_item["course"],
+                    "Net Fee": f"₹{net_amt:.2f}",
+                    "Paid": f"₹{paid_sum:.2f}",
+                    "Due Balance": f"₹{due_amt:.2f}",
+                    "Reminder Link": rem_link
+                })
+        if dues_list:
+            dues_df = pd.DataFrame(dues_list)
+            st.dataframe(dues_df[["Roll ID", "Name", "Mobile", "Course", "Net Fee", "Paid", "Due Balance"]], use_container_width=True)
+            st.write("**Send Direct WhatsApp Reminders to Defaulters:**")
+            for d in dues_list:
+                st.markdown(f"• **{d['Name']}** (Due: {d['Due Balance']}): [📲 Send WhatsApp Reminder]({d['Reminder Link']})")
         else:
-            st.info("No students found.")
+            st.success("🎉 All enrolled students have completely cleared their fees!")
+            
+        st.markdown("---")
+        st.write("**🧾 All Fee Transaction Receipts (Full History):**")
+        if all_fees:
+            st.dataframe(pd.DataFrame([dict(r) for r in all_fees]), use_container_width=True)
+    elif adm_pass:
+        st.error("❌ Incorrect Director Password!")
 
 conn.close()
 
 # Footer
 st.markdown("""
-<div style="text-align:center; padding:20px; font-size:12px; color:#64748B; border-top:1px solid #1E293B; margin-top:40px;">
+<div style="text-align:center; padding:20px; font-size:12px; color:#64748B; border-top:1px solid #E2E8F0; margin-top:40px;">
 Soft Tech Computers & ZTC Enterprise Management System © 2026 | Center Code: 4159 | Kamarchuburi, Thelamara, Sonitpur - 784149
 </div>
 """, unsafe_allow_html=True)
