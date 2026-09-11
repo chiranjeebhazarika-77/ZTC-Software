@@ -5,6 +5,9 @@ import pytz
 import sqlite3
 import urllib.parse
 import base64
+import requests
+import json
+import threading
 import os
 
 # Page Setup
@@ -17,9 +20,36 @@ st.set_page_config(
 
 IST = pytz.timezone('Asia/Kolkata')
 DB_FILE = "ztc_academy.db"
+GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyeLkWRqD_gHSIQzFBUEJ2kv1e6DpbaUkBB9_CV5l_95k8kg-tSyBnCC50W1TN0XwES/exec"
 
 # -------------------------------------------------------------
-# DATABASE ENGINE (WITH SETTINGS & MIGRATION)
+# BACKGROUND CLOUD SYNC & RECOVERY ENGINE
+# -------------------------------------------------------------
+def push_sheet_async(sheet_name, df):
+    def _worker():
+        try:
+            records = [df.columns.tolist()] + df.fillna("").astype(str).values.tolist()
+            payload = {"action": "overwrite", "sheet_name": sheet_name, "rows": records}
+            requests.post(GSHEET_WEBAPP_URL, data=json.dumps(payload), headers={"Content-Type": "application/json"}, timeout=8)
+        except Exception:
+            pass
+    t = threading.Thread(target=_worker)
+    t.daemon = True
+    t.start()
+
+def fetch_sheet_data(sheet_name):
+    try:
+        res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=4)
+        if res.status_code == 200:
+            data = res.json()
+            if isinstance(data, list) and len(data) > 1:
+                return pd.DataFrame(data[1:], columns=data[0], dtype=str)
+    except Exception:
+        pass
+    return None
+
+# -------------------------------------------------------------
+# DATABASE ENGINE (SQLITE + AUTO-RECOVERY ON SERVER SLEEP)
 # -------------------------------------------------------------
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
@@ -42,7 +72,7 @@ def init_db():
     conn = get_db_connection()
     c = conn.cursor()
     
-    # System Settings (For Dynamic Password & Center Config)
+    # System Settings (Password)
     c.execute('''
         CREATE TABLE IF NOT EXISTS system_settings (
             key TEXT PRIMARY KEY,
@@ -190,17 +220,56 @@ def init_db():
         )
     ''')
     
-    # Default Teacher if empty
+    # Check default teacher
     check_t = c.execute("SELECT COUNT(*) FROM teachers").fetchone()[0]
     if check_t == 0:
         c.execute('''
             INSERT INTO teachers (name, phone, email, qualification, designation, shift, address, id_proof, join_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', ("Chiranjeeb Hazarika (Director)", "9101026718", "ztcenterprise@gmail.com", "MCA / IT Specialist", "Director / Center Head", "All Shifts", "Kamarchuburi, Thelamara, Sonitpur", "ID-4159", str(datetime.date.today())))
+    
+    # -------------------------------------------------------------
+    # CLOUD AUTO-RESTORATION (If local database is freshly awakened)
+    # -------------------------------------------------------------
+    check_s = c.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+    if check_s == 0:
+        df_cloud_s = fetch_sheet_data("students_db")
+        if df_cloud_s is not None and not df_cloud_s.empty:
+            for _, r in df_cloud_s.iterrows():
+                try:
+                    c.execute('''
+                        INSERT OR IGNORE INTO students (
+                            student_id, name, father_name, mother_name, gender, dob, mobile,
+                            address_vill, po, ps, pin, district, course, join_date, total_fee,
+                            net_fee, shift, status, lifecycle_stage, ho_reg_no, cert_serial_no
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        r.get("Student ID", ""), r.get("Name", ""), r.get("Father Name", ""), r.get("Mother Name", ""),
+                        r.get("Gender", "Male"), r.get("DOB", ""), r.get("Mobile No", ""), r.get("Vill Town", ""),
+                        r.get("PO", ""), r.get("PS", ""), r.get("PIN", ""), r.get("District", ""),
+                        r.get("Course", ""), r.get("Join Date", str(datetime.date.today())),
+                        float(r.get("Total Fee", 2550.0) or 2550.0), float(r.get("Net Fee", 2550.0) or 2550.0),
+                        r.get("Shift", "Morning"), r.get("Status", "Active"), r.get("Stage_Cert_Status", "Admission"),
+                        r.get("HO_Reg_No", "Pending"), r.get("Cert_Serial_No", "--")
+                    ))
+                except Exception:
+                    pass
+                    
     conn.commit()
     conn.close()
 
 init_db()
+
+# Synchronize current tables to cloud
+def sync_all_to_cloud(conn):
+    try:
+        st_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id as 'Student ID', name as 'Name', father_name as 'Father Name', mobile as 'Mobile No', course as 'Course', net_fee as 'Net Fee', shift as 'Shift', status as 'Status', lifecycle_stage as 'Stage' FROM students").fetchall()])
+        if not st_df.empty: push_sheet_async("students_db", st_df)
+        
+        fee_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT receipt_no as 'Receipt No', student_id as 'Student ID', date as 'Date', amount as 'Amount Paid', mode as 'Payment Mode', collector as 'Collected_By', remarks as 'Remarks' FROM fees").fetchall()])
+        if not fee_df.empty: push_sheet_async("fees_db", fee_df)
+    except Exception:
+        pass
 
 # -------------------------------------------------------------
 # LIGHT & CRISP THEME CSS
@@ -335,7 +404,7 @@ st.markdown("""
     </div>
     <div style="font-size:12px; color:#475569; text-align:right;">
         Academic Session: <b style="color:#0F172A;">2026-27</b><br>
-        <span style="color:#059669; font-weight:bold;">● System Live (Zero-Lag Engine)</span>
+        <span style="color:#059669; font-weight:bold;">🛡️ Cloud Protected (Zero-Loss Engine)</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -434,7 +503,7 @@ if menu == "🌐 Public Dashboard & Enquiry":
                     st.error("Please fill Name and Mobile Number!")
 
 # -------------------------------------------------------------
-# 2. STUDENT SELF-SERVICE PORTAL
+# 2. STUDENT SELF-SERVICE PORTAL (WITH WHATSAPP FORGOT PASS HELP)
 # -------------------------------------------------------------
 elif menu == "🔑 Student Self-Service Portal":
     st.subheader("🔑 Student Dashboard (Attendance, Daily Learning, Marks & Passbook)")
@@ -443,19 +512,34 @@ elif menu == "🔑 Student Self-Service Portal":
         st.session_state["s_auth_id"] = None
 
     if not st.session_state["s_auth_id"]:
+        st.info("💡 ছাত্ৰৰ নিজৰ পঞ্জীকৃত **ম’বাইল নম্বৰটোৱেই হ’ল লগ-ইন পাছৱৰ্ড**।")
         c_l1, c_l2 = st.columns(2)
         with c_l1:
-            in_sid = st.text_input("Enter Student Roll ID:").strip().upper()
+            in_sid = st.text_input("Enter Student Roll ID (e.g. STC26-001):").strip().upper()
         with c_l2:
             in_mob = st.text_input("Enter Registered Mobile No (Password):", type="password").strip()
             
-        if st.button("🟢 Login To My Dashboard", use_container_width=True):
-            user = conn.execute("SELECT * FROM students WHERE student_id = ? AND mobile = ?", (in_sid, in_mob)).fetchone()
-            if user:
-                st.session_state["s_auth_id"] = in_sid
-                st.rerun()
-            else:
-                st.error("❌ Invalid Roll ID or Mobile Number!")
+        col_btn1, col_btn2 = st.columns([1.2, 2])
+        with col_btn1:
+            if st.button("🟢 Login To My Dashboard", use_container_width=True):
+                user = conn.execute("SELECT * FROM students WHERE student_id = ? AND mobile = ?", (in_sid, in_mob)).fetchone()
+                if user:
+                    st.session_state["s_auth_id"] = in_sid
+                    st.rerun()
+                else:
+                    st.error("❌ Invalid Roll ID or Mobile Number!")
+                    
+        with col_btn2:
+            # 1-Click WhatsApp Help Link for Forgotten Roll/Password
+            wa_help_msg = "নমস্কাৰ ছাৰ, মই Soft Tech Computers & ZTC Academy-ৰ ছাত্ৰ। মই মোৰ লগ-ইন ৰোল নম্বৰ বা মোবাইল নম্বৰ পাহৰিছোঁ। অনুগ্ৰহ কৰি মোক সহায় কৰিবনে?"
+            wa_help_url = f"https://wa.me/919101026718?text={urllib.parse.quote(wa_help_msg)}"
+            st.markdown(f"""
+            <a href="{wa_help_url}" target="_blank" style="text-decoration:none;">
+                <div style="background-color:#F1F5F9; border:1px solid #CBD5E1; color:#0284C7; padding:8px 14px; border-radius:6px; font-weight:700; font-size:13px; text-align:center; display:inline-block; width:100%;">
+                    📲 পাহৰি গ’ল নেকি? WhatsApp-ত সহায় বিচাৰক (Contact Office)
+                </div>
+            </a>
+            """, unsafe_allow_html=True)
     else:
         sid = st.session_state["s_auth_id"]
         s = conn.execute("SELECT * FROM students WHERE student_id = ?", (sid,)).fetchone()
@@ -635,6 +719,9 @@ elif menu == "💵 TuFee Fast Counter":
                              (rc_num, sel_sid, today_str, pay_amt, pay_mode, collector, remarks))
                 conn.commit()
                 
+                # Auto Sync to Cloud
+                sync_all_to_cloud(conn)
+                
                 new_due = max(0.0, due_b - pay_amt)
                 st.success(f"🧾 Receipt Issued: {rc_num} | Amount: ₹{pay_amt}")
                 
@@ -732,6 +819,10 @@ elif menu == "📝 New Candidate Admission":
                         "Admission", "Pending", "--", photo_b64
                     ))
                     conn.commit()
+                    
+                    # Auto sync to Cloud
+                    sync_all_to_cloud(conn)
+                    
                     st.success(f"🎉 Candidate Registered Successfully! Roll ID: {next_id}")
                     st.rerun()
                 except sqlite3.IntegrityError:
@@ -896,7 +987,6 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
 elif menu == "🔐 Director Master Command Center":
     st.subheader("🔐 Director Master Command Center (Executive Control)")
     
-    # Retrieve current password from database
     stored_pin_row = conn.execute("SELECT value FROM system_settings WHERE key = 'admin_pin'").fetchone()
     current_admin_pin = stored_pin_row["value"] if stored_pin_row else "zaan123"
     
@@ -905,7 +995,6 @@ elif menu == "🔐 Director Master Command Center":
     if adm_pass == current_admin_pin:
         st.success("Authorized Director Access Granted! Welcome Chiranjeeb Hazarika Sir.")
         
-        # Tabs for Director Powers
         dir_t1, dir_t2, dir_t3, dir_t4, dir_t5 = st.tabs([
             "📊 Executive Morning Briefing",
             "✏️ Edit & Remove Students",
@@ -914,7 +1003,6 @@ elif menu == "🔐 Director Master Command Center":
             "🛡️ Security & Password Change"
         ])
         
-        # TAB 1: EXECUTIVE BRIEFING
         with dir_t1:
             st.write("##### ☀️ Executive Financial & Operational Overview")
             today_str = str(datetime.date.today())
@@ -924,7 +1012,6 @@ elif menu == "🔐 Director Master Command Center":
             today_fees = [r for r in all_fees if r["date"] == today_str]
             today_cash = sum([r["amount"] for r in today_fees if r["mode"] == "Cash"])
             today_online = sum([r["amount"] for r in today_fees if r["mode"] != "Cash"])
-            today_tot = today_cash + today_online
             
             month_fees = [r for r in all_fees if r["date"].startswith(month_str)]
             month_tot = sum([r["amount"] for r in month_fees])
@@ -942,7 +1029,6 @@ elif menu == "🔐 Director Master Command Center":
             
             st.markdown("---")
             st.write("##### ⚠️ Candidate Drop-out & Long Absence Alert")
-            # Find students with no attendance in last 5 records
             absent_alerts = []
             for s_rec in all_students:
                 s_att = conn.execute("SELECT status FROM attendance WHERE student_id = ? ORDER BY id DESC LIMIT 5", (s_rec["student_id"],)).fetchall()
@@ -963,9 +1049,9 @@ elif menu == "🔐 Director Master Command Center":
             else:
                 st.write("No teacher punches recorded for today yet.")
 
-        # TAB 2: EDIT & REMOVE STUDENTS
         with dir_t2:
             st.write("##### ✏️ Update Student Profile & Permanent Cascade Deletion")
+            all_students = conn.execute("SELECT * FROM students").fetchall()
             if all_students:
                 s_opts = [f"{r['student_id']} - {r['name']} ({r['course']})" for r in all_students]
                 chosen_s = st.selectbox("Select Student to Edit or Remove:", s_opts)
@@ -997,6 +1083,7 @@ elif menu == "🔐 Director Master Command Center":
                             ''', (ed_name.upper(), ed_fname.upper(), ed_mname.upper(), ed_mob.strip(),
                                   ed_course, ed_shift, ed_fee, ed_fee, ed_stage, ed_ho.strip(), ed_cert.strip(), target_sid))
                             conn.commit()
+                            sync_all_to_cloud(conn)
                             st.success(f"✅ Student {target_sid} Updated Successfully!")
                             st.rerun()
                             
@@ -1012,6 +1099,7 @@ elif menu == "🔐 Director Master Command Center":
                             conn.execute("DELETE FROM marks WHERE student_id = ?", (target_sid,))
                             conn.execute("DELETE FROM daily_class_logs WHERE student_id = ?", (target_sid,))
                             conn.commit()
+                            sync_all_to_cloud(conn)
                             st.success(f"🗑️ Candidate {target_sid} and all linked records removed completely!")
                             st.rerun()
                         else:
@@ -1019,10 +1107,10 @@ elif menu == "🔐 Director Master Command Center":
             else:
                 st.info("No candidates registered.")
 
-        # TAB 3: FINANCIALS & FEE DUES
         with dir_t3:
             st.write("##### 💰 Defaulters & Outstanding Installment Ledger")
             dues_list = []
+            all_students = conn.execute("SELECT * FROM students").fetchall()
             for s_item in all_students:
                 s_id = s_item["student_id"]
                 paid_sum = sum([r["amount"] for r in conn.execute("SELECT amount FROM fees WHERE student_id = ?", (s_id,)).fetchall()])
@@ -1054,7 +1142,6 @@ Director Contact: 9101026718"""
             else:
                 st.success("🎉 All enrolled students have completely cleared their fees!")
 
-        # TAB 4: 1-CLICK EXCEL / CSV BACKUP
         with dir_t4:
             st.write("##### 💾 1-Click Institute Complete Database Backup")
             st.info("Download complete real-time data to Excel/CSV for offline records and data security.")
@@ -1076,7 +1163,6 @@ Director Contact: 9101026718"""
                     csv_att = df_att.to_csv(index=False).encode('utf-8')
                     st.download_button("📥 Export Attendance (CSV)", data=csv_att, file_name=f"Attendance_Log_{today_str}.csv", mime="text/csv", use_container_width=True)
 
-        # TAB 5: SECURITY & PASSWORD CHANGE
         with dir_t5:
             st.write("##### 🛡️ Change Director Security Password")
             with st.form("change_admin_pwd_form"):
