@@ -1,7 +1,12 @@
 import streamlit as st
 import db
 
-st.set_page_config(page_title="STC-ZTC Enterprise Portal", page_icon="🎓", layout="wide")
+st.set_page_config(
+    page_title="STC-ZTC Enterprise Portal", 
+    page_icon="🎓", 
+    layout="wide",
+    initial_sidebar_state="expanded"  # চাইডবাৰ সদায় মেল খাই থাকিব
+)
 
 st.markdown("""
 <style>
@@ -30,4 +35,4 @@ col1.metric("Enrolled Trainees", f"{len(students)} Active")
 col2.metric("Center Code", "4159 (Assam)")
 col3.metric("System Engine", "Multi-page Architecture (0-Lag)")
 
-st.info("👈 বাওঁফালৰ চাইডবাৰৰ পৰা **Admission, Fees, ID Card** আদি মডিউলসমূহ খুলিব পাৰা।")
+st.info("👈 বাওঁফালৰ চাইডবাৰৰ পৰা **Admission, Fees, ID Card** আদি সকলো মডিউল খুলি কাম কৰিব পাৰা।")
