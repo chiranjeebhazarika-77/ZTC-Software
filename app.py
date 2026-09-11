@@ -279,7 +279,7 @@ menu = st.sidebar.radio("Select Module:", [
     "🔑 Student Self-Service Portal",
     "💵 TuFee Fast Counter & Dues",
     "📝 Admission & Lifecycle Management",
-    "⏰ Faculty Attendance & Salary (₹230/Day)",
+    "⏰ Faculty Attendance & Salary",
     "📚 Syllabus Covered & Homework Desk"
 ])
 
