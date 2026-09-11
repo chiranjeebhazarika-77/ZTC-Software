@@ -4,6 +4,7 @@ import datetime
 import pytz
 import sqlite3
 import urllib.parse
+import base64
 import os
 
 # Page Setup
@@ -16,37 +17,77 @@ st.set_page_config(
 
 IST = pytz.timezone('Asia/Kolkata')
 DB_FILE = "ztc_academy.db"
-ADMIN_PIN = "zaan123"
 
 # -------------------------------------------------------------
-# LIGHTNING-FAST LOCAL DATABASE ENGINE (SQLITE)
+# DATABASE ENGINE (WITH SETTINGS & MIGRATION)
 # -------------------------------------------------------------
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     return conn
 
+def add_col_if_missing(conn, table, col_def):
+    c = conn.cursor()
+    col_name = col_def.split()[0]
+    c.execute(f"PRAGMA table_info({table})")
+    cols = [r[1] for r in c.fetchall()]
+    if col_name not in cols:
+        try:
+            c.execute(f"ALTER TABLE {table} ADD COLUMN {col_def}")
+            conn.commit()
+        except Exception:
+            pass
+
 def init_db():
     conn = get_db_connection()
     c = conn.cursor()
+    
+    # System Settings (For Dynamic Password & Center Config)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS system_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT
+        )
+    ''')
+    cur = c.execute("SELECT value FROM system_settings WHERE key = 'admin_pin'").fetchone()
+    if not cur:
+        c.execute("INSERT INTO system_settings (key, value) VALUES ('admin_pin', 'zaan123')")
+
     # Teachers Master
     c.execute('''
         CREATE TABLE IF NOT EXISTS teachers (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT UNIQUE,
             phone TEXT,
+            email TEXT,
+            qualification TEXT,
             designation TEXT,
             shift TEXT,
+            address TEXT,
+            id_proof TEXT,
             join_date TEXT
         )
     ''')
+    add_col_if_missing(conn, "teachers", "email TEXT")
+    add_col_if_missing(conn, "teachers", "qualification TEXT")
+    add_col_if_missing(conn, "teachers", "address TEXT")
+    add_col_if_missing(conn, "teachers", "id_proof TEXT")
+
     # Students Master
     c.execute('''
         CREATE TABLE IF NOT EXISTS students (
             student_id TEXT PRIMARY KEY,
             name TEXT,
             father_name TEXT,
+            mother_name TEXT,
+            gender TEXT,
+            dob TEXT,
             mobile TEXT UNIQUE,
+            address_vill TEXT,
+            po TEXT,
+            ps TEXT,
+            pin TEXT,
+            district TEXT,
             course TEXT,
             join_date TEXT,
             total_fee REAL,
@@ -55,9 +96,20 @@ def init_db():
             status TEXT,
             lifecycle_stage TEXT,
             ho_reg_no TEXT,
-            cert_serial_no TEXT
+            cert_serial_no TEXT,
+            photo_base64 TEXT
         )
     ''')
+    add_col_if_missing(conn, "students", "mother_name TEXT")
+    add_col_if_missing(conn, "students", "gender TEXT")
+    add_col_if_missing(conn, "students", "dob TEXT")
+    add_col_if_missing(conn, "students", "address_vill TEXT")
+    add_col_if_missing(conn, "students", "po TEXT")
+    add_col_if_missing(conn, "students", "ps TEXT")
+    add_col_if_missing(conn, "students", "pin TEXT")
+    add_col_if_missing(conn, "students", "district TEXT")
+    add_col_if_missing(conn, "students", "photo_base64 TEXT")
+
     # Fees Ledger
     c.execute('''
         CREATE TABLE IF NOT EXISTS fees (
@@ -80,10 +132,13 @@ def init_db():
             date TEXT,
             time_in TEXT,
             status TEXT,
+            marked_by TEXT,
             FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE CASCADE
         )
     ''')
-    # Daily Student Teaching Log (Theory / Practical / Both)
+    add_col_if_missing(conn, "attendance", "marked_by TEXT")
+
+    # Daily Student Teaching Log
     c.execute('''
         CREATE TABLE IF NOT EXISTS daily_class_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -138,25 +193,25 @@ def init_db():
     # Default Teacher if empty
     check_t = c.execute("SELECT COUNT(*) FROM teachers").fetchone()[0]
     if check_t == 0:
-        c.execute("INSERT INTO teachers (name, phone, designation, shift, join_date) VALUES (?, ?, ?, ?, ?)",
-                  ("Chiranjeeb Hazarika (Director)", "9101026718", "Director / Head", "All Shifts", str(datetime.date.today())))
+        c.execute('''
+            INSERT INTO teachers (name, phone, email, qualification, designation, shift, address, id_proof, join_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', ("Chiranjeeb Hazarika (Director)", "9101026718", "ztcenterprise@gmail.com", "MCA / IT Specialist", "Director / Center Head", "All Shifts", "Kamarchuburi, Thelamara, Sonitpur", "ID-4159", str(datetime.date.today())))
     conn.commit()
     conn.close()
 
 init_db()
 
 # -------------------------------------------------------------
-# HIGH-CONTRAST LIGHT & CRISP THEME CSS (CLEAN & READABLE)
+# LIGHT & CRISP THEME CSS
 # -------------------------------------------------------------
 st.markdown("""
 <style>
-/* Clean Off-White Background */
 .stApp {
     background-color: #F8FAFC;
     color: #0F172A;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
-/* Crisp Top Bar */
 .top-navbar {
     background: #FFFFFF;
     border-bottom: 2px solid #E2E8F0;
@@ -170,7 +225,6 @@ st.markdown("""
     margin-bottom: 24px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
-/* White & Bright Hero Card */
 .hero-wrapper {
     background: #FFFFFF;
     border: 1px solid #CBD5E1;
@@ -209,7 +263,6 @@ st.markdown("""
 .pill-green { background: #059669; color: white; }
 .pill-blue { background: #0284C7; color: white; }
 
-/* Light Content Cards */
 .portal-card {
     background: #FFFFFF;
     border: 1px solid #CBD5E1;
@@ -226,7 +279,6 @@ st.markdown("""
     padding-bottom: 8px;
     margin-bottom: 12px;
 }
-/* High-Contrast Inputs & Dataframes */
 div[data-testid="stMetric"] {
     background: #FFFFFF !important;
     border: 1px solid #CBD5E1 !important;
@@ -295,9 +347,9 @@ menu = st.sidebar.radio("Select Module:", [
     "🔑 Student Self-Service Portal",
     "📚 Daily Class Activity (Practical/Theory)",
     "💵 TuFee Fast Counter",
-    "📝 Admission & Lifecycle Management",
+    "📝 New Candidate Admission",
     "👨‍🏫 Faculty Desk & Attendance",
-    "🔐 Director Financial Locker (Private)"
+    "🔐 Director Master Command Center"
 ])
 
 conn = get_db_connection()
@@ -408,13 +460,23 @@ elif menu == "🔑 Student Self-Service Portal":
         sid = st.session_state["s_auth_id"]
         s = conn.execute("SELECT * FROM students WHERE student_id = ?", (sid,)).fetchone()
         
-        st.markdown(f"""
-        <div style="background:#FFFFFF; border:1px solid #CBD5E1; border-radius:10px; padding:16px 20px; margin-bottom:15px; box-shadow:0 2px 6px rgba(0,0,0,0.04);">
-            <b style="font-size:18px; color:#0F172A;">Welcome, {s['name']}</b> | Roll ID: <b style="color:#0284C7;">{s['student_id']}</b> | Course: <b>{s['course']}</b>
-        </div>
-        """, unsafe_allow_html=True)
+        col_hdr1, col_hdr2 = st.columns([1, 4])
+        with col_hdr1:
+            if s["photo_base64"]:
+                st.image(s["photo_base64"], width=100)
+            else:
+                st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=90)
+        with col_hdr2:
+            st.markdown(f"""
+            <div style="padding-top:10px;">
+                <b style="font-size:20px; color:#0F172A;">{s['name']}</b><br>
+                Roll ID: <b style="color:#0284C7;">{s['student_id']}</b> | Course: <b>{s['course']}</b> | Shift: <b>{s['shift']}</b><br>
+                <span style="font-size:12px; color:#64748B;">Father: {s['father_name']} | Address: {s['address_vill'] or 'Sonitpur'}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        st.markdown("<br>", unsafe_allow_html=True)
         
-        # Calculations: Attendance, Marks, Fees
         att_rows = conn.execute("SELECT * FROM attendance WHERE student_id = ?", (sid,)).fetchall()
         tot_days = len(att_rows)
         present_days = len([r for r in att_rows if r["status"] in ["Present", "Late"]])
@@ -431,8 +493,7 @@ elif menu == "🔑 Student Self-Service Portal":
         c3.metric("Remaining Due", f"₹{due_f:,.2f}", delta="-Due" if due_f > 0 else "Cleared", delta_color="inverse")
         
         st.markdown("---")
-        
-        tab_a, tab_b, tab_c, tab_d = st.tabs(["📚 What I Learned (Daily Practical/Theory)", "📝 My Test Marks", "📸 Attendance Log", "💳 Fee Passbook"])
+        tab_a, tab_b, tab_c, tab_d = st.tabs(["📚 What I Learned (Daily Practice)", "📝 My Test Marks", "📸 Attendance Log", "💳 Fee Passbook"])
         
         with tab_a:
             st.write("**Topics Practiced & Learned in Class:**")
@@ -456,7 +517,7 @@ elif menu == "🔑 Student Self-Service Portal":
             st.write("**Attendance History:**")
             if att_rows:
                 a_df = pd.DataFrame([dict(r) for r in att_rows])
-                st.dataframe(a_df[["date", "time_in", "status"]], use_container_width=True)
+                st.dataframe(a_df[["date", "time_in", "status", "marked_by"]], use_container_width=True)
             else:
                 st.info("No attendance records logged yet.")
                 
@@ -495,8 +556,6 @@ elif menu == "🔑 Student Self-Service Portal":
 # -------------------------------------------------------------
 elif menu == "📚 Daily Class Activity (Practical/Theory)":
     st.subheader("📚 Daily Classroom Activity & Practical Lab Register")
-    st.write("শিক্ষকে আজি কোন ছাত্ৰক কি শিকালে (প্ৰেক্টিকেল, থিয়ৰী নে দুয়োটা) তাৰ এন্ট্ৰি:")
-    
     tab_cl1, tab_cl2 = st.tabs(["📝 Record Today's Class for Student", "📋 Review Daily Class History"])
     
     teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
@@ -543,7 +602,7 @@ elif menu == "📚 Daily Class Activity (Practical/Theory)":
             st.info("No class logs recorded yet.")
 
 # -------------------------------------------------------------
-# 4. TUFEE FAST COUNTER (COLLECT & WHATSAPP RECEIPT ONLY)
+# 4. TUFEE FAST COUNTER
 # -------------------------------------------------------------
 elif menu == "💵 TuFee Fast Counter":
     st.subheader("💵 TuFee Instant Counter (Collect Fee & Send WhatsApp Receipt)")
@@ -561,7 +620,6 @@ elif menu == "💵 TuFee Fast Counter":
         due_b = max(0.0, net_f - tot_p)
         
         st.info(f"Student: **{s_data['name']}** | Course Fee: **₹{net_f:.2f}** | Current Due: **₹{due_b:.2f}**")
-        
         teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
         
         with st.form("counter_fee_form", clear_on_submit=True):
@@ -580,7 +638,6 @@ elif menu == "💵 TuFee Fast Counter":
                 new_due = max(0.0, due_b - pay_amt)
                 st.success(f"🧾 Receipt Issued: {rc_num} | Amount: ₹{pay_amt}")
                 
-                # Direct WhatsApp Link
                 raw_msg = f"""🧾 *OFFICIAL FEE RECEIPT - SOFT TECH COMPUTERS & ZTC*
 (Center Code: 4159 | Kamarchuburi, Sonitpur)
 
@@ -608,101 +665,151 @@ Contact: 9101026718"""
         st.info("No students registered yet.")
 
 # -------------------------------------------------------------
-# 5. ADMISSION & LIFECYCLE MANAGEMENT
+# 5. NEW CANDIDATE ADMISSION
 # -------------------------------------------------------------
-elif menu == "📝 Admission & Lifecycle Management":
-    st.subheader("📝 Candidate Admission & Student Lifecycle Progression")
+elif menu == "📝 New Candidate Admission":
+    st.subheader("📝 Candidate New Admission (Detailed Data Capture)")
+    existing_students = conn.execute("SELECT student_id FROM students").fetchall()
+    year_code = str(datetime.date.today().year)[2:]
+    next_id = f"STC{year_code}-{len(existing_students)+1:03d}"
+    st.info(f"⚡ **Auto-Generated Roll ID:** `{next_id}`")
     
-    adm_t1, adm_t2 = st.tabs(["➕ New Student Admission", "🔄 Manage Lifecycle Stages & Cascade Delete"])
-    
-    with adm_t1:
-        existing_students = conn.execute("SELECT student_id FROM students").fetchall()
-        year_code = str(datetime.date.today().year)[2:]
-        next_id = f"STC{year_code}-{len(existing_students)+1:03d}"
-        st.info(f"⚡ **Auto-Generated Roll ID:** `{next_id}`")
-        
-        with st.form("admission_form", clear_on_submit=True):
-            col_a1, col_a2 = st.columns(2)
-            with col_a1:
-                adm_name = st.text_input("Full Name*")
-                adm_fname = st.text_input("Father's Name*")
-                adm_mob = st.text_input("Mobile Number (Unique Key)*")
-            with col_a2:
-                adm_course = st.selectbox("Course Selected*", ["PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"])
-                adm_shift = st.selectbox("Assigned Shift", ["Morning (06:30-08:00 AM)", "Afternoon (04:00-05:30 PM)", "Evening (05:30-07:00 PM)"])
-                adm_fee = st.number_input("Total Net Fee (₹)*", min_value=100.0, value=2550.0, step=50.0)
-                
-            if st.form_submit_button("🟢 Complete Admission"):
-                if adm_name and adm_mob:
-                    try:
-                        conn.execute('''
-                            INSERT INTO students (student_id, name, father_name, mobile, course, join_date, total_fee, net_fee, shift, status, lifecycle_stage, ho_reg_no, cert_serial_no)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        ''', (next_id, adm_name.upper(), adm_fname.upper(), adm_mob, adm_course, str(datetime.date.today()), adm_fee, adm_fee, adm_shift, "Active", "Admission", "Pending", "--"))
-                        conn.commit()
-                        st.success(f"🎉 Candidate Registered Successfully! Roll ID: {next_id}")
-                        st.rerun()
-                    except sqlite3.IntegrityError:
-                        st.error("🚨 This mobile number is already registered with another student!")
-                else:
-                    st.error("Please fill Name and Mobile Number!")
-                    
-    with adm_t2:
-        students_all = conn.execute("SELECT * FROM students").fetchall()
-        if students_all:
-            s_opts = [f"{r['student_id']} - {r['name']}" for r in students_all]
-            target_s = st.selectbox("Select Candidate to Update Stage or Delete:", s_opts)
-            t_sid = target_s.split(" - ")[0]
-            s_rec = conn.execute("SELECT * FROM students WHERE student_id = ?", (t_sid,)).fetchone()
+    with st.form("admission_detailed_form", clear_on_submit=True):
+        st.write("##### 1. Personal & Guardian Details")
+        col_a1, col_a2, col_a3 = st.columns(3)
+        with col_a1:
+            adm_name = st.text_input("Candidate Full Name*")
+            adm_fname = st.text_input("Father's Name*")
+        with col_a2:
+            adm_mname = st.text_input("Mother's Name")
+            adm_gender = st.selectbox("Gender*", ["Male", "Female", "Other"])
+        with col_a3:
+            adm_dob = st.date_input("Date of Birth*", value=datetime.date(2005, 1, 1), min_value=datetime.date(1985, 1, 1))
+            adm_mob = st.text_input("Mobile Number (Unique / WhatsApp)*")
             
-            st.write(f"Candidate: **{s_rec['name']}** | Current Stage: <b style='color:#059669;'>{s_rec['lifecycle_stage']}</b>", unsafe_allow_html=True)
+        st.write("##### 2. Residential Address")
+        col_ad1, col_ad2, col_ad3, col_ad4 = st.columns(4)
+        with col_ad1:
+            adm_vill = st.text_input("Village / Town*")
+        with col_ad2:
+            adm_po = st.text_input("Post Office")
+        with col_ad3:
+            adm_ps = st.text_input("Police Station", value="Thelamara")
+        with col_ad4:
+            adm_dist = st.text_input("District", value="Sonitpur")
+            adm_pin = st.text_input("PIN Code", value="784149")
             
-            col_stg1, col_stg2 = st.columns(2)
-            with col_stg1:
-                new_stg = st.selectbox("Update Lifecycle Stage:", [
-                    "Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"
-                ], index=["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"].index(s_rec['lifecycle_stage']) if s_rec['lifecycle_stage'] in ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"] else 0)
-                new_ho = st.text_input("HP HO Reg No (if registered):", value=s_rec["ho_reg_no"])
-                new_cert = st.text_input("Certificate Serial No (if handed over):", value=s_rec["cert_serial_no"])
-                if st.button("🟢 Save Updated Stage"):
-                    conn.execute("UPDATE students SET lifecycle_stage = ?, ho_reg_no = ?, cert_serial_no = ? WHERE student_id = ?",
-                                 (new_stg, new_ho, new_cert, t_sid))
+        st.write("##### 3. Academic Course & Photo")
+        col_c1, col_c2, col_c3 = st.columns(3)
+        with col_c1:
+            adm_course = st.selectbox("Course Selected*", [
+                "PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", 
+                "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"
+            ])
+            adm_shift = st.selectbox("Assigned Shift*", ["Morning (06:30-08:00 AM)", "Afternoon (04:00-05:30 PM)", "Evening (05:30-07:00 PM)"])
+        with col_c2:
+            adm_fee = st.number_input("Total Net Course Fee (₹)*", min_value=100.0, value=2550.0, step=50.0)
+        with col_c3:
+            photo_file = st.file_uploader("Upload Passport Size Photo (JPG/PNG)", type=["jpg", "jpeg", "png"])
+            
+        if st.form_submit_button("🟢 Complete Admission & Register"):
+            if adm_name and adm_mob and adm_vill:
+                photo_b64 = ""
+                if photo_file:
+                    photo_b64 = f"data:image/png;base64,{base64.b64encode(photo_file.read()).decode()}"
+                try:
+                    conn.execute('''
+                        INSERT INTO students (
+                            student_id, name, father_name, mother_name, gender, dob, mobile, 
+                            address_vill, po, ps, pin, district, course, join_date, total_fee, 
+                            net_fee, shift, status, lifecycle_stage, ho_reg_no, cert_serial_no, photo_base64
+                        )
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        next_id, adm_name.upper(), adm_fname.upper(), adm_mname.upper(), adm_gender, str(adm_dob),
+                        adm_mob, adm_vill.upper(), adm_po.upper(), adm_ps.upper(), adm_pin, adm_dist.upper(),
+                        adm_course, str(datetime.date.today()), adm_fee, adm_fee, adm_shift, "Active",
+                        "Admission", "Pending", "--", photo_b64
+                    ))
                     conn.commit()
-                    st.success("✅ Lifecycle Stage Updated Successfully!")
+                    st.success(f"🎉 Candidate Registered Successfully! Roll ID: {next_id}")
                     st.rerun()
-                    
-            with col_stg2:
-                st.write("**🔴 Permanent Cascade Delete (Complete Clean):**")
-                st.warning("Deleting will permanently remove candidate, all fees, marks and attendance with ZERO ghost data left.")
-                if st.button("🗑️ Delete Candidate & All Records", key="del_cand_btn"):
-                    conn.execute("DELETE FROM students WHERE student_id = ?", (t_sid,))
-                    conn.execute("DELETE FROM fees WHERE student_id = ?", (t_sid,))
-                    conn.execute("DELETE FROM attendance WHERE student_id = ?", (t_sid,))
-                    conn.execute("DELETE FROM marks WHERE student_id = ?", (t_sid,))
-                    conn.execute("DELETE FROM daily_class_logs WHERE student_id = ?", (t_sid,))
-                    conn.commit()
-                    st.success(f"Candidate {t_sid} and all linked records deleted completely!")
-                    st.rerun()
+                except sqlite3.IntegrityError:
+                    st.error("🚨 This mobile number is already registered with another student!")
+            else:
+                st.error("Please fill Name, Mobile Number and Village/Town!")
 
 # -------------------------------------------------------------
-# 6. FACULTY DESK, ADD TEACHER & ATTENDANCE
+# 6. FACULTY DESK & ATTENDANCE
 # -------------------------------------------------------------
 elif menu == "👨‍🏫 Faculty Desk & Attendance":
-    st.subheader("👨‍🏫 Faculty Management & Shift Attendance Punch")
+    st.subheader("👨‍🏫 Faculty Management, Shift Punch & Student Attendance")
     now_ist = datetime.datetime.now(IST)
     st.info(f"🕒 **Current IST Clock:** `{now_ist.strftime('%I:%M:%S %p (%d-%B-%Y)')}`")
     
-    t_tab1, t_tab2 = st.tabs(["⏰ Teacher Daily Punch (In/Out)", "➕ Add New Teacher / Faculty"])
+    t_tab1, t_tab2, t_tab3 = st.tabs([
+        "📸 Take Student Attendance",
+        "⏰ Teacher Self Punch (In/Out)",
+        "➕ Register New Faculty (Detailed)"
+    ])
     
     with t_tab1:
+        st.write("##### 📸 Mark Daily Student Attendance")
+        students_all = conn.execute("SELECT student_id, name, shift, course FROM students WHERE status='Active'").fetchall()
+        teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
+        
+        if students_all and teachers_list:
+            col_att_m1, col_att_m2, col_att_m3 = st.columns(3)
+            with col_att_m1:
+                att_date = st.date_input("Attendance Date", value=datetime.date.today())
+            with col_att_m2:
+                teacher_marker = st.selectbox("Marked By (Teacher):", teachers_list, key="tch_marker")
+            with col_att_m3:
+                filter_shift = st.selectbox("Filter Shift:", ["All Shifts", "Morning (06:30-08:00 AM)", "Afternoon (04:00-05:30 PM)", "Evening (05:30-07:00 PM)"])
+                
+            filtered_students = students_all if filter_shift == "All Shifts" else [s for s in students_all if s["shift"] == filter_shift]
+            st.write(f"Students Count: **{len(filtered_students)} Candidates**")
+            
+            with st.form("mark_student_att_form"):
+                att_entries = {}
+                for st_rec in filtered_students:
+                    c_s1, c_s2 = st.columns([3, 2])
+                    with c_s1:
+                        st.write(f"**{st_rec['name']}** (`{st_rec['student_id']}`) - {st_rec['course']}")
+                    with c_s2:
+                        att_entries[st_rec['student_id']] = st.radio(
+                            f"Status_{st_rec['student_id']}", 
+                            ["Present", "Absent", "Late"], 
+                            horizontal=True, 
+                            key=f"att_rad_{st_rec['student_id']}",
+                            label_visibility="collapsed"
+                        )
+                
+                if st.form_submit_button("🟢 Save Attendance Register"):
+                    time_str = now_ist.strftime("%I:%M %p")
+                    date_str = str(att_date)
+                    for sid_k, status_v in att_entries.items():
+                        conn.execute("DELETE FROM attendance WHERE student_id = ? AND date = ?", (sid_k, date_str))
+                        conn.execute('''
+                            INSERT INTO attendance (student_id, date, time_in, status, marked_by)
+                            VALUES (?, ?, ?, ?, ?)
+                        ''', (sid_k, date_str, time_str, status_v, teacher_marker))
+                    conn.commit()
+                    st.success(f"✅ Daily Attendance Saved Successfully on {date_str}!")
+                    st.rerun()
+        else:
+            st.warning("Please add students and teachers first to take attendance.")
+            
+    with t_tab2:
+        st.write("##### ⏰ Teacher Shift Punch & Automatic Salary Engine")
         teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
         if teachers_list:
-            t_name = st.selectbox("Select Teacher Name:", teachers_list)
+            t_name = st.selectbox("Select Teacher Name:", teachers_list, key="t_punch_sel")
             t_shift = st.selectbox("Assigned Shift:", [
                 "Morning (06:30 - 08:00 AM)",
                 "Afternoon (04:00 - 05:30 PM)",
                 "Evening (05:30 - 07:00 PM)"
-            ])
+            ], key="t_shift_sel")
             
             shift_start_mins = 6 * 60 + 30 if "Morning" in t_shift else (16 * 60 if "Afternoon" in t_shift else 17 * 60 + 30)
             current_mins = now_ist.hour * 60 + now_ist.minute
@@ -746,98 +853,252 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
             t_logs = conn.execute("SELECT teacher_name, date, shift, time_in, time_out, late_mins, status FROM teacher_punches ORDER BY id DESC LIMIT 10").fetchall()
             if t_logs:
                 st.dataframe(pd.DataFrame([dict(r) for r in t_logs]), use_container_width=True)
-        else:
-            st.warning("No teachers registered yet. Please add a teacher in Tab 2.")
-            
-    with t_tab2:
-        st.write("**➕ Register New Faculty / Teacher:**")
-        with st.form("new_teacher_form", clear_on_submit=True):
-            nt_name = st.text_input("Teacher Full Name*")
-            nt_phone = st.text_input("Mobile Number*")
-            nt_desig = st.selectbox("Designation", ["Computer Instructor", "Lab Assistant", "Guest Lecturer"])
-            nt_shift = st.selectbox("Preferred Shift", ["All Shifts", "Morning Shift", "Evening Shift"])
-            
-            if st.form_submit_button("🟢 Register Teacher"):
-                if nt_name and nt_phone:
+                
+    with t_tab3:
+        st.write("##### ➕ Register New Faculty Member (Detailed Profile)")
+        with st.form("new_teacher_detailed_form", clear_on_submit=True):
+            col_t1, col_t2 = st.columns(2)
+            with col_t1:
+                nt_name = st.text_input("Faculty Full Name*")
+                nt_phone = st.text_input("Mobile Number (WhatsApp)*")
+                nt_email = st.text_input("Email Address")
+                nt_qual = st.selectbox("Educational Qualification*", [
+                    "MCA (Master of Computer Applications)",
+                    "BCA / B.Sc IT / B.Tech",
+                    "PGDCA / 'O' Level Certified",
+                    "Graduate with Computer Diploma",
+                    "Other Higher Qualification"
+                ])
+            with col_t2:
+                nt_desig = st.selectbox("Designation*", ["Senior Computer Instructor", "Assistant Instructor", "Lab Assistant", "Guest Lecturer"])
+                nt_shift = st.selectbox("Assigned Shift*", ["All Shifts", "Morning Shift (06:30-08:00 AM)", "Afternoon Shift (04:00-05:30 PM)", "Evening Shift (05:30-07:00 PM)"])
+                nt_idproof = st.text_input("ID Proof (Aadhaar / Voter ID No)*")
+                nt_address = st.text_area("Complete Residential Address (Vill, PO, PS, Dist, PIN)*")
+                
+            if st.form_submit_button("🟢 Register Faculty Member"):
+                if nt_name and nt_phone and nt_address:
                     try:
-                        conn.execute("INSERT INTO teachers (name, phone, designation, shift, join_date) VALUES (?, ?, ?, ?, ?)",
-                                     (nt_name.strip(), nt_phone.strip(), nt_desig, nt_shift, str(datetime.date.today())))
+                        conn.execute('''
+                            INSERT INTO teachers (name, phone, email, qualification, designation, shift, address, id_proof, join_date)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (nt_name.strip(), nt_phone.strip(), nt_email.strip(), nt_qual, nt_desig, nt_shift, nt_address.strip(), nt_idproof.strip(), str(datetime.date.today())))
                         conn.commit()
-                        st.success(f"🎉 Teacher {nt_name} Registered Successfully!")
+                        st.success(f"🎉 Faculty Member '{nt_name}' Registered Successfully!")
                         st.rerun()
                     except sqlite3.IntegrityError:
                         st.error("🚨 Teacher with this name is already registered!")
                 else:
-                    st.error("Please enter Name and Phone number!")
-                    
-        st.write("**Current Faculty List:**")
-        all_teachers = conn.execute("SELECT * FROM teachers").fetchall()
-        if all_teachers:
-            st.dataframe(pd.DataFrame([dict(r) for r in all_teachers]), use_container_width=True)
+                    st.error("Please enter Name, Phone, and Complete Address!")
 
 # -------------------------------------------------------------
-# 7. DIRECTOR FINANCIAL LOCKER (100% PRIVATE)
+# 7. DIRECTOR MASTER COMMAND CENTER (100% SECURE & FULL CONTROL)
 # -------------------------------------------------------------
-elif menu == "🔐 Director Financial Locker (Private)":
-    st.subheader("🔐 Director Private Financial Locker & Dues Tracker")
-    st.write("এই টেবটো কেৱল ডিৰেক্টৰৰ ব্যক্তিগত ব্যৱহাৰৰ বাবে। শিক্ষক বা আন কোনোৱে কালেকচন চাব নোৱাৰে।")
+elif menu == "🔐 Director Master Command Center":
+    st.subheader("🔐 Director Master Command Center (Executive Control)")
     
-    adm_pass = st.text_input("Enter Director Security Password:", type="password")
-    if adm_pass == ADMIN_PIN:
-        st.success("Authorized Director Access Granted! (Welcome Chiranjeeb Hazarika Sir)")
+    # Retrieve current password from database
+    stored_pin_row = conn.execute("SELECT value FROM system_settings WHERE key = 'admin_pin'").fetchone()
+    current_admin_pin = stored_pin_row["value"] if stored_pin_row else "zaan123"
+    
+    adm_pass = st.text_input("Enter Director Master Security Password:", type="password")
+    
+    if adm_pass == current_admin_pin:
+        st.success("Authorized Director Access Granted! Welcome Chiranjeeb Hazarika Sir.")
         
-        all_fees = conn.execute("SELECT * FROM fees").fetchall()
-        total_collected = sum([r["amount"] for r in all_fees])
+        # Tabs for Director Powers
+        dir_t1, dir_t2, dir_t3, dir_t4, dir_t5 = st.tabs([
+            "📊 Executive Morning Briefing",
+            "✏️ Edit & Remove Students",
+            "💰 Financials & Fee Dues",
+            "💾 1-Click Excel Backup",
+            "🛡️ Security & Password Change"
+        ])
         
-        students_all = conn.execute("SELECT * FROM students").fetchall()
-        total_expected = sum([r["net_fee"] for r in students_all if r["net_fee"]])
-        total_due = max(0.0, total_expected - total_collected)
-        
-        col_m1, col_m2, col_m3 = st.columns(3)
-        col_m1.metric("Total Fee Collected (Net)", f"₹{total_collected:,.2f}")
-        col_m2.metric("Total Pending Dues", f"₹{total_due:,.2f}", delta="-Pending", delta_color="inverse")
-        col_m3.metric("Total Active Trainees", f"{len(students_all)} Students")
-        
-        st.markdown("---")
-        st.write("**💰 Complete Student Outstanding Dues Ledger:**")
-        dues_list = []
-        for s_item in students_all:
-            s_id = s_item["student_id"]
-            paid_sum = sum([r["amount"] for r in conn.execute("SELECT amount FROM fees WHERE student_id = ?", (s_id,)).fetchall()])
-            net_amt = s_item["net_fee"] if s_item["net_fee"] else 0.0
-            due_amt = max(0.0, net_amt - paid_sum)
-            if due_amt > 0:
-                raw_rem = f"""📢 *FEE DUE REMINDER - SOFT TECH COMPUTERS & ZTC*
+        # TAB 1: EXECUTIVE BRIEFING
+        with dir_t1:
+            st.write("##### ☀️ Executive Financial & Operational Overview")
+            today_str = str(datetime.date.today())
+            month_str = today_str[:7]
+            
+            all_fees = conn.execute("SELECT * FROM fees").fetchall()
+            today_fees = [r for r in all_fees if r["date"] == today_str]
+            today_cash = sum([r["amount"] for r in today_fees if r["mode"] == "Cash"])
+            today_online = sum([r["amount"] for r in today_fees if r["mode"] != "Cash"])
+            today_tot = today_cash + today_online
+            
+            month_fees = [r for r in all_fees if r["date"].startswith(month_str)]
+            month_tot = sum([r["amount"] for r in month_fees])
+            
+            all_students = conn.execute("SELECT * FROM students").fetchall()
+            tot_expected = sum([r["net_fee"] for r in all_students if r["net_fee"]])
+            tot_coll = sum([r["amount"] for r in all_fees])
+            tot_due = max(0.0, tot_expected - tot_coll)
+            
+            c_b1, c_b2, c_b3, c_b4 = st.columns(4)
+            c_b1.metric("Today's Total Cash in Hand", f"₹{today_cash:,.2f}", f"Online: ₹{today_online:,.2f}")
+            c_b2.metric("This Month's Revenue", f"₹{month_tot:,.2f}")
+            c_b3.metric("Total Outstanding Dues", f"₹{tot_due:,.2f}", delta="-Market Due", delta_color="inverse")
+            c_b4.metric("Active Candidates", f"{len(all_students)} Trainees")
+            
+            st.markdown("---")
+            st.write("##### ⚠️ Candidate Drop-out & Long Absence Alert")
+            # Find students with no attendance in last 5 records
+            absent_alerts = []
+            for s_rec in all_students:
+                s_att = conn.execute("SELECT status FROM attendance WHERE student_id = ? ORDER BY id DESC LIMIT 5", (s_rec["student_id"],)).fetchall()
+                if s_att:
+                    recent_statuses = [r["status"] for r in s_att]
+                    if recent_statuses.count("Absent") >= 3:
+                        absent_alerts.append({"Roll ID": s_rec["student_id"], "Name": s_rec["name"], "Mobile": s_rec["mobile"], "Course": s_rec["course"], "Recent Trend": f"{recent_statuses.count('Absent')}/5 Days Absent"})
+            if absent_alerts:
+                st.warning("🚨 The following candidates have missed multiple consecutive classes! Please contact them:")
+                st.dataframe(pd.DataFrame(absent_alerts), use_container_width=True)
+            else:
+                st.info("✅ All active students are maintaining regular classroom attendance.")
+                
+            st.write("##### ⏰ Today's Faculty Punctuality & Punch Status")
+            today_punches = conn.execute("SELECT * FROM teacher_punches WHERE date = ?", (today_str,)).fetchall()
+            if today_punches:
+                st.dataframe(pd.DataFrame([dict(r) for r in today_punches]), use_container_width=True)
+            else:
+                st.write("No teacher punches recorded for today yet.")
+
+        # TAB 2: EDIT & REMOVE STUDENTS
+        with dir_t2:
+            st.write("##### ✏️ Update Student Profile & Permanent Cascade Deletion")
+            if all_students:
+                s_opts = [f"{r['student_id']} - {r['name']} ({r['course']})" for r in all_students]
+                chosen_s = st.selectbox("Select Student to Edit or Remove:", s_opts)
+                target_sid = chosen_s.split(" - ")[0]
+                s_data = conn.execute("SELECT * FROM students WHERE student_id = ?", (target_sid,)).fetchone()
+                
+                col_ed1, col_ed2 = st.columns(2)
+                with col_ed1:
+                    st.write("**Edit Candidate Information:**")
+                    with st.form("edit_student_form"):
+                        ed_name = st.text_input("Candidate Name", value=s_data["name"])
+                        ed_fname = st.text_input("Father's Name", value=s_data["father_name"])
+                        ed_mname = st.text_input("Mother's Name", value=s_data["mother_name"] or "")
+                        ed_mob = st.text_input("Mobile Number", value=s_data["mobile"])
+                        ed_course = st.selectbox("Course", ["PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"], index=["PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"].index(s_data["course"]) if s_data["course"] in ["PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"] else 0)
+                        ed_shift = st.selectbox("Shift", ["Morning (06:30-08:00 AM)", "Afternoon (04:00-05:30 PM)", "Evening (05:30-07:00 PM)"])
+                        ed_fee = st.number_input("Course Net Fee (₹)", value=float(s_data["net_fee"]) if s_data["net_fee"] else 2550.0)
+                        ed_stage = st.selectbox("Lifecycle Stage", ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"], index=["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"].index(s_data["lifecycle_stage"]) if s_data["lifecycle_stage"] in ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"] else 0)
+                        ed_ho = st.text_input("HO Registration No", value=s_data["ho_reg_no"] or "")
+                        ed_cert = st.text_input("Certificate Serial No", value=s_data["cert_serial_no"] or "")
+                        
+                        if st.form_submit_button("🟢 Update Candidate Details"):
+                            conn.execute('''
+                                UPDATE students SET
+                                    name = ?, father_name = ?, mother_name = ?, mobile = ?,
+                                    course = ?, shift = ?, net_fee = ?, total_fee = ?,
+                                    lifecycle_stage = ?, ho_reg_no = ?, cert_serial_no = ?
+                                WHERE student_id = ?
+                            ''', (ed_name.upper(), ed_fname.upper(), ed_mname.upper(), ed_mob.strip(),
+                                  ed_course, ed_shift, ed_fee, ed_fee, ed_stage, ed_ho.strip(), ed_cert.strip(), target_sid))
+                            conn.commit()
+                            st.success(f"✅ Student {target_sid} Updated Successfully!")
+                            st.rerun()
+                            
+                with col_ed2:
+                    st.write("**Permanent Cascade Delete:**")
+                    st.warning(f"⚠️ Are you sure you want to permanently delete **{s_data['name']} ({target_sid})**? This will cleanly erase all linked fee deposits, test marks, daily learning logs, and attendance records.")
+                    confirm_del = st.checkbox(f"I confirm permanent deletion of student {target_sid}")
+                    if st.button("🔴 Permanently Delete Student"):
+                        if confirm_del:
+                            conn.execute("DELETE FROM students WHERE student_id = ?", (target_sid,))
+                            conn.execute("DELETE FROM fees WHERE student_id = ?", (target_sid,))
+                            conn.execute("DELETE FROM attendance WHERE student_id = ?", (target_sid,))
+                            conn.execute("DELETE FROM marks WHERE student_id = ?", (target_sid,))
+                            conn.execute("DELETE FROM daily_class_logs WHERE student_id = ?", (target_sid,))
+                            conn.commit()
+                            st.success(f"🗑️ Candidate {target_sid} and all linked records removed completely!")
+                            st.rerun()
+                        else:
+                            st.error("Please tick the confirmation checkbox above first!")
+            else:
+                st.info("No candidates registered.")
+
+        # TAB 3: FINANCIALS & FEE DUES
+        with dir_t3:
+            st.write("##### 💰 Defaulters & Outstanding Installment Ledger")
+            dues_list = []
+            for s_item in all_students:
+                s_id = s_item["student_id"]
+                paid_sum = sum([r["amount"] for r in conn.execute("SELECT amount FROM fees WHERE student_id = ?", (s_id,)).fetchall()])
+                net_amt = s_item["net_fee"] if s_item["net_fee"] else 0.0
+                due_amt = max(0.0, net_amt - paid_sum)
+                if due_amt > 0:
+                    raw_rem = f"""📢 *FEE DUE REMINDER - SOFT TECH COMPUTERS & ZTC*
 Dear {s_item['name']} ({s_item['student_id']}),
 This is a gentle reminder that your installment fee of *₹{due_amt:.2f}* for course *{s_item['course']}* is currently pending.
 Kindly clear your due balance at the center counter.
 Director Contact: 9101026718"""
-                rem_link = f"https://wa.me/91{s_item['mobile']}?text={urllib.parse.quote(raw_rem)}"
-                dues_list.append({
-                    "Roll ID": s_id,
-                    "Name": s_item["name"],
-                    "Mobile": s_item["mobile"],
-                    "Course": s_item["course"],
-                    "Net Fee": f"₹{net_amt:.2f}",
-                    "Paid": f"₹{paid_sum:.2f}",
-                    "Due Balance": f"₹{due_amt:.2f}",
-                    "Reminder Link": rem_link
-                })
-        if dues_list:
-            dues_df = pd.DataFrame(dues_list)
-            st.dataframe(dues_df[["Roll ID", "Name", "Mobile", "Course", "Net Fee", "Paid", "Due Balance"]], use_container_width=True)
-            st.write("**Send Direct WhatsApp Reminders to Defaulters:**")
-            for d in dues_list:
-                st.markdown(f"• **{d['Name']}** (Due: {d['Due Balance']}): [📲 Send WhatsApp Reminder]({d['Reminder Link']})")
-        else:
-            st.success("🎉 All enrolled students have completely cleared their fees!")
+                    rem_link = f"https://wa.me/91{s_item['mobile']}?text={urllib.parse.quote(raw_rem)}"
+                    dues_list.append({
+                        "Roll ID": s_id,
+                        "Name": s_item["name"],
+                        "Mobile": s_item["mobile"],
+                        "Course": s_item["course"],
+                        "Net Fee": f"₹{net_amt:.2f}",
+                        "Paid": f"₹{paid_sum:.2f}",
+                        "Due Balance": f"₹{due_amt:.2f}",
+                        "Reminder Link": rem_link
+                    })
+            if dues_list:
+                dues_df = pd.DataFrame(dues_list)
+                st.dataframe(dues_df[["Roll ID", "Name", "Mobile", "Course", "Net Fee", "Paid", "Due Balance"]], use_container_width=True)
+                st.write("**Send WhatsApp Reminder to Defaulters:**")
+                for d in dues_list:
+                    st.markdown(f"• **{d['Name']}** (Due: {d['Due Balance']}): [📲 Send WhatsApp Reminder]({d['Reminder Link']})")
+            else:
+                st.success("🎉 All enrolled students have completely cleared their fees!")
+
+        # TAB 4: 1-CLICK EXCEL / CSV BACKUP
+        with dir_t4:
+            st.write("##### 💾 1-Click Institute Complete Database Backup")
+            st.info("Download complete real-time data to Excel/CSV for offline records and data security.")
             
-        st.markdown("---")
-        st.write("**🧾 All Fee Transaction Receipts (Full History):**")
-        if all_fees:
-            st.dataframe(pd.DataFrame([dict(r) for r in all_fees]), use_container_width=True)
+            c_exp1, c_exp2, c_exp3 = st.columns(3)
+            with c_exp1:
+                df_st = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id, name, father_name, mobile, course, shift, net_fee, join_date, lifecycle_stage, ho_reg_no, cert_serial_no FROM students").fetchall()])
+                if not df_st.empty:
+                    csv_st = df_st.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Export Students Master (CSV)", data=csv_st, file_name=f"Students_Backup_{today_str}.csv", mime="text/csv", use_container_width=True)
+            with c_exp2:
+                df_fee = pd.DataFrame([dict(r) for r in conn.execute("SELECT receipt_no, student_id, date, amount, mode, collector, remarks FROM fees").fetchall()])
+                if not df_fee.empty:
+                    csv_fee = df_fee.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Export Fee Receipts (CSV)", data=csv_fee, file_name=f"Fees_Ledger_{today_str}.csv", mime="text/csv", use_container_width=True)
+            with c_exp3:
+                df_att = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id, date, time_in, status, marked_by FROM attendance").fetchall()])
+                if not df_att.empty:
+                    csv_att = df_att.to_csv(index=False).encode('utf-8')
+                    st.download_button("📥 Export Attendance (CSV)", data=csv_att, file_name=f"Attendance_Log_{today_str}.csv", mime="text/csv", use_container_width=True)
+
+        # TAB 5: SECURITY & PASSWORD CHANGE
+        with dir_t5:
+            st.write("##### 🛡️ Change Director Security Password")
+            with st.form("change_admin_pwd_form"):
+                cur_pwd = st.text_input("Enter Current Password*", type="password")
+                new_pwd = st.text_input("Enter New Password*", type="password")
+                confirm_pwd = st.text_input("Confirm New Password*", type="password")
+                
+                if st.form_submit_button("🔒 Update Director Password"):
+                    if cur_pwd != current_admin_pin:
+                        st.error("Current password does not match!")
+                    elif len(new_pwd) < 4:
+                        st.error("New password must be at least 4 characters!")
+                    elif new_pwd != confirm_pwd:
+                        st.error("New password and confirm password do not match!")
+                    else:
+                        conn.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('admin_pin', ?)", (new_pwd.strip(),))
+                        conn.commit()
+                        st.success("🎉 Director Password updated successfully! Please remember your new password.")
+                        st.rerun()
+                        
     elif adm_pass:
-        st.error("❌ Incorrect Director Password!")
+        st.error("❌ Incorrect Director Security Password!")
 
 conn.close()
 
