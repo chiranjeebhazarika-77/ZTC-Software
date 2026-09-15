@@ -23,6 +23,20 @@ DB_FILE = "ztc_academy.db"
 GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyeLkWRqD_gHSIQzFBUEJ2kv1e6DpbaUkBB9_CV5l_95k8kg-tSyBnCC50W1TN0XwES/exec"
 
 # -------------------------------------------------------------
+# LOGO LOADER (BASE64)
+# -------------------------------------------------------------
+def get_logo_html():
+    for f in ["logo.jpg", "logo.png", "logo.jpeg"]:
+        if os.path.exists(f):
+            try:
+                with open(f, "rb") as img_f:
+                    b64 = base64.b64encode(img_f.read()).decode()
+                    return f'<img src="data:image/jpeg;base64,{b64}" style="height:48px; width:48px; border-radius:8px; object-fit:contain; background:white; padding:2px; border:1px solid #CBD5E1;">'
+            except Exception:
+                pass
+    return '<span style="background:#0284C7; color:white; font-weight:900; padding:8px 12px; border-radius:8px; font-size:16px;">STC</span>'
+
+# -------------------------------------------------------------
 # BACKGROUND CLOUD SYNC & RECOVERY ENGINE
 # -------------------------------------------------------------
 def push_sheet_async(sheet_name, df):
@@ -289,7 +303,7 @@ st.markdown("""
 .top-navbar {
     background: #FFFFFF;
     border-bottom: 2px solid #E2E8F0;
-    padding: 14px 24px;
+    padding: 12px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -398,11 +412,12 @@ div.stButton > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-# Top Bar
-st.markdown("""
+# Top Bar with Institute Logo
+logo_markup = get_logo_html()
+st.markdown(f"""
 <div class="top-navbar">
-    <div style="display:flex; align-items:center; gap:12px;">
-        <span style="background:#0284C7; color:white; font-weight:900; padding:6px 12px; border-radius:8px; font-size:16px;">STC</span>
+    <div style="display:flex; align-items:center; gap:14px;">
+        {logo_markup}
         <div>
             <b style="font-size:17px; color:#0F172A;">Soft-Tech Computers & ZTC Enterprise</b><br>
             <span style="font-size:11px; color:#64748B;">SITED Govt Licensed (MCA/ROC Reg. U72900HP2008NPL030981) | Center Code: 4159 (Kamarchuburi, Sonitpur)</span>
