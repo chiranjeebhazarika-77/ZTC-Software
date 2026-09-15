@@ -168,7 +168,7 @@ def init_db():
     ''')
     add_col_if_missing(conn, "attendance", "marked_by TEXT")
 
-    # Daily Student Teaching Log
+    # Daily Student Teaching Log (syllabus_logs)
     c.execute('''
         CREATE TABLE IF NOT EXISTS daily_class_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -233,25 +233,37 @@ def init_db():
 init_db()
 
 # -------------------------------------------------------------
-# COMPLETE MULTI-TABLE CLOUD SYNC ENGINE
+# COMPLETE 7-TABLE MASTER CLOUD SYNC ENGINE
 # -------------------------------------------------------------
 def sync_all_to_cloud(conn):
     try:
-        # 1. Students
+        # 1. students_db
         st_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id as 'Student ID', name as 'Name', father_name as 'Father Name', mobile as 'Mobile No', course as 'Course', net_fee as 'Net Fee', shift as 'Shift', status as 'Status', lifecycle_stage as 'Stage' FROM students").fetchall()])
         if not st_df.empty: push_sheet_async("students_db", st_df)
         
-        # 2. Fees
+        # 2. fees_db
         fee_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT receipt_no as 'Receipt No', student_id as 'Student ID', date as 'Date', amount as 'Amount Paid', mode as 'Payment Mode', collector as 'Collected_By', remarks as 'Remarks' FROM fees").fetchall()])
         if not fee_df.empty: push_sheet_async("fees_db", fee_df)
 
-        # 3. Teachers (Added now!)
+        # 3. teachers_db
         t_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT name as 'Teacher Name', phone as 'Mobile', designation as 'Designation', qualification as 'Qualification', shift as 'Shift', id_proof as 'ID Proof', address as 'Address', join_date as 'Join Date' FROM teachers").fetchall()])
         if not t_df.empty: push_sheet_async("teachers_db", t_df)
 
-        # 4. Teacher Attendance & Punches (Added now!)
+        # 4. teacher_attendance
         tp_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT date as 'Date', teacher_name as 'Teacher Name', shift as 'Shift', time_in as 'Time In', time_out as 'Time Out', late_mins as 'Late (Mins)', net_batch_earning as 'Net Shift Earning', status as 'Status' FROM teacher_punches").fetchall()])
         if not tp_df.empty: push_sheet_async("teacher_attendance", tp_df)
+
+        # 5. attendance_db (Student Daily Attendance)
+        att_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT a.date as 'Date', a.student_id as 'Student ID', s.name as 'Student Name', a.time_in as 'Time In', a.status as 'Status', a.marked_by as 'Marked By' FROM attendance a LEFT JOIN students s ON a.student_id = s.student_id").fetchall()])
+        if not att_df.empty: push_sheet_async("attendance_db", att_df)
+
+        # 6. syllabus_logs (Daily Practical / Theory Logs)
+        syl_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT d.date as 'Date', d.student_id as 'Student ID', s.name as 'Student Name', d.teacher_name as 'Teacher Name', d.topic as 'Topic Covered', d.class_type as 'Class Type', d.remarks as 'Remarks' FROM daily_class_logs d LEFT JOIN students s ON d.student_id = s.student_id").fetchall()])
+        if not syl_df.empty: push_sheet_async("syllabus_logs", syl_df)
+
+        # 7. enquiries_db (Public Admission Inquiries)
+        enq_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT date as 'Date', name as 'Candidate Name', mobile as 'Mobile No', course as 'Course', address as 'Address' FROM enquiries").fetchall()])
+        if not enq_df.empty: push_sheet_async("enquiries_db", enq_df)
 
     except Exception:
         pass
@@ -424,7 +436,7 @@ if st.sidebar.button("🌐 Test Live Google Sheet Connection", use_container_wid
 
 if st.sidebar.button("🔄 Push All Data to Google Sheet Now", use_container_width=True):
     sync_all_to_cloud(conn)
-    st.sidebar.success("🚀 All Student, Fee & Teacher records synced to Google Sheet!")
+    st.sidebar.success("🚀 All 7 Modules (Students, Fees, Teachers, Attendance & Logs) Synced to Google Sheet!")
 
 # -------------------------------------------------------------
 # 1. PUBLIC DASHBOARD & ENQUIRY
@@ -501,6 +513,7 @@ if menu == "🌐 Public Dashboard & Enquiry":
                     conn.execute("INSERT INTO enquiries (date, name, mobile, course, address) VALUES (?, ?, ?, ?, ?)",
                                  (str(datetime.date.today()), enq_name.upper(), enq_mob, enq_course, enq_addr.upper()))
                     conn.commit()
+                    sync_all_to_cloud(conn)
                     st.success("🎉 Enquiry Submitted! Our center team will contact you shortly.")
                 else:
                     st.error("Please fill Name and Mobile Number!")
@@ -667,6 +680,7 @@ elif menu == "📚 Daily Class Activity (Practical/Theory)":
                             VALUES (?, ?, ?, ?, ?, ?)
                         ''', (str(datetime.date.today()), sid_val, sel_tch, today_topic, class_mode, class_remarks))
                         conn.commit()
+                        sync_all_to_cloud(conn)
                         st.success(f"✅ Recorded {class_mode} on '{today_topic}' for {sel_st}!")
                         st.rerun()
                     else:
@@ -829,7 +843,7 @@ elif menu == "📝 New Candidate Admission":
                 st.error("Please fill Name, Mobile Number and Village/Town!")
 
 # -------------------------------------------------------------
-# 6. FACULTY DESK & ATTENDANCE (WITH AUTO CLOUD SYNC)
+# 6. FACULTY DESK & ATTENDANCE
 # -------------------------------------------------------------
 elif menu == "👨‍🏫 Faculty Desk & Attendance":
     st.subheader("👨‍🏫 Faculty Management, Shift Punch & Student Attendance")
@@ -884,6 +898,7 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
                             VALUES (?, ?, ?, ?, ?)
                         ''', (sid_k, date_str, time_str, status_v, teacher_marker))
                     conn.commit()
+                    sync_all_to_cloud(conn)
                     st.success(f"✅ Daily Attendance Saved Successfully on {date_str}!")
                     st.rerun()
         else:
@@ -974,10 +989,7 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (nt_name.strip(), nt_phone.strip(), nt_email.strip(), nt_qual, nt_desig, nt_shift, nt_address.strip(), nt_idproof.strip(), str(datetime.date.today())))
                         conn.commit()
-                        
-                        # Trigger immediate sync including teachers_db
                         sync_all_to_cloud(conn)
-                        
                         st.success(f"🎉 Faculty Member '{nt_name}' Registered & Synced to Google Sheet Successfully!")
                         st.rerun()
                     except sqlite3.IntegrityError:
