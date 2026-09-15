@@ -12,7 +12,7 @@ import os
 
 # Page Setup
 st.set_page_config(
-    page_title="Soft Tech Computers & ZTC Enterprise",
+    page_title="Soft-Tech Computers & ZTC Enterprise | Sarva India 4159",
     page_icon="🎓",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -336,6 +336,7 @@ st.markdown("""
 .pill-orange { background: #EA580C; color: white; }
 .pill-green { background: #059669; color: white; }
 .pill-blue { background: #0284C7; color: white; }
+.pill-red { background: #DC2626; color: white; }
 
 .portal-card {
     background: #FFFFFF;
@@ -403,13 +404,13 @@ st.markdown("""
     <div style="display:flex; align-items:center; gap:12px;">
         <span style="background:#0284C7; color:white; font-weight:900; padding:6px 12px; border-radius:8px; font-size:16px;">STC</span>
         <div>
-            <b style="font-size:17px; color:#0F172A;">Soft Tech Computers & ZTC Enterprise</b><br>
-            <span style="font-size:11px; color:#64748B;">ISO 9001:2015 Certified | Center Code: 4159 (Kamarchuburi, Thelamara)</span>
+            <b style="font-size:17px; color:#0F172A;">Soft-Tech Computers & ZTC Enterprise</b><br>
+            <span style="font-size:11px; color:#64748B;">SITED Govt Licensed (MCA/ROC Reg. U72900HP2008NPL030981) | Center Code: 4159 (Kamarchuburi, Sonitpur)</span>
         </div>
     </div>
     <div style="font-size:12px; color:#475569; text-align:right;">
-        Academic Session: <b style="color:#0F172A;">2026-27</b><br>
-        <span style="color:#059669; font-weight:bold;">🛡️ Cloud Protected (Zero-Loss Engine)</span>
+        Sarva Franchise Renewal: <b style="color:#059669;">27-Dec-2026</b><br>
+        <span style="color:#0284C7; font-weight:bold;">🛡️ SITED Cloud Connected</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -451,9 +452,7 @@ if st.sidebar.button("🔄 Push All Data to Google Sheet Now", use_container_wid
     sync_all_to_cloud(conn)
     st.sidebar.success("🚀 All Records Synced to Google Sheet Successfully!")
 
-# -------------------------------------------------------------
-# HELPER: PIN VERIFICATION WRAPPER FOR STAFF MODULES
-# -------------------------------------------------------------
+# Helper: Staff Access
 def verify_staff_access(module_name):
     st.markdown(f"#### 🔒 Staff Access Control: {module_name}")
     st.caption("This section is restricted to authorized faculty and staff members.")
@@ -471,15 +470,16 @@ def verify_staff_access(module_name):
 if menu == "🌐 Public Dashboard & Enquiry":
     st.markdown("""
     <div class="hero-wrapper">
-        <div class="hero-tag-pill">🛡️ GOVT REGD IT ACADEMY • SONITPUR, ASSAM</div>
-        <h1 class="hero-main-title">Soft Tech Computers & ZTC Enterprise</h1>
+        <div class="hero-tag-pill">🏛️ SARVA I.T & EDUCATIONAL DEVELOPMENT (INDIA) • SITED ACCREDITED</div>
+        <h1 class="hero-main-title">Soft-Tech Computers & ZTC Enterprise</h1>
         <p style="color:#475569; font-size:14px; line-height:1.7; margin:0 0 12px 0;">
-            An accredited institution under Center Code <b style="color:#C2410C;">4159</b> providing ISO 9001:2015 certified technical computer courses with Sarva India nationwide accreditation.
+            Accredited Center Code <b style="color:#C2410C;">4159</b> under Sarva Education (SITED). Licensed by Govt. of India (Lic No: 2/114/T-1/08/D, MCA/NR New Delhi, ROC Certified Reg No/CIN: U72900HP2008NPL030981).
         </p>
         <div>
             <span class="pill-item pill-orange"># CENTER CODE: 4159</span>
-            <span class="pill-item pill-green">✓ Operational & Verified</span>
+            <span class="pill-item pill-green">✓ SITED Govt Verified</span>
             <span class="pill-item pill-blue">🏛️ ISO 9001:2015 Certified</span>
+            <span class="pill-item pill-red">📅 Valid Till: 27-Dec-2026</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -489,14 +489,14 @@ if menu == "🌐 Public Dashboard & Enquiry":
         st.markdown("""
         <div class="portal-card">
             <div class="card-header-flex">
-                <b style="color:#0F172A; font-size:16px;">🏛️ Accredited Career Programs</b>
+                <b style="color:#0F172A; font-size:16px;">🏛️ Sarva National Accredited Courses</b>
                 <span style="color:#0284C7; font-size:11px; font-weight:bold;">CENTER: 4159</span>
             </div>
             <p style="color:#475569; font-size:13.5px; line-height:1.7;">
                 • <b>PGDCA / ADCA:</b> 12 Months Advanced Diploma with Programming & DTP<br>
                 • <b>DCA:</b> 6 Months Fundamental Computing & Office Automation<br>
                 • <b>Tally Prime with GST:</b> Commercial Accounting, Billing & Taxation<br>
-                • <b>DTP:</b> Graphic Designing (Photoshop, Pagemaker, CorelDraw)<br>
+                • <b>DTP Graphics:</b> Designing (Photoshop, PageMaker, CorelDraw)<br>
                 • <b>English Coaching:</b> Class 9 to 12 Board Curriculum
             </p>
         </div>
@@ -506,27 +506,38 @@ if menu == "🌐 Public Dashboard & Enquiry":
         st.markdown("""
         <div class="portal-card">
             <div class="card-header-flex">
-                <b style="color:#0F172A; font-size:16px;">ℹ️ Official Center Details</b>
+                <b style="color:#0F172A; font-size:16px;">ℹ️ Official Center Credentials</b>
                 <span style="color:#059669; font-size:11px; font-weight:bold;">ACCREDITED</span>
             </div>
             <div style="font-size:13px; line-height:2.0; color:#334155;">
-                📍 <b>Location:</b> Kamarchuburi, Thelamara, Sonitpur<br>
-                📮 <b>PIN Code:</b> 784149, Assam<br>
+                🏢 <b>Center Name:</b> Soft-Tech Computers<br>
+                📍 <b>Location:</b> Kamarchuburi, Thelamara, Sonitpur, Assam - 784149<br>
                 📞 <b>Director:</b> Chiranjeeb Hazarika (9101026718)<br>
-                📜 <b>Affiliation:</b> Sarva India (HP Head Office)
+                🌐 <b>National Network:</b> Sarva India (SITED)
             </div>
         </div>
         """, unsafe_allow_html=True)
         
     st.markdown("---")
-    st.subheader("📜 Online Certificate Verification")
-    v_id = st.text_input("Enter Student Roll ID (e.g. STC26-001):", key="pub_v_id").strip().upper()
-    if v_id:
-        match_s = conn.execute("SELECT * FROM students WHERE student_id = ?", (v_id,)).fetchone()
-        if match_s:
-            st.success(f"✅ RECORD VERIFIED: {match_s['name']} | Course: {match_s['course']} | Status: {match_s['status']} (Center Code: 4159)")
-        else:
-            st.error("❌ No official matching record found in institute database.")
+    st.subheader("📜 Online Certificate & Center Verification")
+    col_v1, col_v2 = st.columns([1.5, 1.5])
+    with col_v1:
+        v_id = st.text_input("Local Institute Roll ID (e.g. STC26-001):", key="pub_v_id").strip().upper()
+        if v_id:
+            match_s = conn.execute("SELECT * FROM students WHERE student_id = ?", (v_id,)).fetchone()
+            if match_s:
+                st.success(f"✅ RECORD VERIFIED: {match_s['name']} | Course: {match_s['course']} | Status: {match_s['status']} (Center Code: 4159)")
+            else:
+                st.error("❌ No official matching record found in institute database.")
+    with col_v2:
+        st.write("**Verify on National Sarva Head Office Portal:**")
+        st.markdown("""
+        <a href="https://sarvaindia.com/index.aspx" target="_blank" style="text-decoration:none;">
+            <div style="background-color:#0284C7; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; text-align:center; margin-top:24px;">
+                🔍 Verify Center Code 4159 on SarvaIndia.com
+            </div>
+        </a>
+        """, unsafe_allow_html=True)
             
     st.markdown("---")
     with st.expander("📝 Submit Public Admission / Course Enquiry", expanded=True):
@@ -546,7 +557,7 @@ if menu == "🌐 Public Dashboard & Enquiry":
                     st.error("Please fill Name and Mobile Number!")
 
 # -------------------------------------------------------------
-# 2. STUDENT SELF-SERVICE PORTAL (WITH TEACHER STAR RATINGS)
+# 2. STUDENT SELF-SERVICE PORTAL (WITH SARVA HO LINK & TEACHER REVIEWS)
 # -------------------------------------------------------------
 elif menu == "🔑 Student Self-Service Portal":
     st.subheader("🔑 Student Dashboard (Attendance, Daily Learning, Marks, Passbook & Faculty Review)")
@@ -573,7 +584,7 @@ elif menu == "🔑 Student Self-Service Portal":
                     st.error("❌ Invalid Roll ID or Mobile Number!")
                     
         with col_btn2:
-            wa_help_msg = "নমস্কাৰ ছাৰ, মই Soft Tech Computers & ZTC Academy-ৰ ছাত্ৰ। মই মোৰ লগ-ইন ৰোল নম্বৰ বা মোবাইল নম্বৰ পাহৰিছোঁ। অনুগ্ৰহ কৰি মোক সহায় কৰিবনে?"
+            wa_help_msg = "নমস্কাৰ ছাৰ, মই Soft-Tech Computers & ZTC Academy-ৰ ছাত্ৰ। মই মোৰ লগ-ইন ৰোল নম্বৰ বা মোবাইল নম্বৰ পাহৰিছোঁ। অনুগ্ৰহ কৰি মোক সহায় কৰিবনে?"
             wa_help_url = f"https://wa.me/919101026718?text={urllib.parse.quote(wa_help_msg)}"
             st.markdown(f"""
             <a href="{wa_help_url}" target="_blank" style="text-decoration:none;">
@@ -597,7 +608,7 @@ elif menu == "🔑 Student Self-Service Portal":
             <div style="padding-top:10px;">
                 <b style="font-size:20px; color:#0F172A;">{s['name']}</b><br>
                 Roll ID: <b style="color:#0284C7;">{s['student_id']}</b> | Course: <b>{s['course']}</b> | Shift: <b>{s['shift']}</b><br>
-                <span style="font-size:12px; color:#64748B;">Father: {s['father_name']} | Address: {s['address_vill'] or 'Sonitpur'}</span>
+                <span style="font-size:12px; color:#64748B;">Sarva HO Reg No: <b>{s['ho_reg_no'] or 'Pending at Head Office'}</b> | Center Code: <b>4159</b></span>
             </div>
             """, unsafe_allow_html=True)
             
@@ -619,12 +630,13 @@ elif menu == "🔑 Student Self-Service Portal":
         c3.metric("Remaining Due", f"₹{due_f:,.2f}", delta="-Due" if due_f > 0 else "Cleared", delta_color="inverse")
         
         st.markdown("---")
-        tab_a, tab_b, tab_c, tab_d, tab_e = st.tabs([
+        tab_a, tab_b, tab_c, tab_d, tab_e, tab_f = st.tabs([
             "📚 What I Learned (Daily Practice)", 
             "📝 My Test Marks", 
             "📸 Attendance Log", 
             "💳 Fee Passbook",
-            "⭐ Rate My Teacher (Feedback)"
+            "⭐ Rate My Teacher (Feedback)",
+            "🏛️ Sarva India HO Verification"
         ])
         
         with tab_a:
@@ -665,8 +677,8 @@ elif menu == "🔑 Student Self-Service Portal":
             st.markdown(f"""
             <div class="passbook-box">
                 <div style="text-align:center; border-bottom:2px solid #0284C7; padding-bottom:6px;">
-                    <h3 style="margin:0;">SOFT TECH COMPUTERS & ZTC ENTERPRISE</h3>
-                    <span style="font-size:11px; color:#64748B;">Student Fee Installment Passbook</span>
+                    <h3 style="margin:0;">SOFT-TECH COMPUTERS & ZTC ENTERPRISE</h3>
+                    <span style="font-size:11px; color:#64748B;">Student Fee Installment Passbook (Center Code: 4159)</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:12.5px; margin:10px 0; background:#F8FAFC; padding:8px;">
                     <div><b>Candidate:</b> {s['name']}<br><b>Roll ID:</b> {s['student_id']}</div>
@@ -689,7 +701,7 @@ elif menu == "🔑 Student Self-Service Portal":
                 
                 col_r1, col_r2, col_r3 = st.columns(3)
                 with col_r1:
-                    r_teach = st.slider("1. Teaching Skill (পঢ়োৱা পদ্ধতি)*", min_value=1, max_value=5, value=5, help="1 Star = Poor, 5 Star = Excellent")
+                    r_teach = st.slider("1. Teaching Skill (পঢ়োৱা পদ্ধতি)*", min_value=1, max_value=5, value=5)
                 with col_r2:
                     r_und = st.slider("2. Understanding / Explaining (বুজোৱাৰ ক্ষমতা)*", min_value=1, max_value=5, value=5)
                 with col_r3:
@@ -704,13 +716,24 @@ elif menu == "🔑 Student Self-Service Portal":
                     ''', (str(datetime.date.today()), sid, target_teacher, r_teach, r_und, r_char, rev_text.strip()))
                     conn.commit()
                     st.success(f"🎉 Thank you, {s['name']}! Your review for {target_teacher} has been submitted securely to the Director.")
+
+        with tab_f:
+            st.write("##### 🏛️ National Sarva India Certificate Verification")
+            st.info(f"Your Sarva Head Office Registration: `{s['ho_reg_no'] or 'Processing at Head Office'}`")
+            st.markdown("""
+            <a href="https://sarvaindia.com/index.aspx" target="_blank" style="text-decoration:none;">
+                <div style="background-color:#059669; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; display:inline-block;">
+                    🔍 Verify on Sarva India Head Office Portal (sarvaindia.com)
+                </div>
+            </a>
+            """, unsafe_allow_html=True)
             
         if st.button("🔒 Logout"):
             st.session_state["s_auth_id"] = None
             st.rerun()
 
 # -------------------------------------------------------------
-# 3. DAILY CLASS ACTIVITY (PIN RESTRICTED FOR INSTRUCTORS)
+# 3. DAILY CLASS ACTIVITY (PIN RESTRICTED)
 # -------------------------------------------------------------
 elif menu == "📚 Daily Class Activity (Practical/Theory)":
     st.subheader("📚 Daily Classroom Activity & Practical Lab Register")
@@ -800,8 +823,8 @@ elif menu == "💵 TuFee Fast Counter":
                     new_due = max(0.0, due_b - pay_amt)
                     st.success(f"🧾 Receipt Issued: {rc_num} | Amount: ₹{pay_amt}")
                     
-                    raw_msg = f"""🧾 *OFFICIAL FEE RECEIPT - SOFT TECH COMPUTERS & ZTC*
-(Center Code: 4159 | Kamarchuburi, Sonitpur)
+                    raw_msg = f"""🧾 *OFFICIAL FEE RECEIPT - SOFT-TECH COMPUTERS & ZTC*
+(Center Code: 4159 | Sarva India Affiliated)
 
 Dear {s_data['name']}, your course installment fee has been successfully received.
 
@@ -813,7 +836,7 @@ Dear {s_data['name']}, your course installment fee has been successfully receive
 • Collected By: *{collector}*
 • Date: *{today_str}*
 
-Thank you for learning with Soft Tech Computers & ZTC!
+Thank you for learning with Soft-Tech Computers & ZTC!
 Contact: 9101026718"""
                     wa_url = f"https://wa.me/91{s_data['mobile']}?text={urllib.parse.quote(raw_msg)}"
                     st.markdown(f"""
@@ -901,8 +924,8 @@ elif menu == "📝 New Candidate Admission":
                         st.rerun()
                     except sqlite3.IntegrityError:
                         st.error("🚨 This mobile number is already registered with another student!")
-                else:
-                    st.error("Please fill Name, Mobile Number and Village/Town!")
+            else:
+                st.error("Please fill Name, Mobile Number and Village/Town!")
 
 # -------------------------------------------------------------
 # 6. FACULTY DESK & ATTENDANCE (PIN RESTRICTED)
@@ -1011,7 +1034,7 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
                         today_str = str(datetime.date.today())
                         time_str = now_ist.strftime("%I:%M %p")
                         conn.execute("UPDATE teacher_punches SET time_out = ? WHERE teacher_name = ? AND date = ? AND time_out = '--'",
-                                     (time_str, t_name, today_str))
+                                 (time_str, t_name, today_str))
                         conn.commit()
                         sync_all_to_cloud(conn)
                         st.success(f"✅ Punched OUT at {time_str}!")
@@ -1106,6 +1129,17 @@ elif menu == "🔐 Director Master Command Center":
             c_b4.metric("Active Candidates", f"{len(all_students)} Trainees")
             
             st.markdown("---")
+            st.write("##### 🏛️ Sarva Education Head Office Sync")
+            st.info(f"Official Sarva Center Renewal Due Date: **27-Dec-2026** | Total Students Registered at HO: **159**")
+            st.markdown("""
+            <a href="https://admin.sarvaeducation.in/admin/AdminHome.aspx" target="_blank" style="text-decoration:none;">
+                <div style="background-color:#0284C7; color:white; padding:8px 14px; border-radius:6px; font-weight:bold; display:inline-block;">
+                    🌐 Open Official Sarva Admin HO Portal (admin.sarvaeducation.in)
+                </div>
+            </a>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("---")
             st.write("##### ⚠️ Candidate Drop-out & Long Absence Alert")
             absent_alerts = []
             for s_rec in all_students:
@@ -1119,15 +1153,8 @@ elif menu == "🔐 Director Master Command Center":
                 st.dataframe(pd.DataFrame(absent_alerts), use_container_width=True)
             else:
                 st.info("✅ All active students are maintaining regular classroom attendance.")
-                
-            st.write("##### ⏰ Today's Faculty Punctuality & Punch Status")
-            today_punches = conn.execute("SELECT * FROM teacher_punches WHERE date = ?", (today_str,)).fetchall()
-            if today_punches:
-                st.dataframe(pd.DataFrame([dict(r) for r in today_punches]), use_container_width=True)
-            else:
-                st.write("No teacher punches recorded for today yet.")
 
-        # TAB 2: TEACHER RATINGS & AUDIT (STUDENT REVIEWS)
+        # TAB 2: TEACHER RATINGS & AUDIT
         with dir_t2:
             st.write("##### ⭐ Faculty Performance & Student Star Ratings (Director Confidential)")
             all_ratings = conn.execute('''
@@ -1157,9 +1184,9 @@ elif menu == "🔐 Director Master Command Center":
             else:
                 st.info("No student feedback/ratings submitted yet.")
 
-        # TAB 3: EDIT & REMOVE STUDENTS
+        # TAB 3: EDIT & REMOVE STUDENTS (WITH HO REG NO)
         with dir_t3:
-            st.write("##### ✏️ Update Student Profile & Permanent Cascade Deletion")
+            st.write("##### ✏️ Update Student Profile & Sarva Head Office Reg No")
             all_students = conn.execute("SELECT * FROM students").fetchall()
             if all_students:
                 s_opts = [f"{r['student_id']} - {r['name']} ({r['course']})" for r in all_students]
@@ -1179,7 +1206,7 @@ elif menu == "🔐 Director Master Command Center":
                         ed_shift = st.selectbox("Shift", ["Morning (06:30-08:00 AM)", "Afternoon (04:00-05:30 PM)", "Evening (05:30-07:00 PM)"])
                         ed_fee = st.number_input("Course Net Fee (₹)", value=float(s_data["net_fee"]) if s_data["net_fee"] else 2550.0)
                         ed_stage = st.selectbox("Lifecycle Stage", ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"], index=["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"].index(s_data["lifecycle_stage"]) if s_data["lifecycle_stage"] in ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"] else 0)
-                        ed_ho = st.text_input("HO Registration No", value=s_data["ho_reg_no"] or "")
+                        ed_ho = st.text_input("Sarva HO Registration No (From admin.sarvaeducation.in)", value=s_data["ho_reg_no"] or "")
                         ed_cert = st.text_input("Certificate Serial No", value=s_data["cert_serial_no"] or "")
                         
                         if st.form_submit_button("🟢 Update Candidate Details"):
@@ -1193,12 +1220,12 @@ elif menu == "🔐 Director Master Command Center":
                                   ed_course, ed_shift, ed_fee, ed_fee, ed_stage, ed_ho.strip(), ed_cert.strip(), target_sid))
                             conn.commit()
                             sync_all_to_cloud(conn)
-                            st.success(f"✅ Student {target_sid} Updated Successfully!")
+                            st.success(f"✅ Student {target_sid} Updated Successfully with Sarva HO Details!")
                             st.rerun()
                             
                 with col_ed2:
                     st.write("**Permanent Cascade Delete:**")
-                    st.warning(f"⚠️ Are you sure you want to permanently delete **{s_data['name']} ({target_sid})**? This will cleanly erase all linked fee deposits, test marks, daily learning logs, and attendance records.")
+                    st.warning(f"⚠️ Are you sure you want to permanently delete **{s_data['name']} ({target_sid})**? This will cleanly erase all linked fee deposits, test marks, daily learning logs, ratings, and attendance records.")
                     confirm_del = st.checkbox(f"I confirm permanent deletion of student {target_sid}")
                     if st.button("🔴 Permanently Delete Student"):
                         if confirm_del:
@@ -1228,7 +1255,7 @@ elif menu == "🔐 Director Master Command Center":
                 net_amt = s_item["net_fee"] if s_item["net_fee"] else 0.0
                 due_amt = max(0.0, net_amt - paid_sum)
                 if due_amt > 0:
-                    raw_rem = f"""📢 *FEE DUE REMINDER - SOFT TECH COMPUTERS & ZTC*
+                    raw_rem = f"""📢 *FEE DUE REMINDER - SOFT-TECH COMPUTERS & ZTC*
 Dear {s_item['name']} ({s_item['student_id']}),
 This is a gentle reminder that your installment fee of *₹{due_amt:.2f}* for course *{s_item['course']}* is currently pending.
 Kindly clear your due balance at the center counter.
@@ -1322,6 +1349,6 @@ conn.close()
 # Footer
 st.markdown("""
 <div style="text-align:center; padding:20px; font-size:12px; color:#64748B; border-top:1px solid #E2E8F0; margin-top:40px;">
-Soft Tech Computers & ZTC Enterprise Management System © 2026 | Center Code: 4159 | Kamarchuburi, Thelamara, Sonitpur - 784149
+Soft-Tech Computers & ZTC Enterprise Management System © 2026 | SITED Center Code: 4159 | Kamarchuburi, Thelamara, Sonitpur - 784149
 </div>
 """, unsafe_allow_html=True)
