@@ -227,36 +227,32 @@ def init_db():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', ("Chiranjeeb Hazarika (Director)", "9101026718", "ztcenterprise@gmail.com", "MCA / IT Specialist", "Director / Center Head", "All Shifts", "Kamarchuburi, Thelamara, Sonitpur", "ID-4159", str(datetime.date.today())))
     
-    check_s = c.execute("SELECT COUNT(*) FROM students").fetchone()[0]
-    if check_s == 0:
-        df_cloud_s = fetch_sheet_data("students_db")
-        if df_cloud_s is not None and not df_cloud_s.empty:
-            for _, r in df_cloud_s.iterrows():
-                try:
-                    c.execute('''
-                        INSERT OR IGNORE INTO students (
-                            student_id, name, father_name, mobile, course, net_fee, shift, status, lifecycle_stage
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ''', (
-                        r.get("Student ID", ""), r.get("Name", ""), r.get("Father Name", ""), r.get("Mobile No", ""),
-                        r.get("Course", ""), float(r.get("Net Fee", 2550.0) or 2550.0),
-                        r.get("Shift", "Morning"), r.get("Status", "Active"), r.get("Stage", "Admission")
-                    ))
-                except Exception:
-                    pass
-                    
     conn.commit()
     conn.close()
 
 init_db()
 
+# -------------------------------------------------------------
+# COMPLETE MULTI-TABLE CLOUD SYNC ENGINE
+# -------------------------------------------------------------
 def sync_all_to_cloud(conn):
     try:
+        # 1. Students
         st_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id as 'Student ID', name as 'Name', father_name as 'Father Name', mobile as 'Mobile No', course as 'Course', net_fee as 'Net Fee', shift as 'Shift', status as 'Status', lifecycle_stage as 'Stage' FROM students").fetchall()])
         if not st_df.empty: push_sheet_async("students_db", st_df)
         
+        # 2. Fees
         fee_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT receipt_no as 'Receipt No', student_id as 'Student ID', date as 'Date', amount as 'Amount Paid', mode as 'Payment Mode', collector as 'Collected_By', remarks as 'Remarks' FROM fees").fetchall()])
         if not fee_df.empty: push_sheet_async("fees_db", fee_df)
+
+        # 3. Teachers (Added now!)
+        t_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT name as 'Teacher Name', phone as 'Mobile', designation as 'Designation', qualification as 'Qualification', shift as 'Shift', id_proof as 'ID Proof', address as 'Address', join_date as 'Join Date' FROM teachers").fetchall()])
+        if not t_df.empty: push_sheet_async("teachers_db", t_df)
+
+        # 4. Teacher Attendance & Punches (Added now!)
+        tp_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT date as 'Date', teacher_name as 'Teacher Name', shift as 'Shift', time_in as 'Time In', time_out as 'Time Out', late_mins as 'Late (Mins)', net_batch_earning as 'Net Shift Earning', status as 'Status' FROM teacher_punches").fetchall()])
+        if not tp_df.empty: push_sheet_async("teacher_attendance", tp_df)
+
     except Exception:
         pass
 
@@ -401,7 +397,7 @@ st.markdown("""
 conn = get_db_connection()
 
 # -------------------------------------------------------------
-# SIDEBAR WITH PROMINENT LIVE TEST & CLOUD SYNC
+# SIDEBAR
 # -------------------------------------------------------------
 st.sidebar.title("💻 Portal Navigation")
 menu = st.sidebar.radio("Select Module:", [
@@ -428,7 +424,7 @@ if st.sidebar.button("🌐 Test Live Google Sheet Connection", use_container_wid
 
 if st.sidebar.button("🔄 Push All Data to Google Sheet Now", use_container_width=True):
     sync_all_to_cloud(conn)
-    st.sidebar.success("🚀 All current student & fee records pushed to Google Sheet!")
+    st.sidebar.success("🚀 All Student, Fee & Teacher records synced to Google Sheet!")
 
 # -------------------------------------------------------------
 # 1. PUBLIC DASHBOARD & ENQUIRY
@@ -833,7 +829,7 @@ elif menu == "📝 New Candidate Admission":
                 st.error("Please fill Name, Mobile Number and Village/Town!")
 
 # -------------------------------------------------------------
-# 6. FACULTY DESK & ATTENDANCE
+# 6. FACULTY DESK & ATTENDANCE (WITH AUTO CLOUD SYNC)
 # -------------------------------------------------------------
 elif menu == "👨‍🏫 Faculty Desk & Attendance":
     st.subheader("👨‍🏫 Faculty Management, Shift Punch & Student Attendance")
@@ -925,6 +921,7 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (t_name, today_str, t_shift, time_str, "--", late_by, penalty_amt, net_batch_earning, stat_val))
                     conn.commit()
+                    sync_all_to_cloud(conn)
                     if is_late:
                         st.warning(f"🚨 Late by {late_by} mins! Penalty: ₹{penalty_amt:.2f} | Net Shift Pay: ₹{net_batch_earning:.2f}")
                     else:
@@ -938,6 +935,7 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
                     conn.execute("UPDATE teacher_punches SET time_out = ? WHERE teacher_name = ? AND date = ? AND time_out = '--'",
                                  (time_str, t_name, today_str))
                     conn.commit()
+                    sync_all_to_cloud(conn)
                     st.success(f"✅ Punched OUT at {time_str}!")
                     st.rerun()
                     
@@ -976,7 +974,11 @@ elif menu == "👨‍🏫 Faculty Desk & Attendance":
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ''', (nt_name.strip(), nt_phone.strip(), nt_email.strip(), nt_qual, nt_desig, nt_shift, nt_address.strip(), nt_idproof.strip(), str(datetime.date.today())))
                         conn.commit()
-                        st.success(f"🎉 Faculty Member '{nt_name}' Registered Successfully!")
+                        
+                        # Trigger immediate sync including teachers_db
+                        sync_all_to_cloud(conn)
+                        
+                        st.success(f"🎉 Faculty Member '{nt_name}' Registered & Synced to Google Sheet Successfully!")
                         st.rerun()
                     except sqlite3.IntegrityError:
                         st.error("🚨 Teacher with this name is already registered!")
