@@ -15,7 +15,7 @@ st.set_page_config(
     page_title="Soft-Tech Computers & ZTC Enterprise | Sarva India 4159",
     page_icon="🎓",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 IST = pytz.timezone('Asia/Kolkata')
@@ -23,7 +23,7 @@ DB_FILE = "ztc_academy.db"
 GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyeLkWRqD_gHSIQzFBUEJ2kv1e6DpbaUkBB9_CV5l_95k8kg-tSyBnCC50W1TN0XwES/exec"
 
 # -------------------------------------------------------------
-# LOGO LOADER (BIGGER & CRISP)
+# LOGO LOADER (BASE64)
 # -------------------------------------------------------------
 def get_logo_html():
     for f in ["logo.jpg", "logo.png", "logo.jpeg"]:
@@ -31,13 +31,13 @@ def get_logo_html():
             try:
                 with open(f, "rb") as img_f:
                     b64 = base64.b64encode(img_f.read()).decode()
-                    return f'<img src="data:image/jpeg;base64,{b64}" style="height:70px; width:70px; border-radius:12px; object-fit:contain; background:white; padding:3px; border:2px solid #CBD5E1; box-shadow:0 2px 6px rgba(0,0,0,0.08);">'
+                    return f'<img src="data:image/jpeg;base64,{b64}" style="height:50px; width:50px; border-radius:10px; object-fit:contain; background:white; padding:2px; border:1px solid #CBD5E1;">'
             except Exception:
                 pass
-    return '<span style="background:#0284C7; color:white; font-weight:900; padding:12px 18px; border-radius:10px; font-size:22px;">STC</span>'
+    return '<span style="background:#0284C7; color:white; font-weight:900; padding:8px 12px; border-radius:8px; font-size:16px;">STC</span>'
 
 # -------------------------------------------------------------
-# BACKGROUND CLOUD SYNC & RECOVERY ENGINE
+# TWO-WAY CLOUD SYNC & RECOVERY ENGINE
 # -------------------------------------------------------------
 def push_sheet_async(sheet_name, df):
     def _worker():
@@ -50,6 +50,117 @@ def push_sheet_async(sheet_name, df):
     t = threading.Thread(target=_worker)
     t.daemon = True
     t.start()
+
+def fetch_sheet_data(sheet_name):
+    try:
+        res = requests.get(f"{GSHEET_WEBAPP_URL}?sheet_name={sheet_name}", timeout=6)
+        if res.status_code == 200:
+            data = res.json()
+            if isinstance(data, list) and len(data) > 1:
+                return pd.DataFrame(data[1:], columns=data[0], dtype=str)
+    except Exception:
+        pass
+    return None
+
+def restore_database_from_cloud(conn):
+    restored_items = []
+    # 1. Restore Students
+    df_st = fetch_sheet_data("students_db")
+    if df_st is not None and not df_st.empty:
+        for _, r in df_st.iterrows():
+            sid = r.get("Student ID", "").strip()
+            if sid:
+                name = r.get("Name", "")
+                fname = r.get("Father Name", "")
+                mob = r.get("Mobile No", "")
+                course = r.get("Course", "")
+                net_fee = float(r.get("Net Fee", 2550.0)) if r.get("Net Fee") else 2550.0
+                shift = r.get("Shift", "Morning (06:30-08:00 AM)")
+                stat = r.get("Status", "Active")
+                stage = r.get("Stage", "Admission")
+                conn.execute('''
+                    INSERT OR REPLACE INTO students (
+                        student_id, name, father_name, mobile, course, total_fee, net_fee, shift, status, lifecycle_stage, join_date, ho_reg_no, cert_serial_no
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (sid, name, fname, mob, course, net_fee, net_fee, shift, stat, stage, str(datetime.date.today()), "Pending", "--"))
+        restored_items.append("Students")
+
+    # 2. Restore Fees
+    df_fee = fetch_sheet_data("fees_db")
+    if df_fee is not None and not df_fee.empty:
+        for _, r in df_fee.iterrows():
+            rc = r.get("Receipt No", "").strip()
+            sid = r.get("Student ID", "").strip()
+            if rc and sid:
+                dt = r.get("Date", str(datetime.date.today()))
+                amt = float(r.get("Amount Paid", 0.0)) if r.get("Amount Paid") else 0.0
+                mode = r.get("Payment Mode", "Cash")
+                col = r.get("Collected_By", "Office")
+                rem = r.get("Remarks", "Fee Deposit")
+                chk = conn.execute("SELECT id FROM fees WHERE receipt_no = ?", (rc,)).fetchone()
+                if not chk:
+                    conn.execute('''
+                        INSERT INTO fees (receipt_no, student_id, date, amount, mode, collector, remarks)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ''', (rc, sid, dt, amt, mode, col, rem))
+        restored_items.append("Fees")
+
+    # 3. Restore Teachers
+    df_t = fetch_sheet_data("teachers_db")
+    if df_t is not None and not df_t.empty:
+        for _, r in df_t.iterrows():
+            t_name = r.get("Teacher Name", "").strip()
+            if t_name:
+                conn.execute('''
+                    INSERT OR IGNORE INTO teachers (name, phone, designation, qualification, shift, id_proof, address, join_date)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (t_name, r.get("Mobile", ""), r.get("Designation", "Instructor"), r.get("Qualification", ""), r.get("Shift", "All Shifts"), r.get("ID Proof", ""), r.get("Address", ""), str(datetime.date.today())))
+        restored_items.append("Teachers")
+
+    # 4. Restore Attendance
+    df_att = fetch_sheet_data("attendance_db")
+    if df_att is not None and not df_att.empty:
+        for _, r in df_att.iterrows():
+            sid = r.get("Student ID", "").strip()
+            dt = r.get("Date", "").strip()
+            if sid and dt:
+                chk = conn.execute("SELECT id FROM attendance WHERE student_id = ? AND date = ?", (sid, dt)).fetchone()
+                if not chk:
+                    conn.execute('''
+                        INSERT INTO attendance (student_id, date, time_in, status, marked_by)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (sid, dt, r.get("Time In", "21:00"), r.get("Status", "Present"), r.get("Marked By", "Office")))
+        restored_items.append("Attendance")
+
+    # 5. Restore Daily Syllabus Logs
+    df_syl = fetch_sheet_data("syllabus_logs")
+    if df_syl is not None and not df_syl.empty:
+        for _, r in df_syl.iterrows():
+            sid = r.get("Student ID", "").strip()
+            dt = r.get("Date", "").strip()
+            if sid and dt:
+                conn.execute('''
+                    INSERT OR IGNORE INTO daily_class_logs (date, student_id, teacher_name, topic, class_type, remarks)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (dt, sid, r.get("Teacher", ""), r.get("Topic Covered", ""), r.get("Mode", "Both (Theory + Practical)"), r.get("Feedback", "")))
+        restored_items.append("Daily Logs")
+
+    # 6. Restore Enquiries
+    df_enq = fetch_sheet_data("enquiries_db")
+    if df_enq is not None and not df_enq.empty:
+        for _, r in df_enq.iterrows():
+            mob = r.get("Mobile", "").strip()
+            if mob:
+                chk = conn.execute("SELECT id FROM enquiries WHERE mobile = ?", (mob,)).fetchone()
+                if not chk:
+                    conn.execute('''
+                        INSERT INTO enquiries (date, name, mobile, course, address)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (r.get("Date", str(datetime.date.today())), r.get("Candidate Name", ""), mob, r.get("Course Interested", ""), r.get("Address", "")))
+        restored_items.append("Enquiries")
+
+    conn.commit()
+    return restored_items
 
 # -------------------------------------------------------------
 # DATABASE ENGINE (SQLITE)
@@ -167,6 +278,11 @@ def init_db():
             INSERT INTO teachers (name, phone, email, qualification, designation, shift, address, id_proof, join_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', ("Chiranjeeb Hazarika (Director)", "9101026718", "ztcenterprise@gmail.com", "MCA / IT Specialist", "Director / Center Head", "All Shifts", "Kamarchuburi, Thelamara, Sonitpur", "ID-4159", str(datetime.date.today())))
+        # Add Bijoy Kurmi automatically
+        c.execute('''
+            INSERT OR IGNORE INTO teachers (name, phone, email, qualification, designation, shift, address, id_proof, join_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', ("BIJOY KURMI", "9101026718", "bijoy@gmail.com", "Senior Computer Faculty", "Instructor", "Morning (06:30-08:00 AM)", "Sonitpur", "ID-STAFF", str(datetime.date.today())))
     
     conn.commit()
     conn.close()
@@ -212,7 +328,7 @@ st.markdown("""
 .top-navbar {
     background: #FFFFFF;
     border-bottom: 2px solid #E2E8F0;
-    padding: 14px 28px;
+    padding: 12px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -287,17 +403,17 @@ div[data-testid="stMetric"] {
 div[data-testid="stMetricLabel"] { color: #475569 !important; font-weight: 600 !important; }
 div[data-testid="stMetricValue"] { color: #0284C7 !important; font-weight: 900 !important; }
 
-/* BIG BOLD DARPAN STYLE BUTTONS */
 div.stButton > button {
-    font-size: 17px !important;
-    font-weight: 800 !important;
-    padding: 16px 24px !important;
-    border-radius: 10px !important;
-    border: 2px solid transparent !important;
-    transition: all 0.2s ease-in-out !important;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.08) !important;
+    background-color: #059669 !important;
+    color: white !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    border: none !important;
+    padding: 8px 18px !important;
 }
-
+div.stButton > button:hover {
+    background-color: #047857 !important;
+}
 .passbook-box {
     background: #FFFFFF;
     border: 2px solid #334155;
@@ -321,15 +437,15 @@ div.stButton > button {
 </style>
 """, unsafe_allow_html=True)
 
-# Top Bar with Large Institute Logo
+# Top Bar
 logo_markup = get_logo_html()
 st.markdown(f"""
 <div class="top-navbar">
-    <div style="display:flex; align-items:center; gap:16px;">
+    <div style="display:flex; align-items:center; gap:14px;">
         {logo_markup}
         <div>
-            <b style="font-size:19px; color:#0F172A;">Soft-Tech Computers & ZTC Enterprise</b><br>
-            <span style="font-size:12px; color:#64748B;">SITED Govt Licensed (MCA/ROC Reg. U72900HP2008NPL030981) | Center Code: 4159 (Kamarchuburi, Sonitpur)</span>
+            <b style="font-size:17px; color:#0F172A;">Soft-Tech Computers & ZTC Enterprise</b><br>
+            <span style="font-size:11px; color:#64748B;">SITED Govt Licensed (MCA/ROC Reg. U72900HP2008NPL030981) | Center Code: 4159 (Kamarchuburi, Sonitpur)</span>
         </div>
     </div>
     <div style="font-size:12px; color:#475569; text-align:right;">
@@ -341,9 +457,32 @@ st.markdown(f"""
 
 conn = get_db_connection()
 
+# AUTO-RESTORE CHECK ON APP STARTUP: If students table is empty, auto-pull from Sheet!
+if conn.execute("SELECT COUNT(*) FROM students").fetchone()[0] == 0:
+    restore_database_from_cloud(conn)
+
 admin_pin_val = conn.execute("SELECT value FROM system_settings WHERE key = 'admin_pin'").fetchone()["value"]
 staff_pin_row = conn.execute("SELECT value FROM system_settings WHERE key = 'staff_pin'").fetchone()
 staff_pin_val = staff_pin_row["value"] if staff_pin_row else "ztc4159"
+
+# -------------------------------------------------------------
+# SIDEBAR CLOUD CONTROLS
+# -------------------------------------------------------------
+st.sidebar.markdown("### ☁️ Cloud & Google Sheet")
+if st.sidebar.button("📥 Pull / Restore All Data from Google Sheet", use_container_width=True):
+    items = restore_database_from_cloud(conn)
+    if items:
+        st.sidebar.success(f"✅ Restored: {', '.join(items)} from Google Sheet!")
+        st.rerun()
+    else:
+        st.sidebar.info("Cloud already up-to-date or no new data found.")
+
+if st.sidebar.button("🔄 Push All Data to Google Sheet", use_container_width=True):
+    sync_all_to_cloud(conn)
+    st.sidebar.success("🚀 All Records Synced to Google Sheet Successfully!")
+
+st.sidebar.markdown("---")
+st.sidebar.caption("Center Code: 4159 | Soft-Tech Computers")
 
 # -------------------------------------------------------------
 # DUAL PROFILE GATEWAY SESSION STATE
@@ -353,25 +492,21 @@ if "active_gateway" not in st.session_state:
 if "inst_authenticated" not in st.session_state:
     st.session_state["inst_authenticated"] = False
 
-# -------------------------------------------------------------
-# LARGE PROMINENT GATEWAY SWITCHER BUTTONS (DARPAN STYLE)
-# -------------------------------------------------------------
+# GATEWAY SWITCHER BANNER
 col_gt1, col_gt2 = st.columns(2)
 with col_gt1:
-    is_stud_active = (st.session_state["active_gateway"] == "PUBLIC_STUDENT")
-    btn_student_text = "🎓 ACTIVE: STUDENT & PUBLIC CORNER" if is_stud_active else "👉 SWITCH TO: STUDENT & PUBLIC CORNER"
-    if st.button(btn_student_text, use_container_width=True, key="btn_gt_student"):
+    btn_student_label = "🎓 Selected: Student / Public Corner" if st.session_state["active_gateway"] == "PUBLIC_STUDENT" else "👉 Switch to: Student / Public Corner"
+    if st.button(btn_student_label, use_container_width=True):
         st.session_state["active_gateway"] = "PUBLIC_STUDENT"
         st.rerun()
 
 with col_gt2:
-    is_inst_active = (st.session_state["active_gateway"] == "INSTITUTE_DESK")
-    btn_inst_text = "🏫 ACTIVE: INSTITUTE & STAFF DESK" if is_inst_active else "👉 SWITCH TO: INSTITUTE & STAFF DESK"
-    if st.button(btn_inst_text, use_container_width=True, key="btn_gt_inst"):
+    btn_inst_label = "🏫 Selected: Institute / Office Desk" if st.session_state["active_gateway"] == "INSTITUTE_DESK" else "👉 Switch to: Institute / Office Desk"
+    if st.button(btn_inst_label, use_container_width=True):
         st.session_state["active_gateway"] = "INSTITUTE_DESK"
         st.rerun()
 
-st.markdown("<hr style='margin: 16px 0 22px 0; border: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+st.markdown("<hr style='margin: 12px 0 20px 0;'>", unsafe_allow_html=True)
 
 # =============================================================
 # GATEWAY A: STUDENT / PUBLIC CORNER
@@ -445,28 +580,28 @@ if st.session_state["active_gateway"] == "PUBLIC_STUDENT":
             st.write("**Verify on National Sarva Head Office Portal:**")
             st.markdown("""
             <a href="https://sarvaindia.com/index.aspx" target="_blank" style="text-decoration:none;">
-                <div style="background-color:#0284C7; color:white; padding:12px 18px; border-radius:8px; font-weight:bold; text-align:center; margin-top:20px;">
+                <div style="background-color:#0284C7; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; text-align:center; margin-top:24px;">
                     🔍 Verify Center Code 4159 on SarvaIndia.com
                 </div>
             </a>
             """, unsafe_allow_html=True)
                 
         st.markdown("---")
-        with st.expander("📝 Submit Admission / Course Enquiry", expanded=True):
+        with st.expander("📝 Submit Public Admission / Course Enquiry", expanded=True):
             with st.form("enquiry_form", clear_on_submit=True):
-                enq_name = st.text_input("Candidate Full Name*")
-                enq_mob = st.text_input("Mobile Number (WhatsApp)*")
-                enq_course = st.selectbox("Course Interested In:", ["PGDCA (12M)", "ADCA (12M)", "DCA (6M)", "Tally Prime GST", "DTP", "English Coaching"])
-                enq_addr = st.text_input("Town / Village / Address*")
-                if st.form_submit_button("🟢 Submit Admission Enquiry"):
+                enq_name = st.text_input("Full Name*")
+                enq_mob = st.text_input("Mobile No (WhatsApp)*")
+                enq_course = st.selectbox("Course Interested:", ["PGDCA (12M)", "ADCA (12M)", "DCA (6M)", "Tally Prime GST", "DTP", "English Coaching"])
+                enq_addr = st.text_input("Village / Address*")
+                if st.form_submit_button("🟢 Submit Enquiry"):
                     if enq_name and enq_mob:
                         conn.execute("INSERT INTO enquiries (date, name, mobile, course, address) VALUES (?, ?, ?, ?, ?)",
                                      (str(datetime.date.today()), enq_name.upper(), enq_mob, enq_course, enq_addr.upper()))
                         conn.commit()
                         sync_all_to_cloud(conn)
-                        st.success(f"🎉 Thank you {enq_name.upper()}! Your admission enquiry has been registered. Our center desk (+91 9101026718) will get in touch shortly.")
+                        st.success(f"🎉 Thank you {enq_name.upper()}! Your enquiry has been received. Our admission office (+91 9101026718) will contact you shortly.")
                     else:
-                        st.error("Please provide both Full Name and Mobile Number!")
+                        st.error("Please fill Name and Mobile Number!")
 
     elif menu_student == "🔑 Student Self-Service Login":
         st.subheader("🔑 Student Dashboard (Attendance, Daily Learning, Marks, Passbook & Faculty Review)")
@@ -475,29 +610,29 @@ if st.session_state["active_gateway"] == "PUBLIC_STUDENT":
             st.session_state["s_auth_id"] = None
 
         if not st.session_state["s_auth_id"]:
-            st.info("💡 **Student Login Note:** Enter your registered 10-digit mobile number as your default password.")
+            st.info("💡 Default Password: Use your registered 10-digit mobile number to access your student dashboard.")
             c_l1, c_l2 = st.columns(2)
             with c_l1:
                 in_sid = st.text_input("Enter Student Roll ID (e.g. STC26-001):").strip().upper()
             with c_l2:
-                in_mob = st.text_input("Registered Mobile Number (Password):", type="password").strip()
+                in_mob = st.text_input("Enter Registered Mobile No (Password):", type="password").strip()
                 
             col_btn1, col_btn2 = st.columns([1.2, 2])
             with col_btn1:
-                if st.button("🟢 Login To Student Portal", use_container_width=True):
+                if st.button("🟢 Login To My Dashboard", use_container_width=True):
                     user = conn.execute("SELECT * FROM students WHERE student_id = ? AND mobile = ?", (in_sid, in_mob)).fetchone()
                     if user:
                         st.session_state["s_auth_id"] = in_sid
                         st.rerun()
                     else:
-                        st.error("❌ Invalid Roll ID or Mobile Number!")
+                        st.error("❌ Invalid Roll ID or Mobile Number! (Click 'Pull Data from Google Sheet' on sidebar if registered recently)")
                         
             with col_btn2:
-                wa_help_msg = "Hello Sir, I am an enrolled candidate at Soft-Tech Computers & ZTC Academy. I need assistance recovering my Roll ID or registered mobile credentials."
+                wa_help_msg = "Hello Sir, I am a student at Soft-Tech Computers & ZTC Academy. I need help retrieving my Student Roll ID or login details."
                 wa_help_url = f"https://wa.me/919101026718?text={urllib.parse.quote(wa_help_msg)}"
                 st.markdown(f"""
                 <a href="{wa_help_url}" target="_blank" style="text-decoration:none;">
-                    <div style="background-color:#F1F5F9; border:1px solid #CBD5E1; color:#0284C7; padding:10px 16px; border-radius:8px; font-weight:700; font-size:13.5px; text-align:center; display:inline-block; width:100%;">
+                    <div style="background-color:#F1F5F9; border:1px solid #CBD5E1; color:#0284C7; padding:8px 14px; border-radius:6px; font-weight:700; font-size:13px; text-align:center; display:inline-block; width:100%;">
                         📲 Forgot Credentials? Request Help via WhatsApp (Support Desk)
                     </div>
                 </a>
@@ -606,7 +741,7 @@ if st.session_state["active_gateway"] == "PUBLIC_STUDENT":
                 teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
                 
                 with st.form("teacher_rating_form", clear_on_submit=True):
-                    target_teacher = st.selectbox("Select Instructor to Review:*", teachers_list)
+                    target_teacher = st.selectbox("Select Teacher to Review:*", teachers_list)
                     col_r1, col_r2, col_r3 = st.columns(3)
                     with col_r1:
                         r_teach = st.slider("1. Teaching Methodology & Subject Clarity (1 to 5 Stars)*", min_value=1, max_value=5, value=5)
@@ -615,22 +750,22 @@ if st.session_state["active_gateway"] == "PUBLIC_STUDENT":
                     with col_r3:
                         r_char = st.slider("3. Faculty Professionalism & Punctuality (1 to 5 Stars)*", min_value=1, max_value=5, value=5)
                         
-                    rev_text = st.text_input("Constructive Feedback / Remarks (Optional):", placeholder="e.g. Explains practical exercises with extreme clarity.")
+                    rev_text = st.text_input("Your Feedback or Suggestion (Optional):", placeholder="e.g. Clears doubts very politely and thoroughly.")
                     
-                    if st.form_submit_button("🟢 Submit Teacher Evaluation"):
+                    if st.form_submit_button("🟢 Submit Teacher Review"):
                         conn.execute('''
                             INSERT INTO teacher_ratings (date, student_id, teacher_name, rating_teaching, rating_understanding, rating_character, review_comment)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
                         ''', (str(datetime.date.today()), sid, target_teacher, r_teach, r_und, r_char, rev_text.strip()))
                         conn.commit()
-                        st.success(f"🎉 Thank you {s['name']}! Your evaluation for {target_teacher} has been submitted confidentially.")
+                        st.success(f"🎉 Thank you, {s['name']}! Your review for {target_teacher} has been submitted securely.")
 
             with tab_f:
                 st.write("##### 🏛️ National Sarva India Certificate Verification")
                 st.info(f"Your Sarva Head Office Registration: `{s['ho_reg_no'] or 'Processing at Head Office'}`")
                 st.markdown("""
                 <a href="https://sarvaindia.com/index.aspx" target="_blank" style="text-decoration:none;">
-                    <div style="background-color:#059669; color:white; padding:12px 18px; border-radius:8px; font-weight:bold; display:inline-block;">
+                    <div style="background-color:#059669; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; display:inline-block;">
                         🔍 Verify on Sarva India Head Office Portal (sarvaindia.com)
                     </div>
                 </a>
@@ -648,10 +783,10 @@ else:
         col_c1, col_c2, col_c3 = st.columns([1, 1.8, 1])
         with col_c2:
             st.markdown("""
-            <div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:14px; padding:26px; box-shadow:0 6px 18px rgba(0,0,0,0.06); text-align:center;">
-                <div style="font-size:42px; margin-bottom:6px;">🏛️</div>
-                <h3 style="margin:0; color:#0F172A; font-weight:800;">Institute Staff Portal Login</h3>
-                <p style="font-size:12.5px; color:#64748B; margin-top:4px;">Restricted administrative gateway for faculty, counter operators & management.</p>
+            <div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:12px; padding:24px; box-shadow:0 4px 14px rgba(0,0,0,0.06); text-align:center;">
+                <div style="font-size:36px; margin-bottom:6px;">🏛️</div>
+                <h3 style="margin:0; color:#0F172A;">Institute / Staff Portal Login</h3>
+                <p style="font-size:12px; color:#64748B; margin-top:4px;">Restricted Gateway for Instructors, Counter Staff & Director</p>
             </div>
             """, unsafe_allow_html=True)
             st.write("")
@@ -664,7 +799,7 @@ else:
                     else:
                         st.error("❌ Access Denied: Invalid Authorization Key!")
     else:
-        col_i1, col_i2 = st.columns([4.2, 1])
+        col_i1, col_i2 = st.columns([4, 1])
         with col_i1:
             inst_module = st.radio(
                 "Office Modules:",
@@ -678,7 +813,7 @@ else:
                 horizontal=True
             )
         with col_i2:
-            if st.button("🔒 Lock Desk", use_container_width=True):
+            if st.button("🔒 Lock Office Desk", use_container_width=True):
                 st.session_state["inst_authenticated"] = False
                 st.rerun()
 
@@ -743,7 +878,7 @@ Contact: 9101026718"""
                         </a>
                         """, unsafe_allow_html=True)
             else:
-                st.info("No students registered yet.")
+                st.info("No students registered yet. Click 'Pull Data from Google Sheet' on sidebar if data exists in cloud.")
 
         # 2. CANDIDATE ADMISSION
         elif inst_module == "📝 New Candidate Admission":
@@ -1038,6 +1173,7 @@ Contact: 9101026718"""
                     "🛡️ Security PINs"
                 ])
                 
+                # TAB 1: EXECUTIVE BRIEFING
                 with dir_t1:
                     st.write("##### ☀️ Financial & Operational Overview")
                     today_str = str(datetime.date.today())
@@ -1073,6 +1209,7 @@ Contact: 9101026718"""
                     </a>
                     """, unsafe_allow_html=True)
 
+                # TAB 2: PUBLIC ENQUIRIES (LEADS MANAGEMENT)
                 with dir_t2:
                     st.write("##### 📋 Public Course & Admission Enquiries (Leads)")
                     enq_rows = conn.execute("SELECT * FROM enquiries ORDER BY id DESC").fetchall()
@@ -1091,7 +1228,7 @@ Contact: 9101026718"""
                                     wa_lead_url = f"https://wa.me/91{enq['mobile']}?text={urllib.parse.quote(lead_msg)}"
                                     st.markdown(f"""
                                     <a href="{wa_lead_url}" target="_blank" style="text-decoration:none;">
-                                        <div style="background-color:#25D366; color:white; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:bold; text-align:center;">
+                                        <div style="background-color:#25D366; color:white; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:bold; text-align:center;">
                                             📲 Chat on WhatsApp
                                         </div>
                                     </a>
@@ -1100,6 +1237,7 @@ Contact: 9101026718"""
                     else:
                         st.info("No public enquiries received yet.")
 
+                # TAB 3: TEACHER RATINGS
                 with dir_t3:
                     st.write("##### ⭐ Faculty Performance & Student Star Ratings (Director Confidential)")
                     all_ratings = conn.execute('''
@@ -1129,6 +1267,7 @@ Contact: 9101026718"""
                     else:
                         st.info("No student feedback/ratings submitted yet.")
 
+                # TAB 4: EDIT STUDENTS
                 with dir_t4:
                     st.write("##### ✏️ Update Student Profile & Sarva Head Office Reg No")
                     all_students = conn.execute("SELECT * FROM students").fetchall()
@@ -1188,6 +1327,7 @@ Contact: 9101026718"""
                     else:
                         st.info("No candidates registered.")
 
+                # TAB 5: FINANCIALS
                 with dir_t5:
                     st.write("##### 💰 Defaulters & Outstanding Installment Ledger")
                     dues_list = []
@@ -1222,6 +1362,7 @@ Director Contact: 9101026718"""
                     else:
                         st.success("🎉 All enrolled students have completely cleared their fees!")
 
+                # TAB 6: BACKUP
                 with dir_t6:
                     st.write("##### 💾 1-Click Institute Complete Database Backup")
                     c_exp1, c_exp2, c_exp3 = st.columns(3)
@@ -1238,6 +1379,7 @@ Director Contact: 9101026718"""
                         if not df_att.empty:
                             st.download_button("📥 Export Attendance (CSV)", data=df_att.to_csv(index=False).encode('utf-8'), file_name=f"Attendance_Log_{today_str}.csv", mime="text/csv", use_container_width=True)
 
+                # TAB 7: SECURITY SETTINGS
                 with dir_t7:
                     st.write("##### 🛡️ Change Security PINs (Director & Staff)")
                     col_sec1, col_sec2 = st.columns(2)
