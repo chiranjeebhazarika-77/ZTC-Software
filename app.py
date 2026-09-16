@@ -23,7 +23,7 @@ DB_FILE = "ztc_academy.db"
 GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyeLkWRqD_gHSIQzFBUEJ2kv1e6DpbaUkBB9_CV5l_95k8kg-tSyBnCC50W1TN0XwES/exec"
 
 # -------------------------------------------------------------
-# LOGO LOADER (BASE64)
+# LOGO LOADER (BIGGER & CRISP)
 # -------------------------------------------------------------
 def get_logo_html():
     for f in ["logo.jpg", "logo.png", "logo.jpeg"]:
@@ -31,10 +31,10 @@ def get_logo_html():
             try:
                 with open(f, "rb") as img_f:
                     b64 = base64.b64encode(img_f.read()).decode()
-                    return f'<img src="data:image/jpeg;base64,{b64}" style="height:50px; width:50px; border-radius:10px; object-fit:contain; background:white; padding:2px; border:1px solid #CBD5E1;">'
+                    return f'<img src="data:image/jpeg;base64,{b64}" style="height:70px; width:70px; border-radius:12px; object-fit:contain; background:white; padding:3px; border:2px solid #CBD5E1; box-shadow:0 2px 6px rgba(0,0,0,0.08);">'
             except Exception:
                 pass
-    return '<span style="background:#0284C7; color:white; font-weight:900; padding:8px 12px; border-radius:8px; font-size:16px;">STC</span>'
+    return '<span style="background:#0284C7; color:white; font-weight:900; padding:12px 18px; border-radius:10px; font-size:22px;">STC</span>'
 
 # -------------------------------------------------------------
 # BACKGROUND CLOUD SYNC & RECOVERY ENGINE
@@ -212,7 +212,7 @@ st.markdown("""
 .top-navbar {
     background: #FFFFFF;
     border-bottom: 2px solid #E2E8F0;
-    padding: 12px 24px;
+    padding: 14px 28px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -287,17 +287,17 @@ div[data-testid="stMetric"] {
 div[data-testid="stMetricLabel"] { color: #475569 !important; font-weight: 600 !important; }
 div[data-testid="stMetricValue"] { color: #0284C7 !important; font-weight: 900 !important; }
 
+/* BIG BOLD DARPAN STYLE BUTTONS */
 div.stButton > button {
-    background-color: #059669 !important;
-    color: white !important;
-    border-radius: 6px !important;
-    font-weight: 700 !important;
-    border: none !important;
-    padding: 8px 18px !important;
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    padding: 16px 24px !important;
+    border-radius: 10px !important;
+    border: 2px solid transparent !important;
+    transition: all 0.2s ease-in-out !important;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08) !important;
 }
-div.stButton > button:hover {
-    background-color: #047857 !important;
-}
+
 .passbook-box {
     background: #FFFFFF;
     border: 2px solid #334155;
@@ -321,15 +321,15 @@ div.stButton > button:hover {
 </style>
 """, unsafe_allow_html=True)
 
-# Top Bar
+# Top Bar with Large Institute Logo
 logo_markup = get_logo_html()
 st.markdown(f"""
 <div class="top-navbar">
-    <div style="display:flex; align-items:center; gap:14px;">
+    <div style="display:flex; align-items:center; gap:16px;">
         {logo_markup}
         <div>
-            <b style="font-size:17px; color:#0F172A;">Soft-Tech Computers & ZTC Enterprise</b><br>
-            <span style="font-size:11px; color:#64748B;">SITED Govt Licensed (MCA/ROC Reg. U72900HP2008NPL030981) | Center Code: 4159 (Kamarchuburi, Sonitpur)</span>
+            <b style="font-size:19px; color:#0F172A;">Soft-Tech Computers & ZTC Enterprise</b><br>
+            <span style="font-size:12px; color:#64748B;">SITED Govt Licensed (MCA/ROC Reg. U72900HP2008NPL030981) | Center Code: 4159 (Kamarchuburi, Sonitpur)</span>
         </div>
     </div>
     <div style="font-size:12px; color:#475569; text-align:right;">
@@ -354,22 +354,24 @@ if "inst_authenticated" not in st.session_state:
     st.session_state["inst_authenticated"] = False
 
 # -------------------------------------------------------------
-# GATEWAY SWITCHER BANNER (DARPAN STYLE CARDS)
+# LARGE PROMINENT GATEWAY SWITCHER BUTTONS (DARPAN STYLE)
 # -------------------------------------------------------------
 col_gt1, col_gt2 = st.columns(2)
 with col_gt1:
-    btn_student_label = "🎓 Selected: Student / Public Corner" if st.session_state["active_gateway"] == "PUBLIC_STUDENT" else "👉 Switch to: Student / Public Corner"
-    if st.button(btn_student_label, use_container_width=True):
+    is_stud_active = (st.session_state["active_gateway"] == "PUBLIC_STUDENT")
+    btn_student_text = "🎓 ACTIVE: STUDENT & PUBLIC CORNER" if is_stud_active else "👉 SWITCH TO: STUDENT & PUBLIC CORNER"
+    if st.button(btn_student_text, use_container_width=True, key="btn_gt_student"):
         st.session_state["active_gateway"] = "PUBLIC_STUDENT"
         st.rerun()
 
 with col_gt2:
-    btn_inst_label = "🏫 Selected: Institute / Office Desk" if st.session_state["active_gateway"] == "INSTITUTE_DESK" else "👉 Switch to: Institute / Office Desk"
-    if st.button(btn_inst_label, use_container_width=True):
+    is_inst_active = (st.session_state["active_gateway"] == "INSTITUTE_DESK")
+    btn_inst_text = "🏫 ACTIVE: INSTITUTE & STAFF DESK" if is_inst_active else "👉 SWITCH TO: INSTITUTE & STAFF DESK"
+    if st.button(btn_inst_text, use_container_width=True, key="btn_gt_inst"):
         st.session_state["active_gateway"] = "INSTITUTE_DESK"
         st.rerun()
 
-st.markdown("<hr style='margin: 12px 0 20px 0;'>", unsafe_allow_html=True)
+st.markdown("<hr style='margin: 16px 0 22px 0; border: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
 # =============================================================
 # GATEWAY A: STUDENT / PUBLIC CORNER
@@ -443,28 +445,28 @@ if st.session_state["active_gateway"] == "PUBLIC_STUDENT":
             st.write("**Verify on National Sarva Head Office Portal:**")
             st.markdown("""
             <a href="https://sarvaindia.com/index.aspx" target="_blank" style="text-decoration:none;">
-                <div style="background-color:#0284C7; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; text-align:center; margin-top:24px;">
+                <div style="background-color:#0284C7; color:white; padding:12px 18px; border-radius:8px; font-weight:bold; text-align:center; margin-top:20px;">
                     🔍 Verify Center Code 4159 on SarvaIndia.com
                 </div>
             </a>
             """, unsafe_allow_html=True)
                 
         st.markdown("---")
-        with st.expander("📝 Submit Public Admission / Course Enquiry", expanded=True):
+        with st.expander("📝 Submit Admission / Course Enquiry", expanded=True):
             with st.form("enquiry_form", clear_on_submit=True):
-                enq_name = st.text_input("Full Name*")
-                enq_mob = st.text_input("Mobile No (WhatsApp)*")
-                enq_course = st.selectbox("Course Interested:", ["PGDCA (12M)", "ADCA (12M)", "DCA (6M)", "Tally Prime GST", "DTP", "English Coaching"])
-                enq_addr = st.text_input("Village / Address*")
-                if st.form_submit_button("🟢 Submit Enquiry"):
+                enq_name = st.text_input("Candidate Full Name*")
+                enq_mob = st.text_input("Mobile Number (WhatsApp)*")
+                enq_course = st.selectbox("Course Interested In:", ["PGDCA (12M)", "ADCA (12M)", "DCA (6M)", "Tally Prime GST", "DTP", "English Coaching"])
+                enq_addr = st.text_input("Town / Village / Address*")
+                if st.form_submit_button("🟢 Submit Admission Enquiry"):
                     if enq_name and enq_mob:
                         conn.execute("INSERT INTO enquiries (date, name, mobile, course, address) VALUES (?, ?, ?, ?, ?)",
                                      (str(datetime.date.today()), enq_name.upper(), enq_mob, enq_course, enq_addr.upper()))
                         conn.commit()
                         sync_all_to_cloud(conn)
-                        st.success(f"🎉 Thank you {enq_name.upper()}! Your enquiry has been received. Our admission office (+91 9101026718) will contact you shortly.")
+                        st.success(f"🎉 Thank you {enq_name.upper()}! Your admission enquiry has been registered. Our center desk (+91 9101026718) will get in touch shortly.")
                     else:
-                        st.error("Please fill Name and Mobile Number!")
+                        st.error("Please provide both Full Name and Mobile Number!")
 
     elif menu_student == "🔑 Student Self-Service Login":
         st.subheader("🔑 Student Dashboard (Attendance, Daily Learning, Marks, Passbook & Faculty Review)")
@@ -473,16 +475,16 @@ if st.session_state["active_gateway"] == "PUBLIC_STUDENT":
             st.session_state["s_auth_id"] = None
 
         if not st.session_state["s_auth_id"]:
-            st.info("💡 ছাত্ৰৰ নিজৰ পঞ্জীকৃত **ম’বাইল নম্বৰটোৱেই হ’ল লগ-ইন পাছৱৰ্ড**।")
+            st.info("💡 **Student Login Note:** Enter your registered 10-digit mobile number as your default password.")
             c_l1, c_l2 = st.columns(2)
             with c_l1:
                 in_sid = st.text_input("Enter Student Roll ID (e.g. STC26-001):").strip().upper()
             with c_l2:
-                in_mob = st.text_input("Enter Registered Mobile No (Password):", type="password").strip()
+                in_mob = st.text_input("Registered Mobile Number (Password):", type="password").strip()
                 
             col_btn1, col_btn2 = st.columns([1.2, 2])
             with col_btn1:
-                if st.button("🟢 Login To My Dashboard", use_container_width=True):
+                if st.button("🟢 Login To Student Portal", use_container_width=True):
                     user = conn.execute("SELECT * FROM students WHERE student_id = ? AND mobile = ?", (in_sid, in_mob)).fetchone()
                     if user:
                         st.session_state["s_auth_id"] = in_sid
@@ -491,12 +493,12 @@ if st.session_state["active_gateway"] == "PUBLIC_STUDENT":
                         st.error("❌ Invalid Roll ID or Mobile Number!")
                         
             with col_btn2:
-                wa_help_msg = "নমস্কাৰ ছাৰ, মই Soft-Tech Computers & ZTC Academy-ৰ ছাত্ৰ। মই মোৰ লগ-ইন ৰোল নম্বৰ বা মোবাইল নম্বৰ পাহৰিছোঁ। অনুগ্ৰহ কৰি মোক সহায় কৰিবনে?"
+                wa_help_msg = "Hello Sir, I am an enrolled candidate at Soft-Tech Computers & ZTC Academy. I need assistance recovering my Roll ID or registered mobile credentials."
                 wa_help_url = f"https://wa.me/919101026718?text={urllib.parse.quote(wa_help_msg)}"
                 st.markdown(f"""
                 <a href="{wa_help_url}" target="_blank" style="text-decoration:none;">
-                    <div style="background-color:#F1F5F9; border:1px solid #CBD5E1; color:#0284C7; padding:8px 14px; border-radius:6px; font-weight:700; font-size:13px; text-align:center; display:inline-block; width:100%;">
-                        📲 পাহৰি গ’ল নেকি? WhatsApp-ত সহায় বিচাৰক (Contact Office)
+                    <div style="background-color:#F1F5F9; border:1px solid #CBD5E1; color:#0284C7; padding:10px 16px; border-radius:8px; font-weight:700; font-size:13.5px; text-align:center; display:inline-block; width:100%;">
+                        📲 Forgot Credentials? Request Help via WhatsApp (Support Desk)
                     </div>
                 </a>
                 """, unsafe_allow_html=True)
@@ -604,31 +606,31 @@ if st.session_state["active_gateway"] == "PUBLIC_STUDENT":
                 teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
                 
                 with st.form("teacher_rating_form", clear_on_submit=True):
-                    target_teacher = st.selectbox("Select Teacher to Review:*", teachers_list)
+                    target_teacher = st.selectbox("Select Instructor to Review:*", teachers_list)
                     col_r1, col_r2, col_r3 = st.columns(3)
                     with col_r1:
-                        r_teach = st.slider("1. Teaching Skill (পঢ়োৱা পদ্ধতি)*", min_value=1, max_value=5, value=5)
+                        r_teach = st.slider("1. Teaching Methodology & Subject Clarity (1 to 5 Stars)*", min_value=1, max_value=5, value=5)
                     with col_r2:
-                        r_und = st.slider("2. Understanding / Explaining (বুজোৱাৰ ক্ষমতা)*", min_value=1, max_value=5, value=5)
+                        r_und = st.slider("2. Concept Explanation & Doubt Clearing (1 to 5 Stars)*", min_value=1, max_value=5, value=5)
                     with col_r3:
-                        r_char = st.slider("3. Character & Behavior (ব্যৱহাৰ আৰু সহৃদয়তা)*", min_value=1, max_value=5, value=5)
+                        r_char = st.slider("3. Faculty Professionalism & Punctuality (1 to 5 Stars)*", min_value=1, max_value=5, value=5)
                         
-                    rev_text = st.text_input("Your Feedback or Suggestion (Optional):", placeholder="e.g. Clears doubts very politely.")
+                    rev_text = st.text_input("Constructive Feedback / Remarks (Optional):", placeholder="e.g. Explains practical exercises with extreme clarity.")
                     
-                    if st.form_submit_button("🟢 Submit Teacher Review"):
+                    if st.form_submit_button("🟢 Submit Teacher Evaluation"):
                         conn.execute('''
                             INSERT INTO teacher_ratings (date, student_id, teacher_name, rating_teaching, rating_understanding, rating_character, review_comment)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
                         ''', (str(datetime.date.today()), sid, target_teacher, r_teach, r_und, r_char, rev_text.strip()))
                         conn.commit()
-                        st.success(f"🎉 Thank you, {s['name']}! Your review for {target_teacher} has been submitted securely.")
+                        st.success(f"🎉 Thank you {s['name']}! Your evaluation for {target_teacher} has been submitted confidentially.")
 
             with tab_f:
                 st.write("##### 🏛️ National Sarva India Certificate Verification")
                 st.info(f"Your Sarva Head Office Registration: `{s['ho_reg_no'] or 'Processing at Head Office'}`")
                 st.markdown("""
                 <a href="https://sarvaindia.com/index.aspx" target="_blank" style="text-decoration:none;">
-                    <div style="background-color:#059669; color:white; padding:10px 16px; border-radius:6px; font-weight:bold; display:inline-block;">
+                    <div style="background-color:#059669; color:white; padding:12px 18px; border-radius:8px; font-weight:bold; display:inline-block;">
                         🔍 Verify on Sarva India Head Office Portal (sarvaindia.com)
                     </div>
                 </a>
@@ -646,10 +648,10 @@ else:
         col_c1, col_c2, col_c3 = st.columns([1, 1.8, 1])
         with col_c2:
             st.markdown("""
-            <div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:12px; padding:24px; box-shadow:0 4px 14px rgba(0,0,0,0.06); text-align:center;">
-                <div style="font-size:36px; margin-bottom:6px;">🏛️</div>
-                <h3 style="margin:0; color:#0F172A;">Institute / Staff Portal Login</h3>
-                <p style="font-size:12px; color:#64748B; margin-top:4px;">Restricted Gateway for Instructors, Counter Staff & Director</p>
+            <div style="background:#FFFFFF; border:2px solid #0284C7; border-radius:14px; padding:26px; box-shadow:0 6px 18px rgba(0,0,0,0.06); text-align:center;">
+                <div style="font-size:42px; margin-bottom:6px;">🏛️</div>
+                <h3 style="margin:0; color:#0F172A; font-weight:800;">Institute Staff Portal Login</h3>
+                <p style="font-size:12.5px; color:#64748B; margin-top:4px;">Restricted administrative gateway for faculty, counter operators & management.</p>
             </div>
             """, unsafe_allow_html=True)
             st.write("")
@@ -662,7 +664,7 @@ else:
                     else:
                         st.error("❌ Access Denied: Invalid Authorization Key!")
     else:
-        col_i1, col_i2 = st.columns([4, 1])
+        col_i1, col_i2 = st.columns([4.2, 1])
         with col_i1:
             inst_module = st.radio(
                 "Office Modules:",
@@ -676,7 +678,7 @@ else:
                 horizontal=True
             )
         with col_i2:
-            if st.button("🔒 Lock Office Desk", use_container_width=True):
+            if st.button("🔒 Lock Desk", use_container_width=True):
                 st.session_state["inst_authenticated"] = False
                 st.rerun()
 
@@ -1036,7 +1038,6 @@ Contact: 9101026718"""
                     "🛡️ Security PINs"
                 ])
                 
-                # TAB 1: EXECUTIVE BRIEFING
                 with dir_t1:
                     st.write("##### ☀️ Financial & Operational Overview")
                     today_str = str(datetime.date.today())
@@ -1072,7 +1073,6 @@ Contact: 9101026718"""
                     </a>
                     """, unsafe_allow_html=True)
 
-                # TAB 2: PUBLIC ENQUIRIES (LEADS MANAGEMENT)
                 with dir_t2:
                     st.write("##### 📋 Public Course & Admission Enquiries (Leads)")
                     enq_rows = conn.execute("SELECT * FROM enquiries ORDER BY id DESC").fetchall()
@@ -1091,7 +1091,7 @@ Contact: 9101026718"""
                                     wa_lead_url = f"https://wa.me/91{enq['mobile']}?text={urllib.parse.quote(lead_msg)}"
                                     st.markdown(f"""
                                     <a href="{wa_lead_url}" target="_blank" style="text-decoration:none;">
-                                        <div style="background-color:#25D366; color:white; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:bold; text-align:center;">
+                                        <div style="background-color:#25D366; color:white; padding:8px 14px; border-radius:6px; font-size:12px; font-weight:bold; text-align:center;">
                                             📲 Chat on WhatsApp
                                         </div>
                                     </a>
@@ -1100,7 +1100,6 @@ Contact: 9101026718"""
                     else:
                         st.info("No public enquiries received yet.")
 
-                # TAB 3: TEACHER RATINGS
                 with dir_t3:
                     st.write("##### ⭐ Faculty Performance & Student Star Ratings (Director Confidential)")
                     all_ratings = conn.execute('''
@@ -1130,7 +1129,6 @@ Contact: 9101026718"""
                     else:
                         st.info("No student feedback/ratings submitted yet.")
 
-                # TAB 4: EDIT STUDENTS
                 with dir_t4:
                     st.write("##### ✏️ Update Student Profile & Sarva Head Office Reg No")
                     all_students = conn.execute("SELECT * FROM students").fetchall()
@@ -1190,7 +1188,6 @@ Contact: 9101026718"""
                     else:
                         st.info("No candidates registered.")
 
-                # TAB 5: FINANCIALS
                 with dir_t5:
                     st.write("##### 💰 Defaulters & Outstanding Installment Ledger")
                     dues_list = []
@@ -1225,7 +1222,6 @@ Director Contact: 9101026718"""
                     else:
                         st.success("🎉 All enrolled students have completely cleared their fees!")
 
-                # TAB 6: BACKUP
                 with dir_t6:
                     st.write("##### 💾 1-Click Institute Complete Database Backup")
                     c_exp1, c_exp2, c_exp3 = st.columns(3)
@@ -1242,7 +1238,6 @@ Director Contact: 9101026718"""
                         if not df_att.empty:
                             st.download_button("📥 Export Attendance (CSV)", data=df_att.to_csv(index=False).encode('utf-8'), file_name=f"Attendance_Log_{today_str}.csv", mime="text/csv", use_container_width=True)
 
-                # TAB 7: SECURITY SETTINGS
                 with dir_t7:
                     st.write("##### 🛡️ Change Security PINs (Director & Staff)")
                     col_sec1, col_sec2 = st.columns(2)
