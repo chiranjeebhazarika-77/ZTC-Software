@@ -24,6 +24,44 @@ DB_FILE = "ztc_academy.db"
 GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyeLkWRqD_gHSIQzFBUEJ2kv1e6DpbaUkBB9_CV5l_95k8kg-tSyBnCC50W1TN0XwES/exec"
 
 # -------------------------------------------------------------
+# OFFICIAL COURSE CATALOG & STANDARDIZED PRICING
+# -------------------------------------------------------------
+COURSE_CATALOG = {
+    "PGDCA (12 Months)": {
+        "fee": 8499.0, 
+        "duration": "12 Months", 
+        "desc": "Post Graduate Diploma in Computer Applications (Programming, Database, Advanced Automation)"
+    },
+    "ADCA (12 Months)": {
+        "fee": 8499.0, 
+        "duration": "12 Months", 
+        "desc": "Advanced Diploma in Computer Applications (Complete Office Computing & Commercial Modules)"
+    },
+    "DCA (6 Months)": {
+        "fee": 4999.0, 
+        "duration": "6 Months", 
+        "desc": "Diploma in Computer Applications (Fundamentals, OS, Office Suite & Internet Tech)"
+    },
+    "Tally Prime with GST (3 Months)": {
+        "fee": 3499.0, 
+        "duration": "3 Months", 
+        "desc": "Computerized Financial Accounting, Inventory Management & Direct GST Billing"
+    },
+    "DTP Graphics (3 Months)": {
+        "fee": 3499.0, 
+        "duration": "3 Months", 
+        "desc": "Desktop Publishing & Designing Suite (Photoshop, PageMaker, CorelDraw)"
+    },
+    "English Coaching (6 Months)": {
+        "fee": 3999.0, 
+        "duration": "6 Months", 
+        "desc": "Class 9 to 12 Board Curriculum, Applied Grammar & Spoken Communication"
+    }
+}
+
+COURSE_NAMES = list(COURSE_CATALOG.keys())
+
+# -------------------------------------------------------------
 # LOGO LOADER (BASE64)
 # -------------------------------------------------------------
 def get_logo_html():
@@ -38,7 +76,7 @@ def get_logo_html():
     return '<span style="background:#0284C7; color:white; font-weight:900; padding:8px 12px; border-radius:8px; font-size:16px;">STC</span>'
 
 # -------------------------------------------------------------
-# ASYNCHRONOUS GOOGLE SHEET ENGINE
+# ASYNCHRONOUS GOOGLE SHEET SYNC
 # -------------------------------------------------------------
 def push_sheet_async(sheet_name, df):
     def _worker():
@@ -164,7 +202,7 @@ def init_db():
         )
     ''')
     
-    # Teacher Attendance & Honorarium Punches
+    # Teacher Attendance & Shifts
     c.execute('''
         CREATE TABLE IF NOT EXISTS teacher_punches (
             id INTEGER PRIMARY KEY AUTOINCREMENT, teacher_name TEXT, date TEXT,
@@ -173,7 +211,7 @@ def init_db():
         )
     ''')
     
-    # Enquiries
+    # Public Enquiries
     c.execute('''
         CREATE TABLE IF NOT EXISTS enquiries (
             id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT, name TEXT,
@@ -191,7 +229,6 @@ def init_db():
         )
     ''')
     
-    # Pre-seed verified staff
     if c.execute("SELECT COUNT(*) FROM teachers").fetchone()[0] == 0:
         c.execute('''
             INSERT INTO teachers (name, phone, email, qualification, designation, shift, address, id_proof, join_date)
@@ -200,7 +237,7 @@ def init_db():
         c.execute('''
             INSERT OR IGNORE INTO teachers (name, phone, email, qualification, designation, shift, address, id_proof, join_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', ("BIJOY KURMI", "9101026718", "bijoy@gmail.com", "Senior Computer Faculty", "Instructor", "Morning (07:00-08:30 AM)", "Kamarchuburi, Sonitpur", "ID-STAFF", str(datetime.date.today())))
+        ''', ("BIJOY KURMI", "9101026718", "bijoy@gmail.com", "Senior Computer Faculty", "Instructor", "Morning Slot: 07:00 AM - 08:30 AM", "Kamarchuburi, Sonitpur", "ID-STAFF", str(datetime.date.today())))
     
     conn.commit()
     conn.close()
@@ -244,8 +281,9 @@ def restore_database_from_cloud(conn):
                 fname = r.get("Father Name", "")
                 mob = r.get("Mobile No", "")
                 course = r.get("Course", "")
-                net_fee = float(r.get("Net Fee", 2550.0)) if r.get("Net Fee") else 2550.0
-                shift = r.get("Shift", "Morning (07:00-08:30 AM)")
+                default_f = COURSE_CATALOG.get(course, {}).get("fee", 4999.0)
+                net_fee = float(r.get("Net Fee", default_f)) if r.get("Net Fee") else default_f
+                shift = r.get("Shift", "Morning Slot: 07:00 AM - 08:30 AM")
                 stat = r.get("Status", "Active")
                 stage = r.get("Stage", "Admission")
                 conn.execute('''
@@ -475,7 +513,7 @@ def verify_staff_access(module_name):
     return False
 
 # -------------------------------------------------------------
-# 1. PUBLIC DASHBOARD & ENQUIRY
+# 1. PUBLIC DASHBOARD & ENQUIRY (PRIVACY PROTECTED)
 # -------------------------------------------------------------
 if menu == "🌐 Public Dashboard & Enquiry":
     st.markdown("""
@@ -499,15 +537,17 @@ if menu == "🌐 Public Dashboard & Enquiry":
         st.markdown("""
         <div class="portal-card">
             <div class="card-header-flex">
-                <b style="color:#0F172A; font-size:16px;">🏛️ Sarva National Accredited Courses</b>
-                <span style="color:#0284C7; font-size:11px; font-weight:bold;">CENTER: 4159</span>
+                <b style="color:#0F172A; font-size:16px;">🏛️ Accredited Professional Programs Offered</b>
+                <span style="color:#0284C7; font-size:11px; font-weight:bold;">SARVA CODE: 4159</span>
             </div>
-            <p style="color:#475569; font-size:13.5px; line-height:1.7;">
-                • <b>PGDCA / ADCA:</b> 12 Months Advanced Diploma with Programming & DTP<br>
-                • <b>DCA:</b> 6 Months Fundamental Computing & Office Automation<br>
-                • <b>Tally Prime with GST:</b> Commercial Accounting, Billing & Taxation<br>
-                • <b>DTP Graphics:</b> Designing (Photoshop, PageMaker, CorelDraw)<br>
-                • <b>English Coaching:</b> Class 9 to 12 Board Curriculum
+            <p style="color:#475569; font-size:13.5px; line-height:1.9;">
+                • <b>PGDCA (12 Months):</b> Post Graduate Diploma in Computer Applications<br>
+                • <b>ADCA (12 Months):</b> Advanced Diploma in Computer Applications<br>
+                • <b>DCA (6 Months):</b> Diploma in Computer Applications & Automation<br>
+                • <b>Tally Prime with GST (3 Months):</b> Financial Accounting, Inventory & Taxation<br>
+                • <b>DTP Graphics (3 Months):</b> Graphic Designing (Photoshop, PageMaker, Corel)<br>
+                • <b>English Coaching (6 Months):</b> Board English Curriculum (Class 9 to 12)<br>
+                <span style="font-size:12px; color:#059669; font-weight:bold;">💡 Sunday Free Practice Class (SFPC) facility available for regular enrolled trainees.</span>
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -522,7 +562,7 @@ if menu == "🌐 Public Dashboard & Enquiry":
             <div style="font-size:13px; line-height:2.0; color:#334155;">
                 🏢 <b>Center Name:</b> Soft-Tech Computers<br>
                 📍 <b>Location:</b> Kamarchuburi, Thelamara, Sonitpur, Assam - 784149<br>
-                📞 <b>Director:</b> Chiranjeeb Hazarika (9101026718)<br>
+                📞 <b>Director Desk:</b> Chiranjeeb Hazarika (9101026718)<br>
                 🌐 <b>National Network:</b> Sarva India (SITED)
             </div>
         </div>
@@ -550,21 +590,68 @@ if menu == "🌐 Public Dashboard & Enquiry":
         """, unsafe_allow_html=True)
             
     st.markdown("---")
-    with st.expander("📝 Submit Public Admission / Course Enquiry", expanded=True):
-        with st.form("enquiry_form", clear_on_submit=True):
-            enq_name = st.text_input("Full Name*")
-            enq_mob = st.text_input("Mobile No (WhatsApp)*")
-            enq_course = st.selectbox("Course Interested:", ["PGDCA (12M)", "ADCA (12M)", "DCA (6M)", "Tally Prime GST", "DTP", "English Coaching"])
-            enq_addr = st.text_input("Village / Address*")
-            if st.form_submit_button("🟢 Submit Enquiry"):
-                if enq_name and enq_mob:
-                    conn.execute("INSERT INTO enquiries (date, name, mobile, course, address) VALUES (?, ?, ?, ?, ?)",
-                                 (str(datetime.date.today()), enq_name.upper(), enq_mob, enq_course, enq_addr.upper()))
-                    conn.commit()
-                    sync_all_to_cloud(conn)
-                    st.success(f"🎉 Thank you {enq_name.upper()}! Your enquiry has been received. Our admission office (+91 9101026718) will contact you shortly.")
-                else:
-                    st.error("Please fill Name and Mobile Number!")
+    
+    # -------------------------------------------------------------
+    # PRIVACY PROTECTED ENQUIRY & PROSPECTUS UNLOCK ENGINE
+    # -------------------------------------------------------------
+    st.subheader("📝 Request Course Details, Syllabus & Official Fee Prospectus")
+    st.caption("Submit your details below to instantly unlock the official curriculum syllabus and approved fee structure.")
+    
+    with st.form("enquiry_form", clear_on_submit=False):
+        col_enq1, col_enq2 = st.columns(2)
+        with col_enq1:
+            enq_name = st.text_input("Candidate / Guardian Full Name*")
+            enq_mob = st.text_input("Mobile No (WhatsApp)*", placeholder="10-digit number")
+        with col_enq2:
+            enq_course = st.selectbox("Select Course Interested:*", COURSE_NAMES)
+            enq_addr = st.text_input("Village / Town Address*")
+            
+        submitted = st.form_submit_button("🟢 Unlock Course Details & Fee Structure")
+        
+        if submitted:
+            if enq_name.strip() and len(enq_mob.strip()) >= 10 and enq_addr.strip():
+                # Save lead securely to database
+                conn.execute("INSERT INTO enquiries (date, name, mobile, course, address) VALUES (?, ?, ?, ?, ?)",
+                             (str(datetime.date.today()), enq_name.upper().strip(), enq_mob.strip(), enq_course, enq_addr.upper().strip()))
+                conn.commit()
+                sync_all_to_cloud(conn)
+                
+                # Retrieve course specs
+                c_data = COURSE_CATALOG[enq_course]
+                
+                st.markdown(f"""
+                <div style="background:#F0FDF4; border:2px solid #22C55E; border-radius:10px; padding:18px; margin-top:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <b style="font-size:18px; color:#15803D;">🎉 Official Fee Structure Unlocked for: {enq_course}</b>
+                        <span style="background:#166534; color:white; font-size:11px; font-weight:bold; padding:4px 10px; border-radius:14px;">VERIFIED LEAD</span>
+                    </div>
+                    <hr style="margin:10px 0; border-top:1px solid #BBF7D0;">
+                    <div style="font-size:14px; color:#1F2937; line-height:1.9;">
+                        • <b>Candidate Name:</b> {enq_name.upper()}<br>
+                        • <b>Course Duration:</b> {c_data['duration']}<br>
+                        • <b>Curriculum Focus:</b> {c_data['desc']}<br>
+                        • <b>Approved Total Package Fee:</b> <b style="font-size:22px; color:#166534;">₹{c_data['fee']:,.0f}/-</b> <span style="font-size:12px; color:#4B5563;">(Installment options available)</span><br>
+                        • <b>National Certification:</b> Sarva Education (SITED Govt Approved, Center: 4159)
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Pre-filled WhatsApp response link for student
+                prospectus_wa_msg = f"""Hello Sir, I submitted an enquiry for *{enq_course}* at Soft-Tech Computers & ZTC Academy.
+Name: {enq_name.upper()}
+Address: {enq_addr.upper()}
+Please share the detailed syllabus and class schedule."""
+                prospectus_wa_url = f"https://wa.me/919101026718?text={urllib.parse.quote(prospectus_wa_msg)}"
+                
+                st.markdown(f"""
+                <a href="{prospectus_wa_url}" target="_blank" style="text-decoration:none;">
+                    <div style="background-color:#25D366; color:white; padding:12px 18px; border-radius:6px; font-weight:bold; font-size:14px; text-align:center; margin-top:12px; display:inline-block;">
+                        📲 Receive Official Prospectus & Class Schedule on WhatsApp
+                    </div>
+                </a>
+                """, unsafe_allow_html=True)
+            else:
+                st.error("Please fill your Full Name, 10-digit WhatsApp Number, and Village/Town Address to view course fee details!")
 
 # -------------------------------------------------------------
 # 2. STUDENT SELF-SERVICE PORTAL (WITH SFPC ELIGIBILITY ENGINE)
@@ -624,16 +711,14 @@ elif menu == "🔑 Student Self-Service Portal":
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Attendance Metric
         att_rows = conn.execute("SELECT * FROM attendance WHERE student_id = ?", (sid,)).fetchall()
         tot_days = len(att_rows)
         present_days = len([r for r in att_rows if r["status"] in ["Present", "Late"]])
         att_pct = (present_days / tot_days * 100) if tot_days > 0 else 100.0
         
-        # Financials
         fee_rows = conn.execute("SELECT * FROM fees WHERE student_id = ?", (sid,)).fetchall()
         tot_paid = sum([r["amount"] for r in fee_rows])
-        net_f = s["net_fee"] if s["net_fee"] else 2550.0
+        net_f = s["net_fee"] if s["net_fee"] else COURSE_CATALOG.get(s["course"], {}).get("fee", 4999.0)
         due_f = max(0.0, net_f - tot_paid)
         
         c1, c2, c3 = st.columns(3)
@@ -643,10 +728,7 @@ elif menu == "🔑 Student Self-Service Portal":
         
         st.markdown("---")
         
-        # ---------------------------------------------------------
-        # SFPC (SUNDAY FREE PRACTICE CLASS) ENGINE
-        # ---------------------------------------------------------
-        # Calculate running months since admission
+        # SFPC Eligibility Engine
         try:
             join_dt = datetime.datetime.strptime(s["join_date"], "%Y-%m-%d").date()
         except Exception:
@@ -654,7 +736,6 @@ elif menu == "🔑 Student Self-Service Portal":
         today = datetime.date.today()
         months_active = max(1, (today.year - join_dt.year) * 12 + today.month - join_dt.month + 1)
         
-        # Total installment payable: Admission Fee (₹999) + Monthly (₹550 * active months)
         sfpc_total_payable = min(net_f, 999.0 + (months_active - 1) * 550.0)
         sfpc_paid_pct = (tot_paid / sfpc_total_payable * 100) if sfpc_total_payable > 0 else 100.0
         
@@ -664,7 +745,7 @@ elif menu == "🔑 Student Self-Service Portal":
         
         st.markdown("#### 🏛️ Sunday Free Practice Class (SFPC) Access Card")
         if sfpc_overall_eligible:
-            st.success("🟢 **SFPC PASS: ELIGIBLE (Free Weekend Lab Unlocked)**\nYou are eligible for complimentary Sunday practice sessions. Maintain your regular attendance and fee clearance.")
+            st.success("🟢 **SFPC PASS: ELIGIBLE (Free Weekend Lab Unlocked)**\nYou are eligible for complimentary Sunday practice sessions. Maintain regular attendance and installment schedule.")
         else:
             st.error("🔴 **SFPC ACCESS LOCKED (Criteria Not Met)**\nComplimentary weekend lab practice requires minimum 75% classroom attendance and at least 50% cumulative fee clearance.")
             
@@ -776,7 +857,7 @@ elif menu == "🔑 Student Self-Service Portal":
             st.rerun()
 
 # -------------------------------------------------------------
-# 3. BULK SESSION & ATTENDANCE DESK (SPEED OPTIMIZED)
+# 3. BULK SESSION & ATTENDANCE DESK
 # -------------------------------------------------------------
 elif menu == "⚡ Bulk Session & Attendance Desk":
     st.subheader("⚡ Bulk Session & Attendance Fast Register")
@@ -793,7 +874,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
             with c_bk2:
                 bk_teacher = st.selectbox("Staff / Incharge:", teachers_list)
             with c_bk3:
-                bk_filter_shift = st.selectbox("Filter Shift:", ["All Shifts", "Morning (07:00-08:30 AM)", "Afternoon (04:00-05:30 PM)", "Evening (05:30-07:00 PM)"])
+                bk_filter_shift = st.selectbox("Filter Shift:", ["All Shifts", "Morning Slot: 07:00 AM - 08:30 AM", "Afternoon Slot: 04:00 PM - 05:30 PM", "Evening Slot: 05:30 PM - 07:00 PM"])
                 
             filtered_list = all_students if bk_filter_shift == "All Shifts" else [s for s in all_students if s["shift"] == bk_filter_shift]
             st.write(f"Total Trainees in Queue: **{len(filtered_list)} Candidates**")
@@ -818,12 +899,10 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                     fees_logged = 0
                     
                     for sid_k, stat_v in bulk_status.items():
-                        # Update attendance
                         conn.execute("DELETE FROM attendance WHERE student_id = ? AND date = ?", (sid_k, date_str))
                         conn.execute("INSERT INTO attendance (student_id, date, time_in, status, marked_by) VALUES (?, ?, ?, ?, ?)",
                                      (sid_k, date_str, now_str, stat_v, bk_teacher))
                         
-                        # Process fee deposit if provided
                         deposit = bulk_fee_amt[sid_k]
                         if deposit > 0:
                             rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(conn.execute('SELECT id FROM fees').fetchall())+1:03d}"
@@ -853,10 +932,10 @@ elif menu == "💵 TuFee Fast Counter":
             
             p_rows = conn.execute("SELECT * FROM fees WHERE student_id = ?", (sel_sid,)).fetchall()
             tot_p = sum([r["amount"] for r in p_rows])
-            net_f = s_data["net_fee"] if s_data["net_fee"] else 2550.0
+            net_f = s_data["net_fee"] if s_data["net_fee"] else COURSE_CATALOG.get(s_data["course"], {}).get("fee", 4999.0)
             due_b = max(0.0, net_f - tot_p)
             
-            st.info(f"Student: **{s_data['name']}** | Course Fee: **₹{net_f:.2f}** | Current Due: **₹{due_b:.2f}**")
+            st.info(f"Student: **{s_data['name']}** | Course: **{s_data['course']}** | Standard Fee: **₹{net_f:.2f}** | Current Due: **₹{due_b:.2f}**")
             teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
             
             with st.form("counter_fee_form", clear_on_submit=True):
@@ -903,16 +982,28 @@ Contact: 9101026718"""
             st.info("No candidates registered.")
 
 # -------------------------------------------------------------
-# 5. NEW CANDIDATE ADMISSION
+# 5. NEW CANDIDATE ADMISSION (AUTO-FEE FROM CATALOG)
 # -------------------------------------------------------------
 elif menu == "📝 New Candidate Admission":
-    st.subheader("📝 Candidate New Admission (Detailed Data Capture)")
+    st.subheader("📝 Candidate New Admission (Standardized Course Fee Mapping)")
     if verify_staff_access("Admission Desk"):
         existing_students = conn.execute("SELECT student_id FROM students").fetchall()
         year_code = str(datetime.date.today().year)[2:]
         next_id = f"STC{year_code}-{len(existing_students)+1:03d}"
         st.info(f"⚡ **Auto-Generated Roll ID:** `{next_id}`")
         
+        c_pick1, c_pick2 = st.columns([2, 1.5])
+        with c_pick1:
+            adm_course = st.selectbox("Select Accredited Course*", COURSE_NAMES, key="pick_adm_course")
+        default_course_fee = COURSE_CATALOG[adm_course]["fee"]
+        with c_pick2:
+            st.markdown(f"""
+            <div style="background:#F0FDF4; border:1px solid #86EFAC; border-radius:8px; padding:10px 16px; margin-top:12px;">
+                <span style="font-size:12px; color:#15803D;">Standard Package Fee:</span><br>
+                <b style="font-size:20px; color:#166534;">₹{default_course_fee:,.0f}</b> <span style="font-size:12px; color:#64748B;">({COURSE_CATALOG[adm_course]['duration']})</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
         with st.form("admission_detailed_form", clear_on_submit=True):
             st.write("##### 1. Personal & Guardian Details")
             col_a1, col_a2, col_a3 = st.columns(3)
@@ -938,20 +1029,16 @@ elif menu == "📝 New Candidate Admission":
                 adm_dist = st.text_input("District", value="Sonitpur")
                 adm_pin = st.text_input("PIN Code", value="784149")
                 
-            st.write("##### 3. Academic Course & Photo")
+            st.write("##### 3. Academic Batch & Fee Configuration")
             col_c1, col_c2, col_c3 = st.columns(3)
             with col_c1:
-                adm_course = st.selectbox("Course Selected*", [
-                    "PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", 
-                    "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"
-                ])
-                adm_shift = st.selectbox("Assigned Shift*", [
-                    "Morning (07:00-08:30 AM)", 
-                    "Afternoon (04:00-05:30 PM)", 
-                    "Evening (05:30-07:00 PM)"
+                adm_shift = st.selectbox("Assigned Shift Slot*", [
+                    "Morning Slot: 07:00 AM - 08:30 AM", 
+                    "Afternoon Slot: 04:00 PM - 05:30 PM", 
+                    "Evening Slot: 05:30 PM - 07:00 PM"
                 ])
             with col_c2:
-                adm_fee = st.number_input("Total Net Course Fee (₹)*", min_value=100.0, value=2550.0, step=50.0)
+                adm_fee = st.number_input("Confirmed Net Fee (₹)*", min_value=100.0, value=default_course_fee, step=50.0)
             with col_c3:
                 photo_file = st.file_uploader("Upload Passport Size Photo (JPG/PNG)", type=["jpg", "jpeg", "png"])
                 
@@ -976,7 +1063,7 @@ elif menu == "📝 New Candidate Admission":
                         ))
                         conn.commit()
                         sync_all_to_cloud(conn)
-                        st.success(f"🎉 Candidate Registered Successfully! Roll ID: {next_id}")
+                        st.success(f"🎉 Candidate Registered Successfully! Roll ID: {next_id} | Official Fee: ₹{adm_fee:,.2f}")
                         st.rerun()
                     except sqlite3.IntegrityError:
                         st.error("🚨 This mobile number is already registered with another student!")
@@ -1069,27 +1156,26 @@ elif menu == "👨‍🏫 Faculty Desk & Honorarium":
                     "Evening Slot: 05:30 PM - 07:00 PM"
                 ], key="t_shift_sel")
                 
-                # Precise Shift Logic in Minutes from Midnight
                 if "Morning" in t_shift:
-                    shift_start = 7 * 60         # 07:00 AM
-                    shift_end = 8 * 60 + 30      # 08:30 AM
-                    window_open = 6 * 60 + 45    # 06:45 AM (15m buffer)
+                    shift_start = 7 * 60
+                    shift_end = 8 * 60 + 30
+                    window_open = 6 * 60 + 45
                 elif "Afternoon" in t_shift:
-                    shift_start = 16 * 60        # 04:00 PM
-                    shift_end = 17 * 60 + 30     # 05:30 PM
-                    window_open = 15 * 60 + 45   # 03:45 PM (15m buffer)
+                    shift_start = 16 * 60
+                    shift_end = 17 * 60 + 30
+                    window_open = 15 * 60 + 45
                 else:
-                    shift_start = 17 * 60 + 30   # 05:30 PM
-                    shift_end = 19 * 60          # 07:00 PM
-                    window_open = 17 * 60 + 15   # 05:15 PM (15m buffer)
+                    shift_start = 17 * 60 + 30
+                    shift_end = 19 * 60
+                    window_open = 17 * 60 + 15
                     
                 current_mins = now_ist.hour * 60 + now_ist.minute
                 in_window = window_open <= current_mins <= shift_end
                 late_by = max(0, current_mins - shift_start)
                 is_late = late_by > 5
                 
-                base_shift_honorarium = round(230.0 / 3.0, 2) # ₹76.67
-                per_min_rate = 230.0 / 270.0                   # ₹0.85/min
+                base_shift_honorarium = round(230.0 / 3.0, 2)
+                per_min_rate = 230.0 / 270.0
                 penalty_amt = round(min(late_by * per_min_rate, base_shift_honorarium), 2) if is_late else 0.0
                 net_shift_earning = round(max(0.0, base_shift_honorarium - penalty_amt), 2)
                 
@@ -1150,7 +1236,7 @@ elif menu == "👨‍🏫 Faculty Desk & Honorarium":
                         "Afternoon Slot: 04:00 PM - 05:30 PM",
                         "Evening Slot: 05:30 PM - 07:00 PM"
                     ])
-                    nt_idproof = st.text_input("ID Proof (Aadhaar / Voter ID No)*")
+                    nt_idproof = st.text_input("ID Proof (Voter ID / Driving License)*")
                     nt_address = st.text_area("Complete Residential Address (Vill, PO, PS, Dist, PIN)*")
                     
                 if st.form_submit_button("🟢 Register Faculty Member"):
@@ -1233,7 +1319,7 @@ elif menu == "🔐 Director Master Command Center":
             </a>
             """, unsafe_allow_html=True)
 
-        # TAB 2: PUBLIC ENQUIRIES
+        # TAB 2: PUBLIC ENQUIRIES (LEADS MANAGEMENT)
         with dir_t2:
             st.write("##### 📋 Public Course & Admission Enquiries (Leads)")
             enq_rows = conn.execute("SELECT * FROM enquiries ORDER BY id DESC").fetchall()
@@ -1243,12 +1329,13 @@ elif menu == "🔐 Director Master Command Center":
                     with st.container():
                         col_eq1, col_eq2 = st.columns([3, 1.2])
                         with col_eq1:
+                            target_c_fee = COURSE_CATALOG.get(enq['course'], {}).get("fee", 4999.0)
                             st.markdown(f"""
-                            <b>{enq['name']}</b> | Course Interested: <b style="color:#0284C7;">{enq['course']}</b><br>
+                            <b>{enq['name']}</b> | Course: <b style="color:#0284C7;">{enq['course']}</b> (Package Fee: ₹{target_c_fee:,.0f})<br>
                             <span style="font-size:12px; color:#64748B;">Date: {enq['date']} | Mobile: <b>{enq['mobile']}</b> | Address: {enq['address']}</span>
                             """, unsafe_allow_html=True)
                         with col_eq2:
-                            lead_msg = f"Hello {enq['name']}, this is Soft-Tech Computers & ZTC Academy regarding your admission enquiry for {enq['course']}. How can we assist you today?"
+                            lead_msg = f"Hello {enq['name']}, this is Chiranjeeb Hazarika from Soft-Tech Computers & ZTC Academy. Regarding your enquiry for {enq['course']}, would you like to schedule an admission counseling session at our center?"
                             wa_lead_url = f"https://wa.me/91{enq['mobile']}?text={urllib.parse.quote(lead_msg)}"
                             st.markdown(f"""
                             <a href="{wa_lead_url}" target="_blank" style="text-decoration:none;">
@@ -1309,13 +1396,13 @@ elif menu == "🔐 Director Master Command Center":
                         ed_fname = st.text_input("Father's Name", value=s_data["father_name"])
                         ed_mname = st.text_input("Mother's Name", value=s_data["mother_name"] or "")
                         ed_mob = st.text_input("Mobile Number", value=s_data["mobile"])
-                        ed_course = st.selectbox("Course", ["PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"], index=["PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"].index(s_data["course"]) if s_data["course"] in ["PGDCA (12 Months)", "ADCA (12 Months)", "DCA (6 Months)", "DTP (3 Months)", "Tally Prime with GST (3 Months)", "English Coaching"] else 0)
-                        ed_shift = st.selectbox("Shift", [
-                            "Morning (07:00-08:30 AM)", 
-                            "Afternoon (04:00-05:30 PM)", 
-                            "Evening (05:30-07:00 PM)"
+                        ed_course = st.selectbox("Course", COURSE_NAMES, index=COURSE_NAMES.index(s_data["course"]) if s_data["course"] in COURSE_NAMES else 0)
+                        ed_shift = st.selectbox("Shift Slot", [
+                            "Morning Slot: 07:00 AM - 08:30 AM", 
+                            "Afternoon Slot: 04:00 PM - 05:30 PM", 
+                            "Evening Slot: 05:30 PM - 07:00 PM"
                         ])
-                        ed_fee = st.number_input("Course Net Fee (₹)", value=float(s_data["net_fee"]) if s_data["net_fee"] else 2550.0)
+                        ed_fee = st.number_input("Course Net Fee (₹)", value=float(s_data["net_fee"]) if s_data["net_fee"] else COURSE_CATALOG[ed_course]["fee"])
                         ed_stage = st.selectbox("Lifecycle Stage", ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"], index=["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"].index(s_data["lifecycle_stage"]) if s_data["lifecycle_stage"] in ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"] else 0)
                         ed_ho = st.text_input("Sarva HO Registration No (From admin.sarvaeducation.in)", value=s_data["ho_reg_no"] or "")
                         ed_cert = st.text_input("Certificate Serial No", value=s_data["cert_serial_no"] or "")
@@ -1363,7 +1450,7 @@ elif menu == "🔐 Director Master Command Center":
             for s_item in all_students:
                 s_id = s_item["student_id"]
                 paid_sum = sum([r["amount"] for r in conn.execute("SELECT amount FROM fees WHERE student_id = ?", (s_id,)).fetchall()])
-                net_amt = s_item["net_fee"] if s_item["net_fee"] else 2550.0
+                net_amt = s_item["net_fee"] if s_item["net_fee"] else COURSE_CATALOG.get(s_item["course"], {}).get("fee", 4999.0)
                 due_amt = max(0.0, net_amt - paid_sum)
                 if due_amt > 0:
                     raw_rem = f"""📢 *FEE DUE REMINDER - SOFT-TECH COMPUTERS & ZTC*
@@ -1392,7 +1479,7 @@ Director Contact: 9101026718"""
                 st.success("🎉 All enrolled students have completely cleared their fees!")
 
         # TAB 6: BACKUP
-        with dir_t5:
+        with dir_t6:
             st.write("##### 💾 1-Click Institute Complete Database Backup")
             c_exp1, c_exp2, c_exp3 = st.columns(3)
             with c_exp1:
