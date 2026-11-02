@@ -876,15 +876,33 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
         teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
         
         if all_students:
-            c_bk1, c_bk2, c_bk3 = st.columns(3)
-            with c_bk1:
-                bk_date = st.date_input("Session Date:", value=datetime.date.today())
-            with c_bk2:
-                bk_teacher = st.selectbox("Staff / Incharge:", teachers_list)
-            with c_bk3:
-                bk_filter_shift = st.selectbox("Filter Shift:", ["All Shifts", "Morning Slot: 07:00 AM - 08:30 AM", "Afternoon Slot: 04:00 PM - 05:30 PM", "Evening Slot: 05:30 PM - 07:00 PM"])
-                
-            filtered_list = all_students if bk_filter_shift == "All Shifts" else [s for s in all_students if s["shift"] == bk_filter_shift]
+           bk_date = st.date_input("Session Date*", value=datetime.date.today())
+        weekday_name = bk_date.strftime("%A")
+        default_batch_idx = 1 if weekday_name in ["Monday", "Wednesday", "Friday"] else (2 if weekday_name in ["Tuesday", "Thursday", "Saturday"] else 0)
+
+        c_bk1, c_bk2, c_bk3 = st.columns(3)
+        with c_bk1:
+            bk_teacher = st.selectbox("Staff / Incharge*", teachers_list)
+        with c_bk2:
+            bk_filter_shift = st.selectbox("Filter Shift*", ["All Shifts", "Morning Slot: 07:00 AM - 08:30 AM", "Afternoon Slot: 04:00 PM - 05:30 PM", "Evening Slot: 05:30 PM - 07:00 PM"])
+        with c_bk3:
+            bk_filter_batch = st.selectbox(f"Batch Routine ({weekday_name})*", ["All Batches", "MWF (Mon-Wed-Fri)", "TTS (Tue-Thu-Sat)"], index=default_batch_idx)
+
+        filtered_list = []
+        for s in all_students:
+            match_shift = (bk_filter_shift == "All Shifts" or s["shift"] == bk_filter_shift)
+            s_shift_text = s["shift"] if "shift" in s.keys() else ""
+            if bk_filter_batch == "All Batches":
+                match_batch = True
+            elif bk_filter_batch == "MWF (Mon-Wed-Fri)":
+                match_batch = ("TTS" not in s_shift_text)
+            elif bk_filter_batch == "TTS (Tue-Thu-Sat)":
+                match_batch = ("TTS" in s_shift_text)
+            else:
+                match_batch = True
+            
+            if match_shift and match_batch:
+                filtered_list.append(s)
             st.write(f"Total Trainees in Queue: **{len(filtered_list)} Candidates**")
             
             with st.form("bulk_register_form"):
