@@ -1436,10 +1436,10 @@ elif menu == "🔐 Director Master Command Center":
                 target_sid = chosen_s.split(" - ")[0]
                 s_data = conn.execute("SELECT * FROM students WHERE student_id = ?", (target_sid,)).fetchone()
                 
-                col_ed1, col_ed2 = st.columns(2)
-                with col_ed1:
+        col_ed1, col_ed2 = st.columns(2)
+        with col_ed1:
             st.write("***Edit Candidate Information:***")
-            with st.form("edit_student_form"):
+        with st.form("edit_student_form"):
                 ed_name = st.text_input("Candidate Name*", value=s_data["name"])
                 ed_fname = st.text_input("Father's Name*", value=s_data["father_name"])
                 ed_mname = st.text_input("Mother's Name*", value=s_data["mother_name"] or "")
@@ -1470,6 +1470,19 @@ elif menu == "🔐 Director Master Command Center":
                 ed_ho = st.text_input("Sarva HO Registration No (From admin.sarvaeducation.in)*", value=s_data["ho_reg_no"] or "")
                 ed_cert = st.text_input("Certificate Serial No*", value=s_data["cert_serial_no"] or "")
 
+                if st.form_submit_button("🟢 Update Candidate Details"):
+                    conn.execute("""
+                        UPDATE students SET
+                            name = ?, father_name = ?, mother_name = ?, mobile = ?,
+                            course = ?, shift = ?, net_fee = ?,
+                            lifecycle_stage = ?, ho_reg_no = ?, cert_serial_no = ?
+                        WHERE student_id = ?
+                    """, (ed_name.upper(), ed_fname.upper(), ed_mname.upper(), ed_mob.strip(),
+                          ed_course, ed_shift, ed_fee, ed_stage, ed_ho.strip(), ed_cert.strip(), target_sid))
+                    conn.commit()
+                    sync_all_to_cloud(conn)
+                    st.success(f"Student {target_sid} Updated Successfully!")
+                    st.rerun()
                 if st.form_submit_button("🟢 Update Candidate Details"):
                     conn.execute("""
                         UPDATE students SET
