@@ -873,6 +873,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
     
     if verify_staff_access("Bulk Session Desk"):
         teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
+        
         # 1. Date selection
         bk_date = st.date_input("Session Date*", value=datetime.date.today())
         weekday_name = bk_date.strftime("%A")
@@ -885,21 +886,22 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
         with c_bk2:
             shift_options = [
                 "All Shifts",
-                "Morning Slot",
-                "Afternoon Slot",
-                "Evening Slot"
+                "Morning Slot: 07:00 AM - 08:30 AM",
+                "Afternoon Slot: 04:00 PM - 05:30 PM",
+                "Evening Slot: 05:30 PM - 07:00 PM"
             ]
             bk_filter_shift = st.selectbox("Filter Shift*", shift_options)
         with c_bk3:
             bk_filter_batch = st.selectbox(f"Batch Routine ({weekday_name})*", ["All Batches", "MWF (Mon-Wed-Fri)", "TTS (Tue-Thu-Sat)"], index=default_batch_idx)
 
-        # 3. Direct Strong SQL Query (সকলো ছাত্ৰ সঠিকভাৱে অনাৰ বাবে)
+        # 3. Direct Strong SQL Query (Shob student filter)
         query = "SELECT student_id, name, shift, course FROM students WHERE status='Active'"
         params = []
 
         if bk_filter_shift != "All Shifts":
+            shift_prefix = bk_filter_shift.split(":")[0]  # 'Morning Slot' বা 'Evening Slot' বাচি ল'ব
             query += " AND shift LIKE ?"
-            params.append(f"%{bk_filter_shift}%")
+            params.append(f"%{shift_prefix}%")
 
         if bk_filter_batch == "MWF (Mon-Wed-Fri)":
             query += " AND (shift NOT LIKE '%TTS%')"
@@ -907,23 +909,35 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
             query += " AND shift LIKE '%TTS%'"
 
         query += " ORDER BY student_id ASC"
-        
         filtered_list = conn.execute(query, params).fetchall()
 
         st.write(f"Total Trainees in Queue: **{len(filtered_list)} Candidates**")
 
-        # Unique Form Key with timestamp to prevent duplicate error permanently
-        form_key = f"bulk_reg_{bk_date}_{str(bk_filter_shift).replace(' ','_')}_{bk_filter_batch[:3]}"
-        with st.form(key=form_key):                
-                for s_item in filtered_list:
-                    c_b1, c_b2, c_b3 = st.columns([2.5, 1.8, 1.5])
-                    with c_b1:
-                        st.markdown(f"**{s_item['name']}** (`{s_item['student_id']}`)<br><span style='font-size:11px; color:#64748B;'>Course: {s_item['course']}</span>", unsafe_allow_html=True)
-                    with c_b2:
-                        bulk_status[s_item['student_id']] = st.radio(f"Status_{s_item['student_id']}", ["Present", "Absent", "Late"], horizontal=True, key=f"bk_stat_{s_item['student_id']}", label_visibility="collapsed")
-                    with c_b3:
-                        bulk_fee_amt[s_item['student_id']] = st.number_input(f"Deposit (₹) {s_item['student_id']}", min_value=0.0, step=50.0, value=0.0, key=f"bk_fee_{s_item['student_id']}", label_visibility="collapsed")
-                    st.markdown("<hr style='margin:4px 0;'>", unsafe_allow_html=True)
+        form_key = f"bulk_reg_{bk_date}_{str(bk_filter_shift)[:5]}_{default_batch_idx}"
+        with st.form(key=form_key):
+            bulk_status = {}
+            bulk_fee_amt = {}
+
+            for s_item in filtered_list:
+                c_b1, c_b2, c_b3 = st.columns([2.5, 1.8, 1.5])
+                with c_b1:
+                    st.markdown(f"**{s_item['name']}** (`{s_item['student_id']}`)<br><span style='font-size:11px; color:#64748B;'>Course: {s_item['course']}</span>", unsafe_allow_html=True)
+                with c_b2:
+                    bulk_status[s_item["student_id"]] = st.radio(
+                        f"Status_{s_item['student_id']}", 
+                        ["Present", "Absent", "Late"], 
+                        horizontal=True, 
+                        key=f"bk_stat_{s_item['student_id']}"
+                    )
+                with c_b3:
+                    bulk_fee_amt[s_item["student_id"]] = st.number_input(
+                        f"Deposit (₹) ({s_item['student_id']})", 
+                        min_value=0.0, 
+                        step=50.0, 
+                        value=0.0, 
+                        key=f"bk_fee_{s_item['student_id']}"
+                    )
+                st.markdown("<hr style='margin:4px 0;'>", unsafe_allow_html=True)
                     
                 if st.form_submit_button("🟢 Save Bulk Attendance & Process Receipts"):
                     date_str = str(bk_date)
