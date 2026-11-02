@@ -1087,7 +1087,7 @@ elif menu == "📝 New Candidate Admission":
                 adm_fee = st.number_input("Confirmed Net Fee (₹)*", min_value=100.0, value=default_course_fee, step=50.0)
             with col_c3:
                 photo_file = st.file_uploader("Upload Passport Size Photo (JPG/PNG)*", type=["jpg", "jpeg", "png"])
-                        with col_c3:
+            with col_c3:
                 photo_file = st.file_uploader("Upload Passport Size Photo (JPG/PNG)", type=["jpg", "jpeg", "png"])
                 
             if st.form_submit_button("🟢 Complete Admission & Register"):
