@@ -945,9 +945,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                     sync_all_to_cloud(conn)
                     st.success(f"🎉 Bulk register saved! {len(filtered_list)} attendance records verified and {fees_logged} fee deposits logged.")
                     st.rerun()
-        else:
-            st.info("No active candidates registered in database.")
-
+        
 # -------------------------------------------------------------
 # 4. TUFEE FAST COUNTER
 # -------------------------------------------------------------
