@@ -939,7 +939,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                     )
                 st.markdown("<hr style='margin:4px 0;'>", unsafe_allow_html=True)
                     
-                if st.form_submit_button("🟢 Save Bulk Attendance & Process Receipts"):
+            if st.form_submit_button("🟢 Save Bulk Attendance & Process Receipts"):
                     date_str = str(bk_date)
                     now_str = datetime.datetime.now(IST).strftime("%I:%M %p")
                     fees_logged = 0
