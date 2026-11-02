@@ -872,6 +872,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
     st.caption("Perform rapid multi-candidate attendance marking and direct fee receipt generation in one centralized view.")
     
     if verify_staff_access("Bulk Session Desk"):
+        teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
         # 1. Date selection
         bk_date = st.date_input("Session Date*", value=datetime.date.today())
         weekday_name = bk_date.strftime("%A")
