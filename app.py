@@ -1076,7 +1076,7 @@ elif menu == "📝 New Candidate Admission":
             st.write("##### 3. Academic Batch & Fee Configuration")
             col_c1, col_c2, col_c3 = st.columns(3)
             with col_c1:
-            adm_shift_slot = st.selectbox("Assigned Shift Slot*", [
+                adm_shift_slot = st.selectbox("Assigned Shift Slot*", [
                 "Morning Slot: 07:00 AM - 08:30 AM",
                 "Afternoon Slot: 04:00 PM - 05:30 PM",
                 "Evening Slot: 05:30 PM - 07:00 PM"
