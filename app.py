@@ -1469,7 +1469,7 @@ elif menu == "🔐 Director Master Command Center":
                 ed_ho = st.text_input("Sarva HO Registration No (From admin.sarvaeducation.in)", value=s_data["ho_reg_no"] or "")
                 ed_cert = st.text_input("Certificate Serial No", value=s_data["cert_serial_no"] or "")
                         
-                        if st.form_submit_button("🟢 Update Candidate Details"):
+                if st.form_submit_button("🟢 Update Candidate Details"):
                             conn.execute('''
                                 UPDATE students SET
                                     name = ?, father_name = ?, mother_name = ?, mobile = ?,
