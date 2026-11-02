@@ -1075,18 +1075,18 @@ elif menu == "📝 New Candidate Admission":
                 
             st.write("##### 3. Academic Batch & Fee Configuration")
             col_c1, col_c2, col_c3 = st.columns(3)
-        with col_c1:
+            with col_c1:
             adm_shift_slot = st.selectbox("Assigned Shift Slot*", [
                 "Morning Slot: 07:00 AM - 08:30 AM",
                 "Afternoon Slot: 04:00 PM - 05:30 PM",
                 "Evening Slot: 05:30 PM - 07:00 PM"
             ])
-            adm_routine = st.selectbox("Batch Routine*", ["MWF (Mon-Wed-Fri)", "TTS (Tue-Thu-Sat)"])
-            adm_shift = f"{adm_shift_slot} ({adm_routine[:3]})"
-        with col_c2:
-            adm_fee = st.number_input("Confirmed Net Fee (₹)*", min_value=100.0, value=default_course_fee, step=50.0)
-        with col_c3:
-            photo_file = st.file_uploader("Upload Passport Size Photo (JPG/PNG)*", type=["jpg", "jpeg", "png"])
+                adm_routine = st.selectbox("Batch Routine*", ["MWF (Mon-Wed-Fri)", "TTS (Tue-Thu-Sat)"])
+                adm_shift = f"{adm_shift_slot} ({adm_routine[:3]})"
+            with col_c2:
+                adm_fee = st.number_input("Confirmed Net Fee (₹)*", min_value=100.0, value=default_course_fee, step=50.0)
+            with col_c3:
+                photo_file = st.file_uploader("Upload Passport Size Photo (JPG/PNG)*", type=["jpg", "jpeg", "png"])
                         with col_c3:
                 photo_file = st.file_uploader("Upload Passport Size Photo (JPG/PNG)", type=["jpg", "jpeg", "png"])
                 
