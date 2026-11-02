@@ -21,7 +21,7 @@ st.set_page_config(
 
 IST = pytz.timezone('Asia/Kolkata')
 DB_FILE = "ztc_academy.db"
-GSHEET_WEBAPP_URL = https://script.google.com/macros/s/AKfycbz7SLKcHy7ovrUhagSMAKKNycHn_LjxSDX42PYAsegKOS-4O_CBGHT2svMPzMZ48kJp/exec
+GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz7SLKcHy7ovrUhagSMAKKNycHn_LjxSDX42PYAsegKOS-4O_CBGHT2svMPzMZ48kJp/exec"
 
 # -------------------------------------------------------------
 # OFFICIAL COURSE CATALOG & STANDARDIZED PRICING
