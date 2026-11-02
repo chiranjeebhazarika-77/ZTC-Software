@@ -905,7 +905,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                 filtered_list.append(s)
             st.write(f"Total Trainees in Queue: **{len(filtered_list)} Candidates**")
             
-            with st.form("bulk_register_form"):
+            with st.form(f"bulk_register_form_{bk_date}_{bk_filter_batch}"):
                 bulk_status = {}
                 bulk_fee_amt = {}
                 
