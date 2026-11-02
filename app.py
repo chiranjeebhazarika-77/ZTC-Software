@@ -872,43 +872,48 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
     st.caption("Perform rapid multi-candidate attendance marking and direct fee receipt generation in one centralized view.")
     
     if verify_staff_access("Bulk Session Desk"):
-        all_students = conn.execute("SELECT student_id, name, shift, course FROM students WHERE status='Active'").fetchall()
-        teachers_list = [r["name"] for r in conn.execute("SELECT name FROM teachers").fetchall()]
-        
-        if all_students:
-           bk_date = st.date_input("Session Date*", value=datetime.date.today())
+        # 1. Date selection
+        bk_date = st.date_input("Session Date*", value=datetime.date.today())
         weekday_name = bk_date.strftime("%A")
         default_batch_idx = 1 if weekday_name in ["Monday", "Wednesday", "Friday"] else (2 if weekday_name in ["Tuesday", "Thursday", "Saturday"] else 0)
 
+        # 2. Filters Row
         c_bk1, c_bk2, c_bk3 = st.columns(3)
         with c_bk1:
             bk_teacher = st.selectbox("Staff / Incharge*", teachers_list)
         with c_bk2:
-            bk_filter_shift = st.selectbox("Filter Shift*", ["All Shifts", "Morning Slot: 07:00 AM - 08:30 AM", "Afternoon Slot: 04:00 PM - 05:30 PM", "Evening Slot: 05:30 PM - 07:00 PM"])
+            shift_options = [
+                "All Shifts",
+                "Morning Slot",
+                "Afternoon Slot",
+                "Evening Slot"
+            ]
+            bk_filter_shift = st.selectbox("Filter Shift*", shift_options)
         with c_bk3:
             bk_filter_batch = st.selectbox(f"Batch Routine ({weekday_name})*", ["All Batches", "MWF (Mon-Wed-Fri)", "TTS (Tue-Thu-Sat)"], index=default_batch_idx)
 
-        filtered_list = []
-        for s in all_students:
-            match_shift = (bk_filter_shift == "All Shifts" or s["shift"] == bk_filter_shift)
-            s_shift_text = s["shift"] if "shift" in s.keys() else ""
-            if bk_filter_batch == "All Batches":
-                match_batch = True
-            elif bk_filter_batch == "MWF (Mon-Wed-Fri)":
-                match_batch = ("TTS" not in s_shift_text)
-            elif bk_filter_batch == "TTS (Tue-Thu-Sat)":
-                match_batch = ("TTS" in s_shift_text)
-            else:
-                match_batch = True
-            
-            if match_shift and match_batch:
-                filtered_list.append(s)
-            st.write(f"Total Trainees in Queue: **{len(filtered_list)} Candidates**")
-            
-            with st.form(f"bulk_register_form_{bk_date}_{bk_filter_batch}"):
-                bulk_status = {}
-                bulk_fee_amt = {}
-                
+        # 3. Direct Strong SQL Query (সকলো ছাত্ৰ সঠিকভাৱে অনাৰ বাবে)
+        query = "SELECT student_id, name, shift, course FROM students WHERE status='Active'"
+        params = []
+
+        if bk_filter_shift != "All Shifts":
+            query += " AND shift LIKE ?"
+            params.append(f"%{bk_filter_shift}%")
+
+        if bk_filter_batch == "MWF (Mon-Wed-Fri)":
+            query += " AND (shift NOT LIKE '%TTS%')"
+        elif bk_filter_batch == "TTS (Tue-Thu-Sat)":
+            query += " AND shift LIKE '%TTS%'"
+
+        query += " ORDER BY student_id ASC"
+        
+        filtered_list = conn.execute(query, params).fetchall()
+
+        st.write(f"Total Trainees in Queue: **{len(filtered_list)} Candidates**")
+
+        # Unique Form Key with timestamp to prevent duplicate error permanently
+        form_key = f"bulk_reg_{bk_date}_{str(bk_filter_shift).replace(' ','_')}_{bk_filter_batch[:3]}"
+        with st.form(key=form_key):                
                 for s_item in filtered_list:
                     c_b1, c_b2, c_b3 = st.columns([2.5, 1.8, 1.5])
                     with c_b1:
