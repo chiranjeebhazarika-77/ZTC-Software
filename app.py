@@ -243,7 +243,15 @@ def init_db():
     conn.close()
 
 init_db()
-
+# Automatic startup sync if local database gets reset by Streamlit Cloud reboot
+try:
+    chk_conn = get_db_connection()
+    c_count = chk_conn.execute("SELECT COUNT(*) FROM students").fetchone()[0]
+    if c_count == 0:
+        restore_database_from_cloud(chk_conn)
+    chk_conn.close()
+except Exception:
+    pass
 # Multi-Table Cloud Sync
 def sync_all_to_cloud(conn):
     try:
