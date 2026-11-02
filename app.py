@@ -1445,11 +1445,25 @@ elif menu == "🔐 Director Master Command Center":
                         ed_mname = st.text_input("Mother's Name", value=s_data["mother_name"] or "")
                         ed_mob = st.text_input("Mobile Number", value=s_data["mobile"])
                         ed_course = st.selectbox("Course", COURSE_NAMES, index=COURSE_NAMES.index(s_data["course"]) if s_data["course"] in COURSE_NAMES else 0)
-                        ed_shift = st.selectbox("Shift Slot", [
-                            "Morning Slot: 07:00 AM - 08:30 AM", 
-                            "Afternoon Slot: 04:00 PM - 05:30 PM", 
-                            "Evening Slot: 05:30 PM - 07:00 PM"
-                        ])
+                        curr_sh_str = str(s_data["shift"] or "")
+                        col_esh1, col_esh2 = st.columns(2)
+                        with col_esh1:
+                            base_shift_opts = [
+                                "Morning Slot: 07:00 AM - 08:30 AM",
+                                "Afternoon Slot: 04:00 PM - 05:30 PM",
+                                "Evening Slot: 05:30 PM - 07:00 PM"
+                            ]
+                            d_s_idx = 0
+                            for idx, bso in enumerate(base_shift_opts):
+                                if bso.split(":")[0] in curr_sh_str:
+                                    d_s_idx = idx
+                                    break
+                            ed_shift_base = st.selectbox("Shift Slot*", base_shift_opts, index=d_s_idx)
+                with col_esh2:
+                            d_r_idx = 1 if "TTS" in curr_sh_str else 0
+                            ed_routine = st.selectbox("Routine*", ["MWF (Mon-Wed-Fri)", "TTS (Tue-Thu-Sat)"], index=d_r_idx)
+
+                ed_shift = f"{ed_shift_base} ({ed_routine[:3]})"
                         ed_fee = st.number_input("Course Net Fee (₹)", value=float(s_data["net_fee"]) if s_data["net_fee"] else COURSE_CATALOG[ed_course]["fee"])
                         ed_stage = st.selectbox("Lifecycle Stage", ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"], index=["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"].index(s_data["lifecycle_stage"]) if s_data["lifecycle_stage"] in ["Admission", "Learning/Tests", "Course Completed", "HO Registered", "Exam Appeared", "Certificate Handover"] else 0)
                         ed_ho = st.text_input("Sarva HO Registration No (From admin.sarvaeducation.in)", value=s_data["ho_reg_no"] or "")
