@@ -1320,14 +1320,15 @@ elif menu == "🔐 Director Master Command Center":
     if adm_pass == admin_pin_val:
         st.success("Authorized Director Access Granted! Welcome Chiranjeeb Hazarika Sir.")
         
-        dir_t1, dir_t2, dir_t3, dir_t4, dir_t5, dir_t6, dir_t7 = st.tabs([
-            "📊 Executive Morning Briefing",
-            "📋 Public Enquiries (Leads)",
+        dir_t1, dir_t2, dir_t3, dir_t4, dir_t5, dir_t6, dir_t7, dir_t8 = st.tabs([
+            "📋 Executive Briefing",
+            "💬 Public Enquiries (Leads)",
             "⭐ Teacher Ratings & Audit",
             "✏️ Edit & Remove Students",
             "💰 Financials & Fee Dues",
             "💾 1-Click Excel Backup",
-            "🛡️ Security & PIN Settings"
+            "🔐 Security & PIN Settings",
+            "👥 All Students Directory"
         ])
         
         # TAB 1: EXECUTIVE BRIEFING
@@ -1569,6 +1570,7 @@ Director Contact: 9101026718"""
                             conn.commit()
                             st.success("🎉 Director Password updated successfully!")
                             st.rerun()
+                            
             with col_sec2:
                 st.write("**2. Change Staff / Faculty Access PIN:**")
                 st.caption(f"Current Staff PIN is: `{staff_pin_val}`")
@@ -1580,9 +1582,57 @@ Director Contact: 9101026718"""
                             conn.commit()
                             st.success("🎉 Staff PIN updated successfully!")
                             st.rerun()
-                        else:
-                            st.error("Staff PIN must be at least 4 characters!")
-    elif adm_pass:
+                            else:
+                        st.error("Staff PIN must be at least 4 characters!")
+        with dir_t8:
+            st.write("### 👥 All Enrolled Students Master Directory")
+            
+            df_students = pd.read_sql("""
+                SELECT 
+                    student_id AS [Roll ID],
+                    name AS [Full Name],
+                    father_name AS [Father's Name],
+                    mobile AS [Mobile],
+                    course AS [Course],
+                    shift AS [Shift & Routine],
+                    net_fee AS [Net Fee (₹)],
+                    lifecycle_stage AS [Lifecycle Stage],
+                    ho_reg_no AS [Sarva HO Reg],
+                    cert_serial_no AS [Certificate Serial]
+                FROM students
+                ORDER BY student_id ASC
+            """, conn)
+            
+            if not df_students.empty:
+                col_s1, col_s2 = st.columns([3, 1])
+                with col_s1:
+                    search_q = st.text_input("🔍 Quick Search (Search by Name, Roll ID, Mobile, or Course):", key="search_master_dir")
+                with col_s2:
+                    st.write("")
+                    st.write("")
+                    csv_data = df_students.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="📥 Download Directory (CSV)",
+                        data=csv_data,
+                        file_name="All_Students_Directory.csv",
+                        mime="text/csv",
+                        key="dl_master_all_students"
+                    )
+
+                if search_q:
+                    df_students = df_students[
+                        df_students["Full Name"].astype(str).str.contains(search_q, case=False, na=False) |
+                        df_students["Roll ID"].astype(str).str.contains(search_q, case=False, na=False) |
+                        df_students["Mobile"].astype(str).str.contains(search_q, case=False, na=False) |
+                        df_students["Course"].astype(str).str.contains(search_q, case=False, na=False)
+                    ]
+
+                st.dataframe(df_students, use_container_width=True, hide_index=True)
+                st.info(f"Total Students: {len(df_students)}")
+            else:
+                st.warning("No student records found in database.")
+                       
+        elif adm_pass:
         st.error("❌ Incorrect Director Security Password!")
 
 conn.close()
