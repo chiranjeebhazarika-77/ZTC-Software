@@ -1632,7 +1632,7 @@ Director Contact: 9101026718"""
             else:
                 st.warning("No student records found in database.")
                        
-        elif adm_pass:
+    elif adm_pass:
         st.error("❌ Incorrect Director Security Password!")
 
 conn.close()
