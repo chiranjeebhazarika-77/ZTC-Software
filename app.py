@@ -1477,18 +1477,21 @@ elif menu == "🔐 Director Master Command Center":
                             st.success(f"Student {target_sid} Updated Successfully!")
                             st.rerun()
                             
-                            conn.execute("DELETE FROM students WHERE student_id = ?", (target_sid,))
-                            conn.execute("DELETE FROM fees WHERE student_id = ?", (target_sid,))
-                            conn.execute("DELETE FROM attendance WHERE student_id = ?", (target_sid,))
-                            conn.execute("DELETE FROM marks WHERE student_id = ?", (target_sid,))
-                            conn.execute("DELETE FROM daily_class_logs WHERE student_id = ?", (target_sid,))
-                            conn.execute("DELETE FROM teacher_ratings WHERE student_id = ?", (target_sid,))
-                            conn.commit()
-                            sync_all_to_cloud(conn)
-                            st.success(f"🗑️ Candidate {target_sid} removed completely!")
-                            st.rerun()
-                        else:
-                            st.error("Please tick confirmation checkbox first!")
+        with col_ed2:
+            st.write("***Danger Zone: Remove Student***")
+            confirm_del = st.checkbox(f"I confirm to permanently delete student {target_sid}", key=f"del_chk_{target_sid}")
+            if confirm_del:
+                if st.button("🔴 Permanently Delete Student", type="primary"):
+                    conn.execute("DELETE FROM students WHERE student_id = ?", (target_sid,))
+                    conn.execute("DELETE FROM fees WHERE student_id = ?", (target_sid,))
+                    conn.execute("DELETE FROM attendance WHERE student_id = ?", (target_sid,))
+                    conn.execute("DELETE FROM marks WHERE student_id = ?", (target_sid,))
+                    conn.execute("DELETE FROM daily_class_logs WHERE student_id = ?", (target_sid,))
+                    conn.execute("DELETE FROM teacher_ratings WHERE student_id = ?", (target_sid,))
+                    conn.commit()
+                    sync_all_to_cloud(conn)
+                    st.success(f"Student {target_sid} removed completely!")
+                    st.rerun()
             else:
                 st.info("No candidates registered.")
 
