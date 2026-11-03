@@ -1435,16 +1435,16 @@ elif menu == "🔐 Director Master Command Center":
                 chosen_s = st.selectbox("Select Student to Edit or Remove:", s_opts)
                 target_sid = chosen_s.split(" - ")[0]
                 s_data = conn.execute("SELECT * FROM students WHERE student_id = ?", (target_sid,)).fetchone()
-       col_ed1, col_ed2 = st.columns(2)
+
+                col_ed1, col_ed2 = st.columns(2)
         with col_ed1:
-            st.write("***Edit Candidate Information:***")
+                st.write("***Edit Candidate Information:***")
             with st.form("edit_student_form"):
-                ed_name = st.text_input("Candidate Name*", value=s_data["name"])
-                ed_fname = st.text_input("Father's Name*", value=s_data["father_name"])
-                ed_mname = st.text_input("Mother's Name*", value=s_data["mother_name"] or "")
-                ed_mob = st.text_input("Mobile Number*", value=s_data["mobile"])
-                ed_course = st.selectbox("Course*", COURSE_NAMES, index=COURSE_NAMES.index(s_data["course"]) if s_data["course"] in COURSE_NAMES else 0)
-                
+                    ed_name = st.text_input("Candidate Name*", value=s_data["name"])
+                    ed_fname = st.text_input("Father's Name*", value=s_data["father_name"])
+                    ed_mname = st.text_input("Mother's Name*", value=s_data["mother_name"] or "")
+                    ed_mob = st.text_input("Mobile Number*", value=s_data["mobile"])
+                    ed_course = st.selectbox("Course*", COURSE_NAMES, index=COURSE_NAMES.index(s_data["course"]) if s_data["course"] in COURSE_NAMES else 0)
                 curr_sh_str = str(s_data["shift"] or "")
                 col_esh1, col_esh2 = st.columns(2)
                 with col_esh1:
