@@ -28,12 +28,12 @@ GSHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz7SLKcHy7ovrUhagSM
 # -------------------------------------------------------------
 COURSE_CATALOG = {
     "PGDCA (12 Months)": {
-        "fee": 8499.0, 
+        "fee": 8599.0, 
         "duration": "12 Months", 
         "desc": "Post Graduate Diploma in Computer Applications (Programming, Database, Advanced Automation)"
     },
     "ADCA (12 Months)": {
-        "fee": 8499.0, 
+        "fee": 8599.0, 
         "duration": "12 Months", 
         "desc": "Advanced Diploma in Computer Applications (Complete Office Computing & Commercial Modules)"
     },
