@@ -1582,8 +1582,8 @@ Director Contact: 9101026718"""
                             conn.commit()
                             st.success("🎉 Staff PIN updated successfully!")
                             st.rerun()
-                            else:
-                        st.error("Staff PIN must be at least 4 characters!")
+                        else:
+                            st.error("Staff PIN must be at least 4 characters!")
         with dir_t8:
             st.write("### 👥 All Enrolled Students Master Directory")
             
