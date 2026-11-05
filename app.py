@@ -1537,7 +1537,7 @@ Director Contact: 9101026718"""
             recent_fees_df = pd.read_sql("""
                 SELECT id AS [Fee ID], student_id AS [Roll ID], amount AS [Amount (₹)], date AS [Date], mode AS [Mode] 
                 FROM fees 
-                ORDER BY id DESC LIMIT 10
+                ORDER BY id DESC LIMIT 100
             """, conn)
             st.write("**Recent Fee Transactions (Check the Fee ID to delete):**")
             st.dataframe(recent_fees_df, use_container_width=True, hide_index=True)
