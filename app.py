@@ -1530,6 +1530,29 @@ Director Contact: 9101026718"""
                     st.markdown(f"• **{d['Name']}** (Due: {d['Due Balance']}): [📲 Send WhatsApp Reminder]({d['Reminder Link']})")
             else:
                 st.success("🎉 All enrolled students have completely cleared their fees!")
+            # Mistaken / Duplicate Fee Reversal Utility
+            st.markdown("---")
+            st.write("#### 🗑️ Reverse / Delete Mistaken Fee Entry")
+            
+            recent_fees_df = pd.read_sql("""
+                SELECT id AS [Fee ID], student_id AS [Roll ID], amount AS [Amount (₹)], date AS [Date], mode AS [Mode] 
+                FROM fees 
+                ORDER BY id DESC LIMIT 10
+            """, conn)
+            st.write("**Recent Fee Transactions (Check the Fee ID to delete):**")
+            st.dataframe(recent_fees_df, use_container_width=True, hide_index=True)
+            
+            col_del1, col_del2 = st.columns([2, 1])
+            with col_del1:
+                del_fee_id = st.number_input("Enter Fee ID to permanently remove:", min_value=1, step=1, key="input_del_fee")
+            with col_del2:
+                st.write("")
+                st.write("")
+                if st.button("🚨 Delete This Fee Entry", key="btn_del_fee"):
+                    conn.execute("DELETE FROM fees WHERE id = ?", (del_fee_id,))
+                    conn.commit()
+                    st.success(f"Transaction Fee ID {del_fee_id} deleted successfully!")
+                    st.rerun()
 
         # TAB 6: BACKUP
         with dir_t6:
