@@ -935,7 +935,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                         min_value=0.0, 
                         step=50.0, 
                         value=0.0, 
-                        key=f"bk_fee_{s_item['student_id']}"
+                        key=f"bk_fee_{s_item['student_id']}_{st.session_state.get('bulk_reset_cnt', 0)}"
                     )
                 st.markdown("<hr style='margin:4px 0;'>", unsafe_allow_html=True)
                     
@@ -959,6 +959,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                     conn.commit()
                     sync_all_to_cloud(conn)
                     st.success(f"🎉 Bulk register saved! {len(filtered_list)} attendance records verified and {fees_logged} fee deposits logged.")
+                    st.session_state["bulk_reset_cnt"] = st.session_state.get("bulk_reset_cnt", 0) + 1
                     st.rerun()
         
 # -------------------------------------------------------------
