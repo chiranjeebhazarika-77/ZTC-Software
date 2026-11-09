@@ -479,12 +479,10 @@ conn = get_db_connection()
 admin_pin_val = conn.execute("SELECT value FROM system_settings WHERE key = 'admin_pin'").fetchone()["value"]
 staff_pin_row = conn.execute("SELECT value FROM system_settings WHERE key = 'staff_pin'").fetchone()
 staff_pin_val = staff_pin_row["value"] if staff_pin_row else "ztc4159"
-
-# -------------------------------------------------------------
+# ==========================================
 # SIDEBAR
-# -------------------------------------------------------------
-# --- TOP NAVIGATION (DARPAN STYLE) ---
-menu = st.radio(
+# ==========================================
+menu = st.sidebar.radio(
     "Select Operational Desk:",
     [
         "🌐 Public Dashboard & Enquiry",
@@ -495,11 +493,8 @@ menu = st.radio(
         "💻 Daily Class Activity (Lab/Theory)",
         "👨‍🏫 Faculty Desk & Honorarium",
         "🏛️ Director Master Command Center"
-    ],
-    horizontal=True,
-    label_visibility="collapsed"
+    ]
 )
-st.sidebar.markdown("---")
 st.sidebar.write("### ☁️ Cloud & Google Sheet")
 if st.sidebar.button("📥 Pull / Restore Data from Google Sheet", use_container_width=True):
     items = restore_database_from_cloud(conn)
