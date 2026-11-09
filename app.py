@@ -480,7 +480,7 @@ admin_pin_val = conn.execute("SELECT value FROM system_settings WHERE key = 'adm
 staff_pin_row = conn.execute("SELECT value FROM system_settings WHERE key = 'staff_pin'").fetchone()
 staff_pin_val = staff_pin_row["value"] if staff_pin_row else "ztc4159"
 # ==========================================
-# SIDEBAR
+# SIDEBAR NAVIGATION
 # ==========================================
 menu = st.sidebar.radio(
     "Select Operational Desk:",
@@ -488,11 +488,11 @@ menu = st.sidebar.radio(
         "🌐 Public Dashboard & Enquiry",
         "🎓 Student Self-Service Portal",
         "⚡ Bulk Session & Attendance Desk",
-        "💳 Tuition Fee Fast Counter",
+        "Tuition Fee Fast Counter",
         "📝 New Candidate Admission",
         "💻 Daily Class Activity (Lab/Theory)",
         "👨‍🏫 Faculty Desk & Honorarium",
-        "🏛️ Director Master Command Center"
+        "Director Master Command Center"
     ]
 )
 st.sidebar.write("### ☁️ Cloud & Google Sheet")
