@@ -492,15 +492,13 @@ with top_nav_c1:
     if st.button("🌐 Public Dashboard & Enquiry", use_container_width=True):
         st.session_state["active_nav_tab"] = "🌐 Public Dashboard & Enquiry"
         st.rerun()
-
 with top_nav_c2:
     if st.button("🎓 Student Self-Service Portal", use_container_width=True):
-        st.session_state["active_nav_tab"] = "🎓 Student Self-Service Portal"
+        st.session_state["active_nav_tab"] = "Student Self-Service Portal"
         st.rerun()
-
 with top_nav_c3:
-    if st.button("🏛️ Institute Desk (Staff & Director)", use_container_width=True):
-        st.session_state["active_nav_tab"] = "🏛️ Institute Desk"
+    if st.button("🏛️ Director Master Command Center", use_container_width=True):
+        st.session_state["active_nav_tab"] = "Director Master Command Center"
         st.rerun()
 menu = st.session_state["active_nav_tab"]
 st.sidebar.markdown("---")
