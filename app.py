@@ -483,18 +483,26 @@ staff_pin_val = staff_pin_row["value"] if staff_pin_row else "ztc4159"
 # -------------------------------------------------------------
 # SIDEBAR
 # -------------------------------------------------------------
-st.sidebar.title("💻 Portal Navigation")
-menu = st.sidebar.radio("Select Operational Desk:", [
-    "🌐 Public Dashboard & Enquiry",
-    "🔑 Student Self-Service Portal",
-    "⚡ Bulk Session & Attendance Desk",
-    "💵 TuFee Fast Counter",
-    "📝 New Candidate Admission",
-    "📚 Daily Class Activity (Lab/Theory)",
-    "👨‍🏫 Faculty Desk & Honorarium",
-    "🔐 Director Master Command Center"
-])
+if "active_nav_tab" not in st.session_state:
+    st.session_state["active_nav_tab"] = "🌐 Public Dashboard & Enquiry"
 
+top_nav_c1, top_nav_c2, top_nav_c3 = st.columns([1, 1, 1])
+
+with top_nav_c1:
+    if st.button("🌐 Public Dashboard & Enquiry", use_container_width=True):
+        st.session_state["active_nav_tab"] = "🌐 Public Dashboard & Enquiry"
+        st.rerun()
+
+with top_nav_c2:
+    if st.button("🎓 Student Self-Service Portal", use_container_width=True):
+        st.session_state["active_nav_tab"] = "🎓 Student Self-Service Portal"
+        st.rerun()
+
+with top_nav_c3:
+    if st.button("🏛️ Institute Desk (Staff & Director)", use_container_width=True):
+        st.session_state["active_nav_tab"] = "🏛️ Institute Desk"
+        st.rerun()
+menu = st.session_state["active_nav_tab"]
 st.sidebar.markdown("---")
 st.sidebar.write("### ☁️ Cloud & Google Sheet")
 if st.sidebar.button("📥 Pull / Restore Data from Google Sheet", use_container_width=True):
