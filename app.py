@@ -964,7 +964,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
 # -------------------------------------------------------------
 # 4. TUFEE FAST COUNTER
 # -------------------------------------------------------------
-elif menu == "💳Tuition Fee Fast Counter":
+elif menu == "💳 Tuition Fee Fast Counter":
     st.subheader("💳 TuFee Instant Counter (Collect Fee & Send WhatsApp Receipt)")
     if verify_staff_access("TuFee Counter"):
         students = conn.execute("SELECT * FROM students").fetchall()
