@@ -483,10 +483,19 @@ staff_pin_val = staff_pin_row["value"] if staff_pin_row else "ztc4159"
 # -------------------------------------------------------------
 # SIDEBAR
 # -------------------------------------------------------------
-# --- TOP HORIZONTAL NAVIGATION (DARPAN STYLE) ---
+# --- TOP NAVIGATION (DARPAN STYLE) ---
 menu = st.radio(
-    "Select Portal Gateway:",
-    ["🌐 Public Dashboard & Enquiry", "🎓 Student Self-Service Portal", "🏛️ Director Master Command Center"],
+    "Select Operational Desk:",
+    [
+        "🌐 Public Dashboard & Enquiry",
+        "🎓 Student Self-Service Portal",
+        "⚡ Bulk Session & Attendance Desk",
+        "💳 Tuition Fee Fast Counter",
+        "📝 New Candidate Admission",
+        "💻 Daily Class Activity (Lab/Theory)",
+        "👨‍🏫 Faculty Desk & Honorarium",
+        "🏛️ Director Master Command Center"
+    ],
     horizontal=True,
     label_visibility="collapsed"
 )
