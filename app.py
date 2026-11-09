@@ -486,13 +486,13 @@ menu = st.sidebar.radio(
     "Select Operational Desk:",
     [
         "🌐 Public Dashboard & Enquiry",
-        "🎓 Student Self-Service Portal",
+        "🔑 Student Self-Service Portal",
         "⚡ Bulk Session & Attendance Desk",
-        "Tuition Fee Fast Counter",
+        "💳 Tuition Fee Fast Counter",
         "📝 New Candidate Admission",
-        "💻 Daily Class Activity (Lab/Theory)",
+        "📚 Daily Class Activity (Lab/Theory)",
         "👨‍🏫 Faculty Desk & Honorarium",
-        "Director Master Command Center"
+        "🔐 Director Master Command Center"
     ]
 )
 st.sidebar.write("### ☁️ Cloud & Google Sheet")
@@ -964,8 +964,8 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
 # -------------------------------------------------------------
 # 4. TUFEE FAST COUNTER
 # -------------------------------------------------------------
-elif menu == "💵 TuFee Fast Counter":
-    st.subheader("💵 TuFee Instant Counter (Collect Fee & Send WhatsApp Receipt)")
+elif menu == "💳TuFee Fast Counter":
+    st.subheader("💳 TuFee Instant Counter (Collect Fee & Send WhatsApp Receipt)")
     if verify_staff_access("TuFee Counter"):
         students = conn.execute("SELECT * FROM students").fetchall()
         if students:
