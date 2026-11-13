@@ -911,7 +911,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
         filtered_list = conn.execute(query, params).fetchall()
 
         st.write(f"Total Trainees in Queue: **{len(filtered_list)} Candidates**")
-form_key = f"bulk_reg_{bk_date}_{str(bk_filter_shift)[:5]}_{default_batch_idx}"
+        form_key = f"bulk_reg_{bk_date}_{str(bk_filter_shift)[:5]}_{default_batch_idx}"
         with st.form(key=form_key):
             bulk_status = {}
             bulk_fee_amt = {}
