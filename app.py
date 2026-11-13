@@ -919,7 +919,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
         for s_item in filtered_list:
             c_b1, c_b2, c_b3 = st.columns([2.5, 1.8, 1.5])
             with c_b1:
-                st.markdown(f"**{s_item['name']}** ({s_item['student_id']})<br><span style='font-size:11px; color:#607d8b;'>Shift: {s_item.get('shift', '')}</span>", unsafe_allow_html=True)
+                st.markdown(f"**{s_item['name']}** ({s_item['student_id']})<br><span style='font-size:11px; color:#607d8b;'>Shift: {s_item['shift']}</span>", unsafe_allow_html=True)
 
             existing_att = conn.execute(
                 "SELECT status FROM attendance WHERE student_id = ? AND date = ?", 
