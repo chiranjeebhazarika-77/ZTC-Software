@@ -916,27 +916,39 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
         with st.form(key=form_key):
             bulk_status = {}
             bulk_fee_amt = {}
+        for s_item in filtered_list:
+            c_b1, c_b2, c_b3 = st.columns([2.5, 1.8, 1.5])
+            with c_b1:
+                st.markdown(f"**{s_item['name']}** ({s_item['student_id']})<br><span style='font-size:11px; color:#607d8b;'>Shift: {s_item.get('shift', '')}</span>", unsafe_allow_html=True)
 
-            for s_item in filtered_list:
-                c_b1, c_b2, c_b3 = st.columns([2.5, 1.8, 1.5])
-                with c_b1:
-                    st.markdown(f"**{s_item['name']}** (`{s_item['student_id']}`)<br><span style='font-size:11px; color:#64748B;'>Course: {s_item['course']}</span>", unsafe_allow_html=True)
-                with c_b2:
-                    bulk_status[s_item["student_id"]] = st.radio(
-                        f"Status_{s_item['student_id']}", 
-                        ["Present", "Absent", "Late"], 
-                        horizontal=True, 
-                        key=f"bk_stat_{s_item['student_id']}"
-                    )
-                with c_b3:
-                    bulk_fee_amt[s_item["student_id"]] = st.number_input(
-                        f"Deposit (₹) ({s_item['student_id']})", 
-                        min_value=0.0, 
-                        step=50.0, 
-                        value=0.0, 
-                        key=f"bk_fee_{s_item['student_id']}_{st.session_state.get('bulk_reset_cnt', 0)}"
-                    )
-                st.markdown("<hr style='margin:4px 0;'>", unsafe_allow_html=True)
+            existing_att = conn.execute(
+                "SELECT status FROM attendance WHERE student_id = ? AND date = ?", 
+                (s_item['student_id'], str(bk_date))
+            ).fetchone()
+
+            status_opts = ["Present", "Absent", "Late"]
+            def_idx = 0
+            if existing_att and existing_att["status"] in status_opts:
+                def_idx = status_opts.index(existing_att["status"])
+
+            with c_b2:
+                bulk_status[s_item['student_id']] = st.radio(
+                    f"Status_{s_item['student_id']}",
+                    status_opts,
+                    index=def_idx,
+                    horizontal=True,
+                    key=f"bk_stat_{bk_date}_{s_item['student_id']}"
+                )
+
+            with c_b3:
+                bulk_fee_amt[s_item['student_id']] = st.number_input(
+                    f"Deposit (₹) ({s_item['student_id']})",
+                    min_value=0.0,
+                    step=50.0,
+                    value=0.0,
+                    key=f"bk_fee_{bk_date}_{s_item['student_id']}"
+                )
+            st.markdown("<hr style='margin:4px 0;'>", unsafe_allow_html=True)
                     
             if st.form_submit_button("🟢 Save Bulk Attendance & Process Receipts"):
                     date_str = str(bk_date)
