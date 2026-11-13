@@ -911,67 +911,66 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
         filtered_list = conn.execute(query, params).fetchall()
 
         st.write(f"Total Trainees in Queue: **{len(filtered_list)} Candidates**")
+form_key = f"bulk_reg_{bk_date}_{str(bk_filter_shift)[:5]}_{default_batch_idx}"
+        with st.form(key=form_key):
+            bulk_status = {}
+            bulk_fee_amt = {}
 
-        form_key = f"bulk_reg_{bk_date}_{str(bk_filter_shift)[:5]}_{default_batch_idx}"
-    with st.form(key=form_key):
-        bulk_status = {}
-        bulk_fee_amt = {}
+            for s_item in filtered_list:
+                c_b1, c_b2, c_b3 = st.columns([2.5, 1.8, 1.5])
+                with c_b1:
+                    st.markdown(f"**{s_item['name']}** ({s_item['student_id']})<br><span style='font-size:11px; color:#607d8b;'>Shift: {s_item['shift']}</span>", unsafe_allow_html=True)
 
-        for s_item in filtered_list:
-            c_b1, c_b2, c_b3 = st.columns([2.5, 1.8, 1.5])
-            with c_b1:
-                st.markdown(f"**{s_item['name']}** ({s_item['student_id']})<br><span style='font-size:11px; color:#607d8b;'>Shift: {s_item['shift']}</span>", unsafe_allow_html=True)
+                existing_att = conn.execute(
+                    "SELECT status FROM attendance WHERE student_id = ? AND date = ?", 
+                    (s_item['student_id'], str(bk_date))
+                ).fetchone()
 
-            existing_att = conn.execute(
-                "SELECT status FROM attendance WHERE student_id = ? AND date = ?", 
-                (s_item['student_id'], str(bk_date))
-            ).fetchone()
+                status_opts = ["Present", "Absent", "Late"]
+                def_idx = 0
+                if existing_att and existing_att["status"] in status_opts:
+                    def_idx = status_opts.index(existing_att["status"])
 
-            status_opts = ["Present", "Absent", "Late"]
-            def_idx = 0
-            if existing_att and existing_att["status"] in status_opts:
-                def_idx = status_opts.index(existing_att["status"])
+                with c_b2:
+                    bulk_status[s_item['student_id']] = st.radio(
+                        f"Status_{s_item['student_id']}",
+                        status_opts,
+                        index=def_idx,
+                        horizontal=True,
+                        key=f"bk_stat_{bk_date}_{s_item['student_id']}"
+                    )
 
-            with c_b2:
-                bulk_status[s_item['student_id']] = st.radio(
-                    f"Status_{s_item['student_id']}",
-                    status_opts,
-                    index=def_idx,
-                    horizontal=True,
-                    key=f"bk_stat_{bk_date}_{s_item['student_id']}"
-                )
+                with c_b3:
+                    bulk_fee_amt[s_item['student_id']] = st.number_input(
+                        f"Deposit (₹) ({s_item['student_id']})",
+                        min_value=0.0,
+                        step=50.0,
+                        value=0.0,
+                        key=f"bk_fee_{bk_date}_{s_item['student_id']}"
+                    )
 
-            with c_b3:
-                bulk_fee_amt[s_item['student_id']] = st.number_input(
-                    f"Deposit (₹) ({s_item['student_id']})",
-                    min_value=0.0,
-                    step=50.0,
-                    value=0.0,
-                    key=f"bk_fee_{bk_date}_{s_item['student_id']}"
-                )
+            if st.form_submit_button("💾 Save Bulk Attendance & Process Receipts"):
+                date_str = str(bk_date)
+                now_str = datetime.datetime.now(IST).strftime("%I:%M %p")
+                fees_logged = 0
 
-        if st.form_submit_button("💾 Save Bulk Attendance & Process Receipts"):
-            date_str = str(bk_date)
-            now_str = datetime.datetime.now(IST).strftime("%I:%M %p")
-            fees_logged = 0
+                for sid_k, stat_v in bulk_status.items():
+                    conn.execute("DELETE FROM attendance WHERE student_id = ? AND date = ?", (sid_k, date_str))
+                    conn.execute("INSERT INTO attendance (student_id, date, time_in, status, marked_by) VALUES (?, ?, ?, ?, ?)",
+                                 (sid_k, date_str, now_str, stat_v, bk_teacher))
 
-            for sid_k, stat_v in bulk_status.items():
-                conn.execute("DELETE FROM attendance WHERE student_id = ? AND date = ?", (sid_k, date_str))
-                conn.execute("INSERT INTO attendance (student_id, date, time_in, status, marked_by) VALUES (?, ?, ?, ?, ?)",
-                             (sid_k, date_str, now_str, stat_v, bk_teacher))
+                    deposit = bulk_fee_amt[sid_k]
+                    if deposit > 0:
+                        rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(conn.execute('SELECT id FROM fees').fetchall())+1:03d}"
+                        conn.execute("INSERT INTO fees (receipt_no, student_id, date, amount, mode, collector, remarks) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                                     (rc_num, sid_k, date_str, deposit, "Cash", bk_teacher, "Bulk Counter Deposit"))
+                        fees_logged += 1
 
-                deposit = bulk_fee_amt[sid_k]
-                if deposit > 0:
-                    rc_num = f"REC-{datetime.date.today().strftime('%Y%m%d')}-{len(conn.execute('SELECT id FROM fees').fetchall())+1:03d}"
-                    conn.execute("INSERT INTO fees (receipt_no, student_id, date, amount, mode, collector, remarks) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                                 (rc_num, sid_k, date_str, deposit, "Cash", bk_teacher, "Bulk Counter Deposit"))
-                    fees_logged += 1
-
-            conn.commit()
-            sync_all_to_cloud(conn)
-            st.success(f"Bulk register saved! {len(filtered_list)} attendance records verified and {fees_logged} fee deposits logged.")
-            st.session_state["bulk_reset_cnt"] = st.session_state.get("bulk_reset_cnt", 0) + 1
-            st.rerun()
+                conn.commit()
+                sync_all_to_cloud(conn)
+                st.success(f"Bulk register saved! {len(filtered_list)} attendance records verified and {fees_logged} fee deposits logged.")
+                st.session_state["bulk_reset_cnt"] = st.session_state.get("bulk_reset_cnt", 0) + 1
+                st.rerun()    
 # -------------------------------------------------------------
 # 4. TUFEE FAST COUNTER
 # -------------------------------------------------------------
