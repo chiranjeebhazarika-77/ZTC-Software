@@ -989,7 +989,119 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                 sync_all_to_cloud(conn)
                 st.success(f"Bulk register saved! {len(filtered_list)} attendance records verified and {fees_logged} fee deposits logged.")
                 st.session_state["bulk_reset_cnt"] = st.session_state.get("bulk_reset_cnt", 0) + 1
-                st.rerun()    
+                st.rerun()
+# ----------------------------------------------------
+# EXAM & ASSESSMENT DESK
+# ----------------------------------------------------
+elif menu == "📝 Exam & Assessment Desk":
+    st.markdown("### 📝 Exam & Assessment Management Desk")
+    st.caption("Record Theory & Practical marks, evaluate batch performances, and publish results to the Student Portal.")
+
+    if verify_staff_access("Exam Desk"):
+        ex_tab1, ex_tab2 = st.tabs(["✍️ Bulk Marks Entry", "📊 Assessment Archives"])
+
+        with ex_tab1:
+            st.markdown("#### Record Batch Exam Marks")
+            
+            c_e1, c_e2, c_e3 = st.columns(3)
+            with c_e1:
+                ex_date = st.date_input("Exam Date", datetime.date.today(), key="ex_date_in")
+            with c_e2:
+                courses_raw = [r[0] for r in conn.execute("SELECT DISTINCT course FROM students WHERE course IS NOT NULL").fetchall()]
+                ex_course = st.selectbox("Filter Course", ["All Courses"] + sorted(courses_raw), key="ex_course_sel")
+            with c_e3:
+                ex_teacher = st.selectbox("Evaluator / Teacher", ["CHIRANJEEB HAZARIKA", "BIJOY KURMI", "Staff"], key="ex_evaluator")
+
+            c_e4, c_e5, c_e6 = st.columns(3)
+            with c_e4:
+                ex_title = st.text_input("Exam Title / Module", placeholder="e.g. Monthly Test 1 / MS Word Practical", key="ex_title_in")
+            with c_e5:
+                max_theory = st.number_input("Full Marks (Theory)", min_value=0.0, max_value=200.0, value=50.0, step=5.0)
+            with c_e6:
+                max_practical = st.number_input("Full Marks (Practical)", min_value=0.0, max_value=200.0, value=50.0, step=5.0)
+
+            total_max = max_theory + max_practical
+
+            if ex_course != "All Courses":
+                c_students = conn.execute("SELECT student_id, name, course, shift FROM students WHERE course = ? ORDER BY student_id ASC", (ex_course,)).fetchall()
+            else:
+                c_students = conn.execute("SELECT student_id, name, course, shift FROM students ORDER BY student_id ASC").fetchall()
+
+            st.write(f"**Eligible Candidates in Batch:** `{len(c_students)} Students` | **Total Assessment Marks:** `{total_max}`")
+
+            if len(c_students) > 0 and ex_title.strip():
+                with st.form(key=f"bulk_exam_form_{ex_date}_{ex_course}"):
+                    theory_inputs = {}
+                    practical_inputs = {}
+
+                    st.markdown("---")
+                    h1, h2, h3 = st.columns([2.5, 1.5, 1.5])
+                    with h1:
+                        st.markdown("**Student Details**")
+                    with h2:
+                        st.markdown(f"**Theory Marks (Max {max_theory})**")
+                    with h3:
+                        st.markdown(f"**Practical Marks (Max {max_practical})**")
+
+                    for st_item in c_students:
+                        sid = st_item['student_id']
+                        col_s1, col_s2, col_s3 = st.columns([2.5, 1.5, 1.5])
+                        with col_s1:
+                            st.markdown(f"**{st_item['name']}** (`{sid}`)<br><span style='font-size:11px; color:#607d8b;'>{st_item['course']} | {st_item['shift']}</span>", unsafe_allow_html=True)
+                        with col_s2:
+                            theory_inputs[sid] = st.number_input(f"T_{sid}", min_value=0.0, max_value=float(max_theory), value=0.0, step=1.0, label_visibility="collapsed", key=f"t_in_{sid}")
+                        with col_s3:
+                            practical_inputs[sid] = st.number_input(f"P_{sid}", min_value=0.0, max_value=float(max_practical), value=0.0, step=1.0, label_visibility="collapsed", key=f"p_in_{sid}")
+
+                    if st.form_submit_button("💾 Save & Publish Assessment Scores"):
+                        date_str = str(ex_date)
+                        saved_cnt = 0
+                        for st_item in c_students:
+                            sid = st_item['student_id']
+                            t_score = theory_inputs[sid]
+                            p_score = practical_inputs[sid]
+                            tot_score = t_score + p_score
+                            pct = round((tot_score / total_max) * 100, 2) if total_max > 0 else 0
+
+                            if pct >= 80:
+                                grade_str = "A+ (Excellent)"
+                            elif pct >= 60:
+                                grade_str = "A (Very Good)"
+                            elif pct >= 45:
+                                grade_str = "B (Good)"
+                            elif pct >= 34:
+                                grade_str = "C (Pass)"
+                            else:
+                                grade_str = "F (Needs Improvement)"
+
+                            conn.execute("""
+                                INSERT INTO exam_records (student_id, course, exam_title, exam_date, theory_marks, practical_marks, total_marks, max_marks, percentage, grade, recorded_by)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (sid, st_item['course'], ex_title.strip(), date_str, t_score, p_score, tot_score, total_max, pct, grade_str, ex_teacher))
+                            saved_cnt += 1
+
+                        conn.commit()
+                        sync_all_to_cloud(conn)
+                        st.success(f"Successfully recorded assessment marks for {saved_cnt} students!")
+                        st.rerun()
+            elif not ex_title.strip():
+                st.info("💡 Please enter an Exam Title/Module above to load the marks entry sheet.")
+
+        with ex_tab2:
+            st.markdown("#### Assessment History & Archive")
+            rec_data = conn.execute("""
+                SELECT e.exam_date, e.student_id, s.name, e.course, e.exam_title, e.theory_marks, e.practical_marks, e.total_marks, e.max_marks, e.percentage, e.grade, e.recorded_by 
+                FROM exam_records e 
+                LEFT JOIN students s ON e.student_id = s.student_id 
+                ORDER BY e.id DESC
+            """).fetchall()
+            
+            if rec_data:
+                import pandas as pd
+                df_ex = pd.DataFrame(rec_data, columns=["Date", "Student ID", "Name", "Course", "Exam Title", "Theory", "Practical", "Total", "Max", "Percentage (%)", "Grade", "Teacher"])
+                st.dataframe(df_ex, use_container_width=True)
+            else:
+                st.info("No exam records saved yet.")                
 # -------------------------------------------------------------
 # 4. TUFEE FAST COUNTER
 # -------------------------------------------------------------
