@@ -1016,9 +1016,9 @@ elif menu == "📝 Exam & Assessment Desk":
             with c_e4:
                 ex_title = st.text_input("Exam Title / Module", placeholder="e.g. Monthly Test 1 / MS Word Practical", key="ex_title_in")
             with c_e5:
-                max_theory = st.number_input("Full Marks (Theory)", min_value=0.0, max_value=200.0, value=50.0, step=5.0)
+                max_theory = st.number_input("Full Marks (Theory)", min_value=0, max_value=200, value=50, step=5)
             with c_e6:
-                max_practical = st.number_input("Full Marks (Practical)", min_value=0.0, max_value=200.0, value=50.0, step=5.0)
+                max_practical = st.number_input("Full Marks (Practical)", min_value=0, max_value=200, value=50, step=5)
 
             total_max = max_theory + max_practical
 
@@ -1049,10 +1049,9 @@ elif menu == "📝 Exam & Assessment Desk":
                         with col_s1:
                             st.markdown(f"**{st_item['name']}** (`{sid}`)<br><span style='font-size:11px; color:#607d8b;'>{st_item['course']} | {st_item['shift']}</span>", unsafe_allow_html=True)
                         with col_s2:
-                            theory_inputs[sid] = st.number_input(f"T_{sid}", min_value=0.0, max_value=float(max_theory), value=0.0, step=1.0, label_visibility="collapsed", key=f"t_in_{sid}")
+                            theory_inputs[sid] = st.number_input(f"T_{sid}", min_value=0, max_value=int(max_theory), value=0, step=1, label_visibility="collapsed", key=f"t_in_{sid}", format="%d")
                         with col_s3:
-                            practical_inputs[sid] = st.number_input(f"P_{sid}", min_value=0.0, max_value=float(max_practical), value=0.0, step=1.0, label_visibility="collapsed", key=f"p_in_{sid}")
-
+                            practical_inputs[sid] = st.number_input(f"P_{sid}", min_value=0, max_value=int(max_practical), value=0, step=1, label_visibility="collapsed", key=f"p_in_{sid}", format="%d")
                     if st.form_submit_button("💾 Save & Publish Assessment Scores"):
                         date_str = str(ex_date)
                         saved_cnt = 0
