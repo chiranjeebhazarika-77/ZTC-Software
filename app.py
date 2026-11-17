@@ -201,7 +201,25 @@ def init_db():
             FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE CASCADE
         )
     ''')
-    
+    # Exam & Assessment Desk Records
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS exam_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            student_id TEXT,
+            course TEXT,
+            exam_title TEXT,
+            exam_date TEXT,
+            theory_marks REAL DEFAULT 0,
+            practical_marks REAL DEFAULT 0,
+            total_marks REAL DEFAULT 0,
+            max_marks REAL DEFAULT 100,
+            percentage REAL DEFAULT 0,
+            grade TEXT,
+            recorded_by TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
     # Teacher Attendance & Shifts
     c.execute('''
         CREATE TABLE IF NOT EXISTS teacher_punches (
