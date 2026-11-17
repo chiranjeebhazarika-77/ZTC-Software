@@ -506,6 +506,7 @@ menu = st.sidebar.radio(
         "🌐 Public Dashboard & Enquiry",
         "🔑 Student Self-Service Portal",
         "⚡ Bulk Session & Attendance Desk",
+        "📝 Exam & Assessment Desk",
         "💳 Tuition Fee Fast Counter",
         "📝 New Candidate Admission",
         "📚 Daily Class Activity (Lab/Theory)",
