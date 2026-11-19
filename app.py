@@ -719,24 +719,92 @@ elif menu == "🔑 Student Self-Service Portal":
     else:
         sid = st.session_state["s_auth_id"]
         s = conn.execute("SELECT * FROM students WHERE student_id = ?", (sid,)).fetchone()
-        
-        col_hdr1, col_hdr2 = st.columns([1, 4])
+            
+        # Resolve Student Photo safely (Base64 / URL / Default Avatar)
+        photo_src = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"
+        for p_col in ["photo_base64", "photo", "student_photo", "image"]:
+            if p_col in s.keys() and s[p_col]:
+                raw_p = str(s[p_col]).strip()
+                if raw_p.startswith("data:image") or raw_p.startswith("http"):
+                    photo_src = raw_p
+                else:
+                    photo_src = f"data:image/jpeg;base64,{raw_p}"
+                break
+
+        col_hdr1, col_hdr2 = st.columns([1.2, 4.5])
         with col_hdr1:
-            if s["photo_base64"]:
-                st.image(s["photo_base64"], width=100)
-            else:
-                st.image("https://cdn-icons-png.flaticon.com/512/3135/3135715.png", width=90)
-        with col_hdr2:
             st.markdown(f"""
-            <div style="padding-top:10px;">
-                <b style="font-size:20px; color:#0F172A;">{s['name']}</b><br>
-                Roll ID: <b style="color:#0284C7;">{s['student_id']}</b> | Course: <b>{s['course']}</b> | Shift: <b>{s['shift']}</b><br>
-                <span style="font-size:12px; color:#64748B;">Sarva HO Reg No: <b>{s['ho_reg_no'] or 'Processing at Head Office'}</b> | Center Code: <b>4159</b></span>
+            <div style="display: flex; justify-content: center; align-items: center; padding-top: 5px;">
+                <img src="{photo_src}" style="width: 105px; height: 105px; border-radius: 50%; object-fit: cover; border: 3px solid #0284c7; box-shadow: 0 4px 12px rgba(2,132,199,0.3);" />
             </div>
             """, unsafe_allow_html=True)
+        with col_hdr2:
+            st.markdown(f"""
+            <div style="padding-top: 5px;">
+                <b style="font-size: 22px; color: #0f172a; text-transform: uppercase;">{s['name']}</b><br>
+                Roll ID: <b style="color: #0284c7; font-size: 15px;">{s['student_id']}</b> &nbsp;|&nbsp; 
+                Course: <b>{s['course']}</b> &nbsp;|&nbsp; 
+                Shift: <b>{s['shift']}</b><br>
+                <span style="font-size: 12.5px; color: #64748b;">
+                    Sarva HO Reg No: <b>{s['ho_reg_no'] or 'Pending Verification'}</b> &nbsp;|&nbsp; Center Code: <b>4159</b>
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Official Digital ID Card (SONA Neon Cyan Theme)
+        with st.expander("🪪 View & Print Digital Student ID Card (PVC Card)", expanded=False):
+            validity_val = f"{s['join_date']} to End" if ('join_date' in s.keys() and s['join_date']) else "2026 - 2027"
+            mob_val = s['mobile'] if ('mobile' in s.keys() and s['mobile']) else "Institute Desk"
             
+            id_card_html = f"""<div style="background: #040914; border: 2.5px solid #00e5ff; border-radius: 16px; padding: 24px 28px; max-width: 620px; margin: 15px auto; color: white; font-family: 'Segoe UI', Roboto, Helvetica, sans-serif; box-shadow: 0 0 25px rgba(0, 229, 255, 0.35);">
+<div style="text-align: center; border-bottom: 1.5px solid #004d66; padding-bottom: 12px; margin-bottom: 18px;">
+<h2 style="margin: 0; color: #00e5ff; font-size: 22px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; text-shadow: 0 0 10px rgba(0, 229, 255, 0.7);">SOFT TECH COMPUTERS</h2>
+<p style="margin: 4px 0 2px 0; font-size: 11px; color: #cfd8dc; letter-spacing: 1px;">KAMARCHUBURI, THELAMARA, SONITPUR | CENTER CODE: 4159</p>
+<p style="margin: 0; font-size: 10.5px; color: #00e676; font-weight: bold; letter-spacing: 1.2px;">ISO 9001:2015 CERTIFIED INSTITUTION</p>
+</div>
+<div style="display: flex; align-items: center; gap: 24px;">
+<div style="text-align: center; width: 140px; flex-shrink: 0;">
+<div style="width: 120px; height: 120px; border-radius: 50%; border: 3px solid #00e5ff; box-shadow: 0 0 18px rgba(0, 229, 255, 0.65); overflow: hidden; margin: 0 auto; background: #001020;">
+<img src="{photo_src}" style="width: 100%; height: 100%; object-fit: cover;" />
+</div>
+<div style="border: 1.5px solid #00e5ff; border-radius: 20px; padding: 4px 12px; color: #00e5ff; font-weight: bold; font-size: 11.5px; display: inline-block; margin-top: 12px; background: rgba(0, 229, 255, 0.08); letter-spacing: 0.5px;">
+ID: {s['student_id']}
+</div>
+</div>
+<div style="flex: 1; line-height: 1.75;">
+<h3 style="margin: 0 0 8px 0; color: #ffffff; font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">{s['name']}</h3>
+<div style="font-size: 13.5px;"><span style="color: #00e5ff; font-weight: 600;">Course:</span> <b>{s['course']}</b></div>
+<div style="font-size: 13.5px;"><span style="color: #00e5ff; font-weight: 600;">Batch Time:</span> <b>{s['shift']}</b></div>
+<div style="font-size: 13.5px;"><span style="color: #00e5ff; font-weight: 600;">Validity:</span> <b>{validity_val}</b></div>
+<div style="font-size: 13.5px;"><span style="color: #00e5ff; font-weight: 600;">Contact:</span> <b>+91 {mob_val}</b></div>
+</div>
+</div>
+<div style="border-top: 1px dashed #004d66; margin: 18px 0 14px 0;"></div>
+<div style="display: flex; justify-content: space-between; align-items: center;">
+<div style="text-align: left;">
+<div style="background: white; padding: 4px 6px; border-radius: 4px; display: inline-block;">
+<svg width="125" height="34" viewBox="0 0 125 34">
+<rect width="125" height="34" fill="white"/>
+<rect x="5" y="3" width="3" height="20" fill="black"/><rect x="10" y="3" width="1" height="20" fill="black"/><rect x="13" y="3" width="4" height="20" fill="black"/><rect x="20" y="3" width="2" height="20" fill="black"/><rect x="25" y="3" width="1" height="20" fill="black"/><rect x="28" y="3" width="5" height="20" fill="black"/><rect x="36" y="3" width="2" height="20" fill="black"/><rect x="41" y="3" width="3" height="20" fill="black"/><rect x="47" y="3" width="1" height="20" fill="black"/><rect x="51" y="3" width="4" height="20" fill="black"/><rect x="58" y="3" width="2" height="20" fill="black"/><rect x="63" y="3" width="5" height="20" fill="black"/><rect x="71" y="3" width="2" height="20" fill="black"/><rect x="76" y="3" width="3" height="20" fill="black"/><rect x="82" y="3" width="1" height="20" fill="black"/><rect x="86" y="3" width="4" height="20" fill="black"/><rect x="93" y="3" width="2" height="20" fill="black"/><rect x="98" y="3" width="3" height="20" fill="black"/><rect x="104" y="3" width="2" height="20" fill="black"/><rect x="109" y="3" width="4" height="20" fill="black"/><rect x="116" y="3" width="2" height="20" fill="black"/>
+<text x="62" y="30" text-anchor="middle" font-size="8.5" font-family="monospace" font-weight="bold" fill="black">{s['student_id']}</text>
+</svg>
+</div>
+<div style="font-size: 10px; color: #80deea; letter-spacing: 1px; margin-top: 3px;">DIGITAL TRACKING ID</div>
+</div>
+<div style="text-align: center;">
+<div style="font-family: 'Brush Script MT', 'Dancing Script', cursive; font-size: 26px; color: #00e5ff; text-shadow: 0 0 10px rgba(0, 229, 255, 0.7); line-height: 1;">Chiranjeeb Hazarika</div>
+<div style="border-top: 1px solid #004d66; margin-top: 4px; padding-top: 3px; font-size: 9.5px; color: #00e5ff; font-weight: bold; letter-spacing: 1.5px;">DIRECTOR & FOUNDER</div>
+</div>
+<div>
+<img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=https://stcztc.streamlit.app?sid={s['student_id']}" style="width: 65px; height: 65px; border: 2px solid #00e5ff; border-radius: 6px; padding: 2px; background: white;" />
+</div>
+</div>
+</div>"""
+            clean_id_card = "\n".join(l.strip() for l in id_card_html.splitlines())
+            st.markdown(clean_id_card, unsafe_allow_html=True)
+            st.caption("🖨️ **Print Instructions:** Press **Ctrl + P** to print this official digital PVC ID card.")
+
         st.markdown("<br>", unsafe_allow_html=True)
-        
         att_rows = conn.execute("SELECT * FROM attendance WHERE student_id = ?", (sid,)).fetchall()
         tot_days = len(att_rows)
         present_days = len([r for r in att_rows if r["status"] in ["Present", "Late"]])
