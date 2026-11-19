@@ -798,16 +798,44 @@ elif menu == "🔑 Student Self-Service Portal":
                 st.dataframe(cl_df[["date", "topic", "class_type", "teacher_name", "remarks"]], use_container_width=True)
             else:
                 st.info("No individual class practice records logged yet.")
-                
+
         with tab_b:
             st.write("**Unit Tests & Examination Results:**")
-            marks_rows = conn.execute("SELECT * FROM marks WHERE student_id = ?", (sid,)).fetchall()
-            if marks_rows:
-                m_df = pd.DataFrame([dict(r) for r in marks_rows])
-                st.dataframe(m_df[["date", "test_topic", "marks_obtained", "total_marks"]], use_container_width=True)
+            stud_marks = conn.execute("""
+                SELECT exam_date, exam_title, course, theory_marks, practical_marks, total_marks, max_marks, percentage, grade, recorded_by
+                FROM exam_records
+                WHERE student_id = ?
+                ORDER BY id DESC
+            """, (sid,)).fetchall()
+
+            if stud_marks:
+                for m in stud_marks:
+                    if m['grade'] == "Absent":
+                        score_badge = "<span style='color: #d32f2f; font-weight: bold;'>ABSENT</span>"
+                    else:
+                        score_badge = f"<span style='color: #2e7d32; font-weight: bold;'>{int(m['total_marks'])} / {int(m['max_marks'])} ({m['percentage']}%)</span> — Grade: <b>{m['grade']}</b>"
+
+                    th_view = 'AB' if m['grade'] == 'Absent' else int(m['theory_marks'])
+                    pr_view = 'AB' if m['grade'] == 'Absent' else int(m['practical_marks'])
+
+                    card_html = f"""<div style="background: #ffffff; border: 1px solid #e0e0e0; border-left: 5px solid #1976d2; padding: 14px 18px; border-radius: 6px; margin-bottom: 12px; color: #212121;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+<h4 style="margin: 0; font-size: 16px; color: #0d47a1;">{m['exam_title']}</h4>
+<span style="font-size: 12px; color: #616161;">📅 Date: {m['exam_date']}</span>
+</div>
+<div style="font-size: 13.5px; line-height: 1.6;">
+<b>Course:</b> {m['course']} &nbsp;|&nbsp; 
+<b>Theory:</b> {th_view} &nbsp;|&nbsp; 
+<b>Practical:</b> {pr_view}
+</div>
+<div style="font-size: 14px; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 6px;">
+<b>Result:</b> {score_badge} &nbsp;|&nbsp; 
+<span style="font-size: 12px; color: #555;">Evaluated by: {m['recorded_by']}</span>
+</div>
+</div>"""
+                    st.markdown(card_html, unsafe_allow_html=True)
             else:
-                st.info("No test marks recorded yet.")
-                
+                st.info("No test marks recorded yet.")                
         with tab_c:
             st.write("**Class Attendance History:**")
             if att_rows:
