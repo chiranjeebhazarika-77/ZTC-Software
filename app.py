@@ -800,42 +800,166 @@ elif menu == "🔑 Student Self-Service Portal":
                 st.info("No individual class practice records logged yet.")
 
         with tab_b:
-            st.write("**Unit Tests & Examination Results:**")
+            st.write("**Unit Tests & Examination Performance Desk:**")
             stud_marks = conn.execute("""
-                SELECT exam_date, exam_title, course, theory_marks, practical_marks, total_marks, max_marks, percentage, grade, recorded_by
+                SELECT id, exam_date, exam_title, course, theory_marks, practical_marks, total_marks, max_marks, percentage, grade, recorded_by
                 FROM exam_records
                 WHERE student_id = ?
                 ORDER BY id DESC
             """, (sid,)).fetchall()
 
             if stud_marks:
+                # Top performance summary metrics
+                tot_exams = len(stud_marks)
+                valid_scores = [m['percentage'] for m in stud_marks if m['grade'] != "Absent"]
+                avg_score = round(sum(valid_scores) / len(valid_scores), 1) if valid_scores else 0.0
+
+                m_col1, m_col2 = st.columns(2)
+                with m_col1:
+                    st.metric("Total Assessments Evaluated", f"{tot_exams} Exams")
+                with m_col2:
+                    st.metric("Overall Average Performance", f"{avg_score}%")
+
+                st.markdown("---")
+
+                st_info = conn.execute("SELECT name, course, shift FROM students WHERE student_id = ?", (sid,)).fetchone()
+                student_name_disp = st_info['name'] if st_info else sid
+
                 for m in stud_marks:
-                    if m['grade'] == "Absent":
-                        score_badge = "<span style='color: #d32f2f; font-weight: bold;'>ABSENT</span>"
+                    is_ab = (m['grade'] == "Absent")
+                    if is_ab:
+                        badge_bg = "#ffebee"
+                        badge_color = "#c62828"
+                        badge_label = "ABSENT"
+                        th_disp = "AB"
+                        pr_disp = "AB"
+                        tot_disp = "0"
+                        pct_disp = "0%"
                     else:
-                        score_badge = f"<span style='color: #2e7d32; font-weight: bold;'>{int(m['total_marks'])} / {int(m['max_marks'])} ({m['percentage']}%)</span> — Grade: <b>{m['grade']}</b>"
+                        pct = m['percentage']
+                        if pct >= 80:
+                            badge_bg = "#e8f5e9"
+                            badge_color = "#1b5e20"
+                        elif pct >= 60:
+                            badge_bg = "#e3f2fd"
+                            badge_color = "#0d47a1"
+                        elif pct >= 45:
+                            badge_bg = "#fff8e1"
+                            badge_color = "#b78103"
+                        else:
+                            badge_bg = "#fbe9e7"
+                            badge_color = "#d84315"
+                        
+                        badge_label = m['grade']
+                        th_disp = str(int(m['theory_marks']))
+                        pr_disp = str(int(m['practical_marks']))
+                        tot_disp = str(int(m['total_marks']))
+                        pct_disp = f"{m['percentage']}%"
 
-                    th_view = 'AB' if m['grade'] == 'Absent' else int(m['theory_marks'])
-                    pr_view = 'AB' if m['grade'] == 'Absent' else int(m['practical_marks'])
-
-                    card_html = f"""<div style="background: #ffffff; border: 1px solid #e0e0e0; border-left: 5px solid #1976d2; padding: 14px 18px; border-radius: 6px; margin-bottom: 12px; color: #212121;">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-<h4 style="margin: 0; font-size: 16px; color: #0d47a1;">{m['exam_title']}</h4>
-<span style="font-size: 12px; color: #616161;">📅 Date: {m['exam_date']}</span>
+                    # Standard Colored Portal Card
+                    card_summary_html = f"""<div style="background: #ffffff; border: 1px solid #cfd8dc; border-left: 6px solid #1a237e; border-radius: 8px; padding: 18px 22px; margin-bottom: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eceff1; padding-bottom: 10px; margin-bottom: 12px;">
+<div>
+<h4 style="margin: 0; color: #1a237e; font-size: 18px; font-weight: 700;">{m['exam_title']}</h4>
+<span style="font-size: 13px; color: #546e7a;">Course: <b>{m['course']}</b> | Date: <b>{m['exam_date']}</b></span>
 </div>
-<div style="font-size: 13.5px; line-height: 1.6;">
-<b>Course:</b> {m['course']} &nbsp;|&nbsp; 
-<b>Theory:</b> {th_view} &nbsp;|&nbsp; 
-<b>Practical:</b> {pr_view}
+<div>
+<span style="background: {badge_bg}; color: {badge_color}; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 13px; border: 1px solid {badge_color};">
+{badge_label}
+</span>
 </div>
-<div style="font-size: 14px; margin-top: 6px; border-top: 1px dashed #ccc; padding-top: 6px;">
-<b>Result:</b> {score_badge} &nbsp;|&nbsp; 
-<span style="font-size: 12px; color: #555;">Evaluated by: {m['recorded_by']}</span>
+</div>
+<div style="display: flex; gap: 14px; margin-bottom: 12px;">
+<div style="flex: 1; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 10px; text-align: center;">
+<div style="font-size: 12px; color: #6c757d; font-weight: 600;">Theory Marks</div>
+<div style="font-size: 18px; font-weight: bold; color: #212529; margin-top: 2px;">{th_disp}</div>
+</div>
+<div style="flex: 1; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 10px; text-align: center;">
+<div style="font-size: 12px; color: #6c757d; font-weight: 600;">Practical Marks</div>
+<div style="font-size: 18px; font-weight: bold; color: #212529; margin-top: 2px;">{pr_disp}</div>
+</div>
+<div style="flex: 1; background: #e8eaf6; border: 1px solid #c5cae9; border-radius: 6px; padding: 10px; text-align: center;">
+<div style="font-size: 12px; color: #1a237e; font-weight: 600;">Total / Max</div>
+<div style="font-size: 18px; font-weight: bold; color: #1a237e; margin-top: 2px;">{tot_disp} / {int(m['max_marks'])}</div>
+</div>
+<div style="flex: 1; background: #e0f2f1; border: 1px solid #b2dfdb; border-radius: 6px; padding: 10px; text-align: center;">
+<div style="font-size: 12px; color: #004d40; font-weight: 600;">Percentage</div>
+<div style="font-size: 18px; font-weight: bold; color: #004d40; margin-top: 2px;">{pct_disp}</div>
+</div>
+</div>
+<div style="font-size: 12.5px; color: #78909c; text-align: right;">
+Evaluated by: <b>{m['recorded_by']}</b>
 </div>
 </div>"""
-                    st.markdown(card_html, unsafe_allow_html=True)
+                    st.markdown(card_summary_html, unsafe_allow_html=True)
+
+                    # Student Printable Colored Marksheet View
+                    with st.expander(f"📜 View & Print Colored Marksheet ({m['exam_title']})"):
+                        colored_marksheet_html = f"""<div style="background: #ffffff; border: 3px double #1a237e; border-radius: 8px; padding: 30px; font-family: 'Times New Roman', serif; max-width: 680px; margin: 10px auto; color: #111; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+<div style="text-align: center; border-bottom: 2px solid #1a237e; padding-bottom: 12px; margin-bottom: 16px;">
+<h2 style="margin: 0; color: #1a237e; font-size: 22px; letter-spacing: 1.5px; text-transform: uppercase;">SOFT-TECH COMPUTERS & ZTC ENTERPRISE</h2>
+<p style="margin: 4px 0; font-size: 13.5px; color: #37474f;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149 | Contact: 9101026718</p>
+<span style="background: #e8eaf6; color: #1a237e; border: 1px solid #9fa8da; padding: 2px 10px; border-radius: 4px; font-size: 12px; font-weight: bold;">
+Accredited Center Code: 4159 (Sarva Education / SITED Recognized)
+</span>
+</div>
+<div style="text-align: center; margin-bottom: 18px;">
+<h3 style="margin: 0; color: #b78103; font-size: 17px; letter-spacing: 1px; text-decoration: underline;">OFFICIAL STATEMENT OF ASSESSMENT PERFORMANCE</h3>
+</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 13.5px; margin-bottom: 18px; background: #fdfdfd; border: 1px solid #cfd8dc;">
+<tr>
+<td style="padding: 8px 12px; border: 1px solid #cfd8dc; width: 50%;"><b>Candidate Name:</b> {student_name_disp}</td>
+<td style="padding: 8px 12px; border: 1px solid #cfd8dc; width: 50%;"><b>Enrollment Roll ID:</b> <span style="color:#1a237e; font-weight:bold;">{sid}</span></td>
+</tr>
+<tr>
+<td style="padding: 8px 12px; border: 1px solid #cfd8dc;"><b>Course Enrolled:</b> {m['course']}</td>
+<td style="padding: 8px 12px; border: 1px solid #cfd8dc;"><b>Assessment Module:</b> {m['exam_title']}</td>
+</tr>
+<tr>
+<td style="padding: 8px 12px; border: 1px solid #cfd8dc;"><b>Date of Examination:</b> {m['exam_date']}</td>
+<td style="padding: 8px 12px; border: 1px solid #cfd8dc;"><b>Training Institute:</b> Soft-Tech Computers (4159)</td>
+</tr>
+</table>
+<table style="width: 100%; border-collapse: collapse; font-size: 13.5px; text-align: center; margin-bottom: 25px; border: 1.5px solid #1a237e;">
+<thead>
+<tr style="background-color: #1a237e; color: white;">
+<th style="padding: 10px; border: 1px solid #1a237e;">Theory Marks</th>
+<th style="padding: 10px; border: 1px solid #1a237e;">Practical Marks</th>
+<th style="padding: 10px; border: 1px solid #1a237e;">Total Obtained</th>
+<th style="padding: 10px; border: 1px solid #1a237e;">Maximum Marks</th>
+<th style="padding: 10px; border: 1px solid #1a237e;">Percentage (%)</th>
+<th style="padding: 10px; border: 1px solid #1a237e;">Awarded Grade</th>
+</tr>
+</thead>
+<tbody>
+<tr style="font-weight: bold; font-size: 14px; background: #fafafa;">
+<td style="padding: 12px; border: 1px solid #cfd8dc;">{th_disp}</td>
+<td style="padding: 12px; border: 1px solid #cfd8dc;">{pr_disp}</td>
+<td style="padding: 12px; border: 1px solid #cfd8dc; color: #1a237e;">{tot_disp}</td>
+<td style="padding: 12px; border: 1px solid #cfd8dc;">{int(m['max_marks'])}</td>
+<td style="padding: 12px; border: 1px solid #cfd8dc; color: #004d40;">{pct_disp}</td>
+<td style="padding: 12px; border: 1px solid #cfd8dc; color: {badge_color};">{badge_label}</td>
+</tr>
+</tbody>
+</table>
+<div style="margin-top: 45px; display: flex; justify-content: space-between; font-size: 13px; padding: 0 20px;">
+<div style="text-align: center;">
+<p style="margin: 0; border-top: 1px solid #37474f; padding-top: 5px; width: 170px;">
+<b>Faculty In-Charge</b><br><span style="font-size:12px; color:#546e7a;">{m['recorded_by']}</span>
+</p>
+</div>
+<div style="text-align: center;">
+<p style="margin: 0; border-top: 1px solid #1a237e; padding-top: 5px; width: 170px; color:#1a237e;">
+<b>Authorized Director</b><br><span style="font-size:12px; color:#546e7a;">Soft-Tech Computers</span>
+</p>
+</div>
+</div>
+</div>"""
+                        clean_sheet = "\n".join(l.strip() for l in colored_marksheet_html.splitlines())
+                        st.markdown(clean_sheet, unsafe_allow_html=True)
+                        st.caption("🖨️ **Print Instructions:** Press **Ctrl + P** to print colored copy or 'Save as PDF'.")
             else:
-                st.info("No test marks recorded yet.")                
+                st.info("No test marks recorded yet.")
         with tab_c:
             st.write("**Class Attendance History:**")
             if att_rows:
