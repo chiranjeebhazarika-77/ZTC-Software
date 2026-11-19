@@ -998,80 +998,113 @@ elif menu == "📝 Exam & Assessment Desk":
     st.caption("Record Theory & Practical marks, evaluate batch performances, and publish results to the Student Portal.")
 
     if verify_staff_access("Exam Desk"):
-        ex_tab1, ex_tab2 = st.tabs(["✍️ Bulk Marks Entry", "📊 Assessment Archives"])
+        ex_tab1, ex_tab2 = st.tabs(["✍️ Bulk Marks Entry", "📊 Assessment Archives & Print Station"])
 
         with ex_tab1:
             st.markdown("#### Record Batch Exam Marks")
-            
-            c_e1, c_e2, c_e3 = st.columns(3)
+
+            # Notification alert on successful submission
+            if "exam_success_banner" in st.session_state:
+                st.success(st.session_state.pop("exam_success_banner"))
+
+            # Form Reset Key Management
+            if "exam_form_version" not in st.session_state:
+                st.session_state["exam_form_version"] = 100
+
+            c_e1, c_e2, c_e3, c_e4 = st.columns(4)
             with c_e1:
-                ex_date = st.date_input("Exam Date", datetime.date.today(), key="ex_date_in")
+                ex_date = st.date_input("Exam Date", datetime.date.today(), key=f"ex_date_in_{st.session_state['exam_form_version']}")
             with c_e2:
                 courses_raw = [r[0] for r in conn.execute("SELECT DISTINCT course FROM students WHERE course IS NOT NULL").fetchall()]
-                ex_course = st.selectbox("Filter Course", ["All Courses"] + sorted(courses_raw), key="ex_course_sel")
+                ex_course = st.selectbox("Course Filter", ["All Courses"] + sorted(courses_raw), key=f"ex_course_sel_{st.session_state['exam_form_version']}")
             with c_e3:
-                ex_teacher = st.selectbox("Evaluator / Teacher", ["CHIRANJEEB HAZARIKA", "BIJOY KURMI", "Staff"], key="ex_evaluator")
-
-            c_e4, c_e5, c_e6 = st.columns(3)
+                shifts_raw = [r[0] for r in conn.execute("SELECT DISTINCT shift FROM students WHERE shift IS NOT NULL").fetchall()]
+                ex_shift = st.selectbox("Batch / Shift Filter", ["All Shifts / Batches"] + sorted(shifts_raw), key=f"ex_shift_sel_{st.session_state['exam_form_version']}")
             with c_e4:
-                ex_title = st.text_input("Exam Title / Module", placeholder="e.g. Monthly Test 1 / MS Word Practical", key="ex_title_in")
+                ex_teacher = st.selectbox("Evaluator / Teacher", ["CHIRANJEEB HAZARIKA", "BIJOY KURMI", "Staff"], key=f"ex_eval_{st.session_state['exam_form_version']}")
+
+            c_e5, c_e6, c_e7 = st.columns(3)
             with c_e5:
-                max_theory = st.number_input("Full Marks (Theory)", min_value=0, max_value=200, value=50, step=5)
+                ex_title = st.text_input("Exam Title / Module", placeholder="e.g. Monthly Test 1 / MS Word Practical", key=f"ex_title_in_{st.session_state['exam_form_version']}")
             with c_e6:
-                max_practical = st.number_input("Full Marks (Practical)", min_value=0, max_value=200, value=50, step=5)
+                max_theory = st.number_input("Full Marks (Theory)", min_value=0, max_value=200, value=50, step=5, key=f"m_th_{st.session_state['exam_form_version']}")
+            with c_e7:
+                max_practical = st.number_input("Full Marks (Practical)", min_value=0, max_value=200, value=50, step=5, key=f"m_pr_{st.session_state['exam_form_version']}")
 
             total_max = max_theory + max_practical
 
+            # Fetch candidates matching both course and shift filters
+            query = "SELECT student_id, name, course, shift FROM students WHERE 1=1"
+            params = []
             if ex_course != "All Courses":
-                c_students = conn.execute("SELECT student_id, name, course, shift FROM students WHERE course = ? ORDER BY student_id ASC", (ex_course,)).fetchall()
-            else:
-                c_students = conn.execute("SELECT student_id, name, course, shift FROM students ORDER BY student_id ASC").fetchall()
+                query += " AND course = ?"
+                params.append(ex_course)
+            if ex_shift != "All Shifts / Batches":
+                query += " AND shift = ?"
+                params.append(ex_shift)
+            query += " ORDER BY student_id ASC"
+            c_students = conn.execute(query, params).fetchall()
 
             st.write(f"**Eligible Candidates in Batch:** `{len(c_students)} Students` | **Total Assessment Marks:** `{total_max}`")
 
             if len(c_students) > 0 and ex_title.strip():
-                with st.form(key=f"bulk_exam_form_{ex_date}_{ex_course}"):
+                with st.form(key=f"bulk_exam_form_v_{st.session_state['exam_form_version']}"):
                     theory_inputs = {}
                     practical_inputs = {}
+                    absent_flags = {}
 
                     st.markdown("---")
-                    h1, h2, h3 = st.columns([2.5, 1.5, 1.5])
+                    h1, h2, h3, h4 = st.columns([2.5, 1.2, 1.2, 0.9])
                     with h1:
                         st.markdown("**Student Details**")
                     with h2:
-                        st.markdown(f"**Theory Marks (Max {max_theory})**")
+                        st.markdown(f"**Theory (Max {max_theory})**")
                     with h3:
-                        st.markdown(f"**Practical Marks (Max {max_practical})**")
+                        st.markdown(f"**Practical (Max {max_practical})**")
+                    with h4:
+                        st.markdown("**Status**")
 
                     for st_item in c_students:
                         sid = st_item['student_id']
-                        col_s1, col_s2, col_s3 = st.columns([2.5, 1.5, 1.5])
+                        col_s1, col_s2, col_s3, col_s4 = st.columns([2.5, 1.2, 1.2, 0.9])
                         with col_s1:
                             st.markdown(f"**{st_item['name']}** (`{sid}`)<br><span style='font-size:11px; color:#607d8b;'>{st_item['course']} | {st_item['shift']}</span>", unsafe_allow_html=True)
                         with col_s2:
-                            theory_inputs[sid] = st.number_input(f"T_{sid}", min_value=0, max_value=int(max_theory), value=0, step=1, label_visibility="collapsed", key=f"t_in_{sid}", format="%d")
+                            theory_inputs[sid] = st.number_input(f"T_{sid}", min_value=0, max_value=int(max_theory), value=0, step=1, label_visibility="collapsed", key=f"t_{sid}_{st.session_state['exam_form_version']}", format="%d")
                         with col_s3:
-                            practical_inputs[sid] = st.number_input(f"P_{sid}", min_value=0, max_value=int(max_practical), value=0, step=1, label_visibility="collapsed", key=f"p_in_{sid}", format="%d")
+                            practical_inputs[sid] = st.number_input(f"P_{sid}", min_value=0, max_value=int(max_practical), value=0, step=1, label_visibility="collapsed", key=f"p_{sid}_{st.session_state['exam_form_version']}", format="%d")
+                        with col_s4:
+                            absent_flags[sid] = st.checkbox("Absent", key=f"ab_{sid}_{st.session_state['exam_form_version']}")
+
                     if st.form_submit_button("💾 Save & Publish Assessment Scores"):
                         date_str = str(ex_date)
                         saved_cnt = 0
                         for st_item in c_students:
                             sid = st_item['student_id']
-                            t_score = theory_inputs[sid]
-                            p_score = practical_inputs[sid]
-                            tot_score = t_score + p_score
-                            pct = round((tot_score / total_max) * 100, 2) if total_max > 0 else 0
+                            is_ab = absent_flags[sid]
 
-                            if pct >= 80:
-                                grade_str = "A+ (Excellent)"
-                            elif pct >= 60:
-                                grade_str = "A (Very Good)"
-                            elif pct >= 45:
-                                grade_str = "B (Good)"
-                            elif pct >= 34:
-                                grade_str = "C (Pass)"
+                            if is_ab:
+                                t_score = 0
+                                p_score = 0
+                                tot_score = 0
+                                pct = 0.0
+                                grade_str = "Absent"
                             else:
-                                grade_str = "F (Needs Improvement)"
+                                t_score = int(theory_inputs[sid])
+                                p_score = int(practical_inputs[sid])
+                                tot_score = t_score + p_score
+                                pct = round((tot_score / total_max) * 100, 2) if total_max > 0 else 0.0
+
+                                if pct >= 80:
+                                    grade_str = "A+ (Excellent)"
+                                elif pct >= 60:
+                                    grade_str = "A (Very Good)"
+                                elif pct >= 45:
+                                    grade_str = "B (Good)"
+                                elif pct >= 34:
+                                    grade_str = "C (Pass)"
+                                else:
+                                    grade_str = "F (Needs Improvement)"
 
                             conn.execute("""
                                 INSERT INTO exam_records (student_id, course, exam_title, exam_date, theory_marks, practical_marks, total_marks, max_marks, percentage, grade, recorded_by)
@@ -1081,228 +1114,234 @@ elif menu == "📝 Exam & Assessment Desk":
 
                         conn.commit()
                         sync_all_to_cloud(conn)
-                        st.success(f"Successfully recorded assessment marks for {saved_cnt} students!")
+                        # Clear inputs and show green banner
+                        st.session_state["exam_form_version"] += 1
+                        st.session_state["exam_success_banner"] = f"Submitted Successfully! Recorded assessment marks for {saved_cnt} students."
                         st.rerun()
             elif not ex_title.strip():
                 st.info("💡 Please enter an Exam Title/Module above to load the marks entry sheet.")
 
-            with ex_tab2:
-                st.markdown("#### 📊 Assessment Archives & Print Station")
-                
-                print_mode = st.radio("Select Print / View Mode:", ["📋 Batch Result Sheet (Notice Board)", "🎓 Individual Student Marksheet", "📁 Full Records Table"], horizontal=True)
+        with ex_tab2:
+            st.markdown("#### 📊 Assessment Archives & Print Station")
 
-                if print_mode == "📋 Batch Result Sheet (Notice Board)":
-                    st.info("💡 নটিচ ব’ৰ্ডৰ বাবে বেটচ ৰিজাল্ট শ্বীট (Times New Roman Font-ত প্ৰস্তুত)।")
-                    
-                    distinct_exams = conn.execute("SELECT DISTINCT exam_title FROM exam_records ORDER BY id DESC").fetchall()
-                    exam_options = [r[0] for r in distinct_exams] if distinct_exams else []
-                    
-                    if exam_options:
-                        c_nb1, c_nb2 = st.columns(2)
-                        with c_nb1:
-                            sel_exam = st.selectbox("Select Exam Title / Module:", exam_options, key="nb_exam_sel")
-                        with c_nb2:
-                            sel_exam_dates = [r[0] for r in conn.execute("SELECT DISTINCT exam_date FROM exam_records WHERE exam_title = ? ORDER BY id DESC", (sel_exam,)).fetchall()]
-                            sel_date = st.selectbox("Select Exam Date:", sel_exam_dates, key="nb_date_sel")
+            print_mode = st.radio("Select Print / View Mode:", ["📋 Batch Result Sheet (Notice Board)", "🎓 Individual Student Marksheet", "📁 Full Records Table"], horizontal=True)
 
-                        batch_res = conn.execute("""
-                            SELECT e.student_id, s.name, e.course, e.theory_marks, e.practical_marks, e.total_marks, e.max_marks, e.percentage, e.grade, e.recorded_by
-                            FROM exam_records e
-                            LEFT JOIN students s ON e.student_id = s.student_id
-                            WHERE e.exam_title = ? AND e.exam_date = ?
-                            ORDER BY e.student_id ASC
-                        """, (sel_exam, sel_date)).fetchall()
+            if print_mode == "📋 Batch Result Sheet (Notice Board)":
+                st.info("💡 Consolidated batch tabulation sheet in Times New Roman font for notice board display.")
 
-                        if batch_res:
-                            evaluator_name = batch_res[0]['recorded_by'] if batch_res[0]['recorded_by'] else "Faculty In-Charge"
+                distinct_exams = conn.execute("SELECT DISTINCT exam_title FROM exam_records ORDER BY id DESC").fetchall()
+                exam_options = [r[0] for r in distinct_exams] if distinct_exams else []
 
-                            rows_html = ""
-                            for idx, r in enumerate(batch_res, 1):
-                                rows_html += f"""
-                                <tr style="border-bottom: 1px solid #444; text-align: center; height: 30px; font-family: 'Times New Roman', Times, serif;">
-                                    <td style="padding: 6px; border: 1px solid #555;">{idx}</td>
-                                    <td style="padding: 6px; font-weight: bold; border: 1px solid #555;">{r['student_id']}</td>
-                                    <td style="padding: 6px; text-align: left; border: 1px solid #555;">{r['name']}</td>
-                                    <td style="padding: 6px; border: 1px solid #555; font-size: 12px;">{r['course']}</td>
-                                    <td style="padding: 6px; border: 1px solid #555;">{int(r['theory_marks'])}</td>
-                                    <td style="padding: 6px; border: 1px solid #555;">{int(r['practical_marks'])}</td>
-                                    <td style="padding: 6px; font-weight: bold; border: 1px solid #555;">{int(r['total_marks'])} / {int(r['max_marks'])}</td>
-                                    <td style="padding: 6px; font-weight: bold; border: 1px solid #555;">{r['percentage']}%</td>
-                                    <td style="padding: 6px; font-weight: bold; border: 1px solid #555;">{r['grade']}</td>
-                                </tr>
-                                """
+                if exam_options:
+                    c_nb1, c_nb2 = st.columns(2)
+                    with c_nb1:
+                        sel_exam = st.selectbox("Select Exam Title / Module:", exam_options, key="nb_exam_sel")
+                    with c_nb2:
+                        sel_exam_dates = [r[0] for r in conn.execute("SELECT DISTINCT exam_date FROM exam_records WHERE exam_title = ? ORDER BY id DESC", (sel_exam,)).fetchall()]
+                        sel_date = st.selectbox("Select Exam Date:", sel_exam_dates, key="nb_date_sel")
 
-                            printable_notice_board = f"""
-                            <div style="background: white; color: black; border: 2px solid black; padding: 30px; border-radius: 4px; font-family: 'Times New Roman', Times, serif; max-width: 840px; margin: 15px auto;">
-                                <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 12px; margin-bottom: 15px;">
-                                    <h2 style="margin: 0; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Times New Roman', Times, serif; font-size: 22px;">SOFT-TECH COMPUTERS & ZTC ENTERPRISE</h2>
-                                    <p style="margin: 4px 0; font-size: 14px; font-family: 'Times New Roman', Times, serif;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149 | Ph: 9101026718</p>
-                                    <p style="margin: 2px 0; font-size: 13px; font-family: 'Times New Roman', Times, serif; font-weight: bold;">Accredited Center Code: 4159 (Sarva Education / SITED Recognized)</p>
-                                </div>
-                                
-                                <div style="text-align: center; margin-bottom: 15px;">
-                                    <h3 style="margin: 0; text-decoration: underline; letter-spacing: 1px; font-family: 'Times New Roman', Times, serif; font-size: 17px;">CONSOLIDATED ASSESSMENT TABULATION SHEET</h3>
-                                    <p style="margin: 6px 0 0 0; font-size: 14px; font-family: 'Times New Roman', Times, serif;">
-                                        <b>Assessment Module:</b> {sel_exam} &nbsp;&nbsp;|&nbsp;&nbsp; 
-                                        <b>Date:</b> {sel_date}
-                                    </p>
-                                </div>
-
-                                <table style="width: 100%; border-collapse: collapse; font-size: 13px; font-family: 'Times New Roman', Times, serif; margin-top: 15px; border: 1.5px solid black;">
-                                    <thead>
-                                        <tr style="background-color: #f5f5f5; border-bottom: 2px solid black; text-align: center; font-family: 'Times New Roman', Times, serif;">
-                                            <th style="padding: 8px; border: 1px solid black; width: 35px;">Sl</th>
-                                            <th style="padding: 8px; border: 1px solid black; width: 95px;">Roll / ID</th>
-                                            <th style="padding: 8px; border: 1px solid black; text-align: left;">Student Name</th>
-                                            <th style="padding: 8px; border: 1px solid black; width: 95px;">Course</th>
-                                            <th style="padding: 8px; border: 1px solid black; width: 65px;">Theory</th>
-                                            <th style="padding: 8px; border: 1px solid black; width: 65px;">Practical</th>
-                                            <th style="padding: 8px; border: 1px solid black; width: 85px;">Total</th>
-                                            <th style="padding: 8px; border: 1px solid black; width: 75px;">% Score</th>
-                                            <th style="padding: 8px; border: 1px solid black; width: 110px;">Grade</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {rows_html}
-                                    </tbody>
-                                </table>
-
-                                <div style="margin-top: 60px; display: flex; justify-content: space-between; font-size: 13px; font-family: 'Times New Roman', Times, serif; padding: 0 20px;">
-                                    <div style="text-align: center;">
-                                        <p style="margin: 0; border-top: 1px solid black; padding-top: 6px; width: 200px; font-family: 'Times New Roman', Times, serif;">
-                                            <b>Evaluated By</b><br>{evaluator_name}
-                                        </p>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <p style="margin: 0; border-top: 1px solid black; padding-top: 6px; width: 200px; font-family: 'Times New Roman', Times, serif;">
-                                            <b>Director / Center In-Charge</b><br>Soft-Tech Computers & ZTC
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            """
-                            st.markdown(printable_notice_board, unsafe_allow_html=True)
-                            st.caption("🖨️ **Print নিৰ্দেশনা:** কীবৰ্ডত **Ctrl + P** টিপি 'Save as PDF' বা প্ৰিণ্টাৰ নিৰ্বাচন কৰি A4 কাগজত উলিয়াই ল’ব পাৰিবা।")
-                    else:
-                        st.info("No exam records found to generate batch result.")
-
-                elif print_mode == "🎓 Individual Student Marksheet":
-                    st.info("💡 ছাত্ৰ বা ছাত্ৰীৰ নাম বাছি ব্যক্তিগত অফিচিয়েল মাৰ্কশ্বীট প্ৰস্তুত কৰক (Times New Roman Font)।")
-                    
-                    st_candidates = conn.execute("""
-                        SELECT DISTINCT e.student_id, s.name 
+                    batch_res = conn.execute("""
+                        SELECT e.student_id, s.name, e.course, e.theory_marks, e.practical_marks, e.total_marks, e.max_marks, e.percentage, e.grade, e.recorded_by
                         FROM exam_records e
                         LEFT JOIN students s ON e.student_id = s.student_id
+                        WHERE e.exam_title = ? AND e.exam_date = ?
                         ORDER BY e.student_id ASC
-                    """).fetchall()
-                    
-                    if st_candidates:
-                        c_opts = [f"{r['student_id']} - {r['name']}" for r in st_candidates]
-                        sel_stud = st.selectbox("Select Candidate:", c_opts, key="single_marksheet_stud")
-                        sel_sid = sel_stud.split(" - ")[0]
+                    """, (sel_exam, sel_date)).fetchall()
 
-                        stud_ex_records = conn.execute("""
-                            SELECT id, exam_title, exam_date, course, theory_marks, practical_marks, total_marks, max_marks, percentage, grade, recorded_by
-                            FROM exam_records
-                            WHERE student_id = ?
-                            ORDER BY id DESC
-                        """, (sel_sid,)).fetchall()
+                    if batch_res:
+                        evaluator_name = batch_res[0]['recorded_by'] if batch_res[0]['recorded_by'] else "Faculty In-Charge"
 
-                        if stud_ex_records:
-                            ex_list = [f"{r['exam_title']} ({r['exam_date']}) - ID:{r['id']}" for r in stud_ex_records]
-                            sel_ex_str = st.selectbox("Select Module / Exam Record:", ex_list, key="single_record_sel")
-                            rec_id = int(sel_ex_str.split("ID:")[1])
+                        rows_html = ""
+                        for idx, r in enumerate(batch_res, 1):
+                            if r['grade'] == "Absent":
+                                th_disp = "<span style='color:red; font-weight:bold;'>AB</span>"
+                                pr_disp = "<span style='color:red; font-weight:bold;'>AB</span>"
+                                tot_disp = "0 / " + str(int(r['max_marks']))
+                                pct_disp = "0%"
+                                grd_disp = "<span style='color:red; font-weight:bold;'>Absent</span>"
+                            else:
+                                th_disp = str(int(r['theory_marks']))
+                                pr_disp = str(int(r['practical_marks']))
+                                tot_disp = f"{int(r['total_marks'])} / {int(r['max_marks'])}"
+                                pct_disp = f"{r['percentage']}%"
+                                grd_disp = r['grade']
 
-                            rec = [r for r in stud_ex_records if r['id'] == rec_id][0]
-                            st_detail = conn.execute("SELECT name, course, shift FROM students WHERE student_id = ?", (sel_sid,)).fetchone()
-                            student_full_name = st_detail['name'] if st_detail else sel_stud.split(" - ")[1]
+                            rows_html += f"""<tr style="border-bottom: 1px solid #444; text-align: center; height: 30px; font-family: 'Times New Roman', Times, serif;">
+<td style="padding: 6px; border: 1px solid #555;">{idx}</td>
+<td style="padding: 6px; font-weight: bold; border: 1px solid #555;">{r['student_id']}</td>
+<td style="padding: 6px; text-align: left; border: 1px solid #555;">{r['name']}</td>
+<td style="padding: 6px; border: 1px solid #555; font-size: 12px;">{r['course']}</td>
+<td style="padding: 6px; border: 1px solid #555;">{th_disp}</td>
+<td style="padding: 6px; border: 1px solid #555;">{pr_disp}</td>
+<td style="padding: 6px; font-weight: bold; border: 1px solid #555;">{tot_disp}</td>
+<td style="padding: 6px; font-weight: bold; border: 1px solid #555;">{pct_disp}</td>
+<td style="padding: 6px; font-weight: bold; border: 1px solid #555;">{grd_disp}</td>
+</tr>"""
 
-                            single_card_html = f"""
-                            <div style="background: white; color: black; border: 2.5px solid black; padding: 30px; border-radius: 4px; font-family: 'Times New Roman', Times, serif; max-width: 680px; margin: 20px auto;">
-                                <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 12px; margin-bottom: 15px;">
-                                    <h2 style="margin: 0; letter-spacing: 1.5px; font-family: 'Times New Roman', Times, serif; font-size: 22px;">SOFT-TECH COMPUTERS & ZTC ENTERPRISE</h2>
-                                    <p style="margin: 4px 0; font-size: 14px; font-family: 'Times New Roman', Times, serif;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149</p>
-                                    <p style="margin: 2px 0; font-size: 12.5px; font-family: 'Times New Roman', Times, serif; font-weight: bold;">Accredited Center Code: 4159 (Sarva Education / SITED Recognized)</p>
-                                </div>
+                        raw_notice_board = f"""<div style="background: white; color: black; border: 2px solid black; padding: 30px; border-radius: 4px; font-family: 'Times New Roman', Times, serif; max-width: 840px; margin: 15px auto;">
+<div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 12px; margin-bottom: 15px;">
+<h2 style="margin: 0; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'Times New Roman', Times, serif; font-size: 22px;">SOFT-TECH COMPUTERS & ZTC ENTERPRISE</h2>
+<p style="margin: 4px 0; font-size: 14px; font-family: 'Times New Roman', Times, serif;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149 | Ph: 9101026718</p>
+<p style="margin: 2px 0; font-size: 13px; font-family: 'Times New Roman', Times, serif; font-weight: bold;">Accredited Center Code: 4159 (Sarva Education / SITED Recognized)</p>
+</div>
+<div style="text-align: center; margin-bottom: 15px;">
+<h3 style="margin: 0; text-decoration: underline; letter-spacing: 1px; font-family: 'Times New Roman', Times, serif; font-size: 17px;">CONSOLIDATED ASSESSMENT TABULATION SHEET</h3>
+<p style="margin: 6px 0 0 0; font-size: 14px; font-family: 'Times New Roman', Times, serif;"><b>Assessment Module:</b> {sel_exam} &nbsp;&nbsp;|&nbsp;&nbsp; <b>Date:</b> {sel_date}</p>
+</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 13px; font-family: 'Times New Roman', Times, serif; margin-top: 15px; border: 1.5px solid black;">
+<thead>
+<tr style="background-color: #f5f5f5; border-bottom: 2px solid black; text-align: center; font-family: 'Times New Roman', Times, serif;">
+<th style="padding: 8px; border: 1px solid black; width: 35px;">Sl</th>
+<th style="padding: 8px; border: 1px solid black; width: 95px;">Roll / ID</th>
+<th style="padding: 8px; border: 1px solid black; text-align: left;">Student Name</th>
+<th style="padding: 8px; border: 1px solid black; width: 95px;">Course</th>
+<th style="padding: 8px; border: 1px solid black; width: 65px;">Theory</th>
+<th style="padding: 8px; border: 1px solid black; width: 65px;">Practical</th>
+<th style="padding: 8px; border: 1px solid black; width: 85px;">Total</th>
+<th style="padding: 8px; border: 1px solid black; width: 75px;">% Score</th>
+<th style="padding: 8px; border: 1px solid black; width: 110px;">Grade</th>
+</tr>
+</thead>
+<tbody>
+{rows_html}
+</tbody>
+</table>
+<div style="margin-top: 60px; display: flex; justify-content: space-between; font-size: 13px; font-family: 'Times New Roman', Times, serif; padding: 0 20px;">
+<div style="text-align: center;">
+<p style="margin: 0; border-top: 1px solid black; padding-top: 6px; width: 200px; font-family: 'Times New Roman', Times, serif;"><b>Evaluated By</b><br>{evaluator_name}</p>
+</div>
+<div style="text-align: center;">
+<p style="margin: 0; border-top: 1px solid black; padding-top: 6px; width: 200px; font-family: 'Times New Roman', Times, serif;"><b>Director / Center In-Charge</b><br>Soft-Tech Computers & ZTC</p>
+</div>
+</div>
+</div>"""
+                        clean_nb_html = "\n".join(l.strip() for l in raw_notice_board.splitlines())
+                        st.markdown(clean_nb_html, unsafe_allow_html=True)
+                        st.caption("🖨️ **Print Instructions:** Press **Ctrl + P**, choose 'Save as PDF' or select your printer for A4 sheet output.")
+                else:
+                    st.info("No exam records found to generate batch result.")
 
-                                <div style="text-align: center; margin-bottom: 20px;">
-                                    <h3 style="margin: 0; letter-spacing: 1px; text-decoration: underline; font-family: 'Times New Roman', Times, serif; font-size: 16px;">STUDENT PERFORMANCE SCORECARD</h3>
-                                </div>
+            elif print_mode == "🎓 Individual Student Marksheet":
+                st.info("💡 Official individual performance scorecard in Times New Roman font.")
 
-                            <div style="font-size: 14px; line-height: 1.8; margin-bottom: 20px; border: 1px solid black; padding: 12px 16px; font-family: 'Times New Roman', Times, serif; background: #fafafa;">
-                                    <table style="width: 100%; border-collapse: collapse; font-family: 'Times New Roman', Times, serif;">
-                                        <tr>
-                                            <td style="width: 50%;"><b>Candidate Name:</b> {student_full_name}</td>
-                                            <td style="width: 50%;"><b>Student Roll / ID:</b> {sel_sid}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>Course Enrolled:</b> {rec['course']}</td>
-                                            <td><b>Exam / Module:</b> {rec['exam_title']}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><b>Assessment Date:</b> {rec['exam_date']}</td>
-                                            <td><b>Academic Center:</b> Soft-Tech Computers (4159)</td>
-                                        </tr>
-                                    </table>
-                                </div>
+                st_candidates = conn.execute("""
+                    SELECT DISTINCT e.student_id, s.name 
+                    FROM exam_records e
+                    LEFT JOIN students s ON e.student_id = s.student_id
+                    ORDER BY e.student_id ASC
+                """).fetchall()
 
-                                <table style="width: 100%; border-collapse: collapse; font-size: 13.5px; font-family: 'Times New Roman', Times, serif; margin: 20px 0; border: 1.5px solid black;">
-                                    <thead>
-                                        <tr style="background: #f5f5f5; text-align: center; border-bottom: 1.5px solid black; font-family: 'Times New Roman', Times, serif;">
-                                            <th style="padding: 9px; border: 1px solid black;">Theory Marks</th>
-                                            <th style="padding: 9px; border: 1px solid black;">Practical Marks</th>
-                                            <th style="padding: 9px; border: 1px solid black;">Total Obtained</th>
-                                            <th style="padding: 9px; border: 1px solid black;">Max Marks</th>
-                                            <th style="padding: 9px; border: 1px solid black;">Percentage</th>
-                                            <th style="padding: 9px; border: 1px solid black;">Awarded Grade</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr style="text-align: center; font-weight: bold; font-size: 14px; font-family: 'Times New Roman', Times, serif;">
-                                            <td style="padding: 12px; border: 1px solid black;">{int(rec['theory_marks'])}</td>
-                                            <td style="padding: 12px; border: 1px solid black;">{int(rec['practical_marks'])}</td>
-                                            <td style="padding: 12px; border: 1px solid black;">{int(rec['total_marks'])}</td>
-                                            <td style="padding: 12px; border: 1px solid black;">{int(rec['max_marks'])}</td>
-                                            <td style="padding: 12px; border: 1px solid black;">{rec['percentage']}%</td>
-                                            <td style="padding: 12px; border: 1px solid black;">{rec['grade']}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                if st_candidates:
+                    c_opts = [f"{r['student_id']} - {r['name']}" for r in st_candidates]
+                    sel_stud = st.selectbox("Select Candidate:", c_opts, key="single_marksheet_stud")
+                    sel_sid = sel_stud.split(" - ")[0]
 
-                                <div style="margin-top: 55px; display: flex; justify-content: space-between; font-size: 13px; font-family: 'Times New Roman', Times, serif; padding: 0 20px;">
-                                    <div style="text-align: center;">
-                                        <p style="margin: 0; border-top: 1px solid black; padding-top: 5px; width: 170px; font-family: 'Times New Roman', Times, serif;">
-                                            <b>Faculty In-Charge</b><br>{rec['recorded_by'] if rec['recorded_by'] else 'Teacher'}
-                                        </p>
-                                    </div>
-                                    <div style="text-align: center;">
-                                        <p style="margin: 0; border-top: 1px solid black; padding-top: 5px; width: 170px; font-family: 'Times New Roman', Times, serif;">
-                                            <b>Center Director</b><br>Soft-Tech Computers
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                            """
-                            st.markdown(single_card_html, unsafe_allow_html=True)
-                            st.caption("🖨️ **Print নিৰ্দেশনা:** কীবৰ্ডত **Ctrl + P** টিপি মাৰ্কশ্বীটখন চিধাই প্ৰিণ্ট বা PDF চেভ কৰি লওক।")
-                    else:
-                        st.info("No candidates found with assessment records.")
+                    stud_ex_records = conn.execute("""
+                        SELECT id, exam_title, exam_date, course, theory_marks, practical_marks, total_marks, max_marks, percentage, grade, recorded_by
+                        FROM exam_records
+                        WHERE student_id = ?
+                        ORDER BY id DESC
+                    """, (sel_sid,)).fetchall()
 
-                elif print_mode == "📁 Full Records Table":
-                    st.markdown("#### All Assessment Records Database")
-                    rec_data = conn.execute("""
-                        SELECT e.exam_date, e.student_id, s.name, e.course, e.exam_title, e.theory_marks, e.practical_marks, e.total_marks, e.max_marks, e.percentage, e.grade, e.recorded_by 
-                        FROM exam_records e 
-                        LEFT JOIN students s ON e.student_id = s.student_id 
-                        ORDER BY e.id DESC
-                    """).fetchall()
-                    
-                    if rec_data:
-                        import pandas as pd
-                        df_ex = pd.DataFrame(rec_data, columns=["Date", "Student ID", "Name", "Course", "Exam Title", "Theory", "Practical", "Total", "Max", "Percentage (%)", "Grade", "Teacher"])
-                        st.dataframe(df_ex, use_container_width=True)
-                    else:
-                        st.info("No exam records saved yet.")                     
+                    if stud_ex_records:
+                        ex_list = [f"{r['exam_title']} ({r['exam_date']}) - ID:{r['id']}" for r in stud_ex_records]
+                        sel_ex_str = st.selectbox("Select Module / Exam Record:", ex_list, key="single_record_sel")
+                        rec_id = int(sel_ex_str.split("ID:")[1])
+
+                        rec = [r for r in stud_ex_records if r['id'] == rec_id][0]
+                        st_detail = conn.execute("SELECT name, course, shift FROM students WHERE student_id = ?", (sel_sid,)).fetchone()
+                        student_full_name = st_detail['name'] if st_detail else sel_stud.split(" - ")[1]
+
+                        if rec['grade'] == "Absent":
+                            th_val = "<span style='color:red;'>Absent</span>"
+                            pr_val = "<span style='color:red;'>Absent</span>"
+                            tot_val = "0"
+                            pct_val = "0%"
+                            grd_val = "<span style='color:red;'>Absent</span>"
+                        else:
+                            th_val = str(int(rec['theory_marks']))
+                            pr_val = str(int(rec['practical_marks']))
+                            tot_val = str(int(rec['total_marks']))
+                            pct_val = f"{rec['percentage']}%"
+                            grd_val = rec['grade']
+
+                        raw_single_card = f"""<div style="background: white; color: black; border: 2.5px solid black; padding: 30px; border-radius: 4px; font-family: 'Times New Roman', Times, serif; max-width: 680px; margin: 20px auto;">
+<div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 12px; margin-bottom: 15px;">
+<h2 style="margin: 0; letter-spacing: 1.5px; font-family: 'Times New Roman', Times, serif; font-size: 22px;">SOFT-TECH COMPUTERS & ZTC ENTERPRISE</h2>
+<p style="margin: 4px 0; font-size: 14px; font-family: 'Times New Roman', Times, serif;">Kamarchuburi, Thelamara, Sonitpur, Assam - 784149</p>
+<p style="margin: 2px 0; font-size: 12.5px; font-family: 'Times New Roman', Times, serif; font-weight: bold;">Accredited Center Code: 4159 (Sarva Education / SITED Recognized)</p>
+</div>
+<div style="text-align: center; margin-bottom: 20px;">
+<h3 style="margin: 0; letter-spacing: 1px; text-decoration: underline; font-family: 'Times New Roman', Times, serif; font-size: 16px;">STUDENT PERFORMANCE SCORECARD</h3>
+</div>
+<div style="font-size: 14px; line-height: 1.8; margin-bottom: 20px; border: 1px solid black; padding: 12px 16px; font-family: 'Times New Roman', Times, serif; background: #fafafa;">
+<table style="width: 100%; border-collapse: collapse; font-family: 'Times New Roman', Times, serif;">
+<tr>
+<td style="width: 50%;"><b>Candidate Name:</b> {student_full_name}</td>
+<td style="width: 50%;"><b>Student Roll / ID:</b> {sel_sid}</td>
+</tr>
+<tr>
+<td><b>Course Enrolled:</b> {rec['course']}</td>
+<td><b>Exam / Module:</b> {rec['exam_title']}</td>
+</tr>
+<tr>
+<td><b>Assessment Date:</b> {rec['exam_date']}</td>
+<td><b>Academic Center:</b> Soft-Tech Computers (4159)</td>
+</tr>
+</table>
+</div>
+<table style="width: 100%; border-collapse: collapse; font-size: 13.5px; font-family: 'Times New Roman', Times, serif; margin: 20px 0; border: 1.5px solid black;">
+<thead>
+<tr style="background: #f5f5f5; text-align: center; border-bottom: 1.5px solid black; font-family: 'Times New Roman', Times, serif;">
+<th style="padding: 9px; border: 1px solid black;">Theory Marks</th>
+<th style="padding: 9px; border: 1px solid black;">Practical Marks</th>
+<th style="padding: 9px; border: 1px solid black;">Total Obtained</th>
+<th style="padding: 9px; border: 1px solid black;">Max Marks</th>
+<th style="padding: 9px; border: 1px solid black;">Percentage</th>
+<th style="padding: 9px; border: 1px solid black;">Awarded Grade</th>
+</tr>
+</thead>
+<tbody>
+<tr style="text-align: center; font-weight: bold; font-size: 14px; font-family: 'Times New Roman', Times, serif;">
+<td style="padding: 12px; border: 1px solid black;">{th_val}</td>
+<td style="padding: 12px; border: 1px solid black;">{pr_val}</td>
+<td style="padding: 12px; border: 1px solid black;">{tot_val}</td>
+<td style="padding: 12px; border: 1px solid black;">{int(rec['max_marks'])}</td>
+<td style="padding: 12px; border: 1px solid black;">{pct_val}</td>
+<td style="padding: 12px; border: 1px solid black;">{grd_val}</td>
+</tr>
+</tbody>
+</table>
+<div style="margin-top: 55px; display: flex; justify-content: space-between; font-size: 13px; font-family: 'Times New Roman', Times, serif; padding: 0 20px;">
+<div style="text-align: center;">
+<p style="margin: 0; border-top: 1px solid black; padding-top: 5px; width: 170px; font-family: 'Times New Roman', Times, serif;"><b>Faculty In-Charge</b><br>{rec['recorded_by'] if rec['recorded_by'] else 'Teacher'}</p>
+</div>
+<div style="text-align: center;">
+<p style="margin: 0; border-top: 1px solid black; padding-top: 5px; width: 170px; font-family: 'Times New Roman', Times, serif;"><b>Center Director</b><br>Soft-Tech Computers</p>
+</div>
+</div>
+</div>"""
+                        clean_card_html = "\n".join(l.strip() for l in raw_single_card.splitlines())
+                        st.markdown(clean_card_html, unsafe_allow_html=True)
+                        st.caption("🖨️ **Print Instructions:** Press **Ctrl + P** to print this official student scorecard.")
+                else:
+                    st.info("No candidates found with assessment records.")
+
+            elif print_mode == "📁 Full Records Table":
+                st.markdown("#### All Assessment Records Database")
+                rec_data = conn.execute("""
+                    SELECT e.exam_date, e.student_id, s.name, e.course, e.exam_title, e.theory_marks, e.practical_marks, e.total_marks, e.max_marks, e.percentage, e.grade, e.recorded_by 
+                    FROM exam_records e 
+                    LEFT JOIN students s ON e.student_id = s.student_id 
+                    ORDER BY e.id DESC
+                """).fetchall()
+
+                if rec_data:
+                    import pandas as pd
+                    df_ex = pd.DataFrame(rec_data, columns=["Date", "Student ID", "Name", "Course", "Exam Title", "Theory", "Practical", "Total", "Max", "Percentage (%)", "Grade", "Teacher"])
+                    st.dataframe(df_ex, use_container_width=True)
+                else:
+                    st.info("No exam records saved yet.")
 # -------------------------------------------------------------
 # 4. TUFEE FAST COUNTER
 # -------------------------------------------------------------
