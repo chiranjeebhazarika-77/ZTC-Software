@@ -293,6 +293,8 @@ def sync_all_to_cloud(conn):
 
         enq_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT date as 'Date', name as 'Candidate Name', mobile as 'Mobile', course as 'Course Interested', address as 'Address' FROM enquiries").fetchall()])
         if not enq_df.empty: push_sheet_async("enquiries_db", enq_df)
+        ex_df = pd.DataFrame([dict(r) for r in conn.execute("SELECT student_id as 'Student ID', course as 'Course', exam_title as 'Exam Title', exam_date as 'Exam Date', theory_marks as 'Theory', practical_marks as 'Practical', total_marks as 'Total', max_marks as 'Max Marks', percentage as 'Percentage', grade as 'Grade', recorded_by as 'Recorded By' FROM exam_records").fetchall()])
+        if not ex_df.empty: push_sheet_async("exam_records_db", ex_df)
     except Exception:
         pass
 
@@ -348,7 +350,20 @@ def restore_database_from_cloud(conn):
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ''', (t_name, r.get("Mobile", ""), r.get("Designation", "Instructor"), r.get("Qualification", ""), r.get("Shift", "All Shifts"), r.get("ID Proof", ""), r.get("Address", ""), str(datetime.date.today())))
         restored_items.append("Teachers")
-
+    df_ex = fetch_sheet_data("exam_records_db")
+    if df_ex is not None and not df_ex.empty:
+        for _, r in df_ex.iterrows():
+            sid = str(r.get("Student ID", "")).strip()
+            ex_t = str(r.get("Exam Title", "")).strip()
+            ex_d = str(r.get("Exam Date", "")).strip()
+            if sid and ex_t:
+                chk = conn.execute("SELECT id FROM exam_records WHERE student_id = ? AND exam_title = ? AND exam_date = ?", (sid, ex_t, ex_d)).fetchone()
+                if not chk:
+                    conn.execute('''
+                        INSERT INTO exam_records (student_id, course, exam_title, exam_date, theory_marks, practical_marks, total_marks, max_marks, percentage, grade, recorded_by)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (sid, str(r.get("Course", "")), ex_t, ex_d, float(r.get("Theory", 0) or 0), float(r.get("Practical", 0) or 0), float(r.get("Total", 0) or 0), float(r.get("Max Marks", 100) or 100), float(r.get("Percentage", 0) or 0), str(r.get("Grade", "")), str(r.get("Recorded By", ""))))
+        restored_items.append("Exam Records")
     conn.commit()
     return restored_items
 
