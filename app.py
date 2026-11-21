@@ -1342,7 +1342,14 @@ elif menu == "📸 Attendance Kiosk":
                         st.markdown(f"<div style='text-align:center; margin-top:6px;'><b>{s['name']}</b><br><span style='font-size:12px; color:#64748b;'>{sid}</span></div>", unsafe_allow_html=True)
                         if sid in att_today:
                             st_val, tm_val = att_today[sid]
-                            st.success(f"✅ {st_val} ({tm_val})")
+                            if str(st_val).lower() == "present":
+                                st.success(f"✅ {st_val} ({tm_val})")
+                            elif str(st_val).lower() == "absent":
+                                st.error(f"❌ {st_val}")
+                            elif str(st_val).lower() == "leave":
+                                st.warning(f"🟡 {st_val}")
+                            else:
+                                st.info(f"ℹ️ {st_val} ({tm_val})")
                         else:
                             if st.button("📸 Present", key=f"kbtn_{sid}", use_container_width=True):
                                 st.session_state["kiosk_active_sid"] = sid
