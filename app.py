@@ -534,6 +534,7 @@ menu = st.sidebar.radio(
         "🌐 Public Dashboard & Enquiry",
         "🔑 Student Self-Service Portal",
         "⚡ Bulk Session & Attendance Desk",
+        "📸 Attendance Kiosk",
         "📝 Exam & Assessment Desk",
         "💳 Tuition Fee Fast Counter",
         "📝 New Candidate Admission",
@@ -1238,6 +1239,114 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                 st.success(f"Bulk register saved! {len(filtered_list)} attendance records verified and {fees_logged} fee deposits logged.")
                 st.session_state["bulk_reset_cnt"] = st.session_state.get("bulk_reset_cnt", 0) + 1
                 st.rerun()
+# ----------------------------------------------------
+# ATTENDANCE KIOSK (SELF-SERVICE)
+# ----------------------------------------------------
+elif menu == "📸 Attendance Kiosk":
+    st.markdown("## 📸 Self-Service Attendance Kiosk")
+    now_ist = datetime.datetime.now(IST)
+    today_str = now_ist.strftime("%Y-%m-%d")
+    time_str = now_ist.strftime("%H:%M")
+    day_name = now_ist.strftime("%A")
+
+    if "kiosk_unlocked" not in st.session_state:
+        st.session_state["kiosk_unlocked"] = False
+    if "kiosk_active_sid" not in st.session_state:
+        st.session_state["kiosk_active_sid"] = None
+
+    # 1. PIN Lock Security
+    if not st.session_state["kiosk_unlocked"]:
+        st.info("🔒 Please enter the Staff or Admin PIN to unlock the Kiosk.")
+        k_pin = st.text_input("Enter Staff / Admin PIN:", type="password", key="kiosk_pin_in")
+        if st.button("🔓 Unlock Kiosk", type="primary"):
+            if str(k_pin).strip() in [str(staff_pin_val), str(admin_pin_val)]:
+                st.session_state["kiosk_unlocked"] = True
+                st.rerun()
+            else:
+                st.error("❌ Invalid PIN! Please try again.")
+    else:
+        top_c1, top_c2 = st.columns([4, 1])
+        with top_c1:
+            st.caption(f"📅 Date: **{today_str} ({day_name})** | ⏰ IST Time: **{time_str}**")
+        with top_c2:
+            if st.button("🔒 Lock Kiosk", use_container_width=True):
+                st.session_state["kiosk_unlocked"] = False
+                st.session_state["kiosk_active_sid"] = None
+                st.rerun()
+
+        # 2. Auto Routine & Shift Filter
+        default_r = "MWF" if day_name in ["Monday", "Wednesday", "Friday"] else ("TTS" if day_name in ["Tuesday", "Thursday", "Saturday"] else "All")
+        r_opts = ["All", "MWF", "TTS"]
+        all_rows = [dict(r) for r in conn.execute("SELECT * FROM students ORDER BY student_id").fetchall()]
+        active_st = [s for s in all_rows if str(s.get("status", "Active")).lower() != "inactive"]
+        shift_opts = ["All Shifts"] + sorted(list(set([str(s.get("shift", "")) for s in active_st if s.get("shift")])))
+
+        f_c1, f_c2 = st.columns(2)
+        with f_c1:
+            sel_routine = st.selectbox("Routine Filter (Auto IST):", r_opts, index=r_opts.index(default_r))
+        with f_c2:
+            sel_shift = st.selectbox("Shift Filter:", shift_opts)
+
+        # 3. Active Single Camera Verification Popup
+        active_sid = st.session_state.get("kiosk_active_sid")
+        if active_sid:
+            st_obj = next((s for s in active_st if s["student_id"] == active_sid), None)
+            if st_obj:
+                st.markdown("---")
+                st.warning(f"📸 **{st_obj['name']} ({active_sid})** — Click a live photo to verify your attendance:")
+                cam_snap = st.camera_input("Click Live Photo", key=f"kiosk_cam_{active_sid}")
+                if st.button("❌ Cancel", key="kiosk_cancel"):
+                    st.session_state["kiosk_active_sid"] = None
+                    st.rerun()
+                if cam_snap is not None:
+                    chk_a = conn.execute("SELECT 1 FROM attendance WHERE student_id = ? AND date = ?", (active_sid, today_str)).fetchone()
+                    if not chk_a:
+                        conn.execute(
+                            "INSERT INTO attendance (student_id, date, time_in, status, marked_by) VALUES (?, ?, ?, ?, ?)",
+                            (active_sid, today_str, time_str, "Present", "Attendance Kiosk")
+                        )
+                        conn.commit()
+                        sync_all_to_cloud(conn)
+                    st.session_state["kiosk_active_sid"] = None
+                    st.success(f"✅ Attendance marked for {st_obj['name']} at {time_str} IST!")
+                    st.rerun()
+                st.markdown("---")
+
+        # 4. Filtered Student Photo Grid
+        filtered_st = active_st
+        if sel_routine != "All":
+            filtered_st = [s for s in filtered_st if sel_routine in str(s.get("shift", "")).upper()]
+        if sel_shift != "All Shifts":
+            filtered_st = [s for s in filtered_st if str(s.get("shift", "")) == sel_shift]
+
+        att_today = {
+            r["student_id"]: (r["status"], r["time_in"])
+            for r in conn.execute("SELECT student_id, status, time_in FROM attendance WHERE date = ?", (today_str,)).fetchall()
+        }
+
+        if not filtered_st:
+            st.info("No active students found for this routine or shift.")
+        else:
+            p_col = next((c for c in filtered_st[0].keys() if "photo" in c.lower()), "photo_base64")
+            cols = st.columns(4)
+            for idx, s in enumerate(filtered_st):
+                sid = s["student_id"]
+                with cols[idx % 4]:
+                    with st.container(border=True):
+                        ph = s.get(p_col)
+                        if ph and len(str(ph)) > 50:
+                            st.markdown(f'<div style="text-align:center;"><img src="data:image/jpeg;base64,{ph}" style="width:90px; height:90px; object-fit:cover; border-radius:50%; border:2px solid #2563eb;"></div>', unsafe_allow_html=True)
+                        else:
+                            initials = "".join([w[0] for w in str(s.get("name", "S")).split()[:2]]).upper()
+                            st.markdown(f'<div style="width:90px; height:90px; border-radius:50%; background:#e2e8f0; color:#1e293b; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:bold; margin:auto;">{initials}</div>', unsafe_allow_html=True)
+                        st.markdown(f"<div style='text-align:center; margin-top:6px;'><b>{s['name']}</b><br><span style='font-size:12px; color:#64748b;'>{sid}</span></div>", unsafe_allow_html=True)
+                        if sid in att_today:
+                            st_val, tm_val = att_today[sid]
+                            st.success(f"✅ {st_val} ({tm_val})")
+                        else:
+                            if st.button("📸 Present", key=f"kbtn_{sid}", use_container_width=True):
+                                st.session_state["kiosk_active_sid"] = sid
+                                st.rerun()
 # ----------------------------------------------------
 # EXAM & ASSESSMENT DESK
 # ----------------------------------------------------
