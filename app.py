@@ -1165,7 +1165,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                     (s_item['student_id'], str(bk_date))
                 ).fetchone()
 
-                status_opts = ["Present", "Absent", "Late"]
+                status_opts = ["Present", "Absent", "Late", "Leave"]
                 def_idx = 0
                 if existing_att and existing_att["status"] in status_opts:
                     def_idx = status_opts.index(existing_att["status"])
