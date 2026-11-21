@@ -364,6 +364,19 @@ def restore_database_from_cloud(conn):
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (sid, str(r.get("Course", "")), ex_t, ex_d, float(r.get("Theory", 0) or 0), float(r.get("Practical", 0) or 0), float(r.get("Total", 0) or 0), float(r.get("Max Marks", 100) or 100), float(r.get("Percentage", 0) or 0), str(r.get("Grade", "")), str(r.get("Recorded By", ""))))
         restored_items.append("Exam Records")
+    df_att = fetch_sheet_data("attendance_db")
+    if df_att is not None and not df_att.empty:
+        for _, r in df_att.iterrows():
+            sid = str(r.get("Student ID", "")).strip()
+            dt = str(r.get("Date", "")).strip()
+            if sid and dt:
+                chk = conn.execute("SELECT 1 FROM attendance WHERE student_id = ? AND date = ?", (sid, dt)).fetchone()
+                if not chk:
+                    conn.execute('''
+                        INSERT INTO attendance (student_id, date, time_in, status, marked_by)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (sid, dt, str(r.get("Time In", "")), str(r.get("Status", "Present")), str(r.get("Marked By", "Office"))))
+        restored_items.append("Attendance")    
     conn.commit()
     return restored_items
 
