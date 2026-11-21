@@ -1272,6 +1272,7 @@ elif menu == "📝 Exam & Assessment Desk":
                     theory_inputs = {}
                     practical_inputs = {}
                     absent_flags = {}
+                    skip_flags = {}
 
                     st.markdown("---")
                     h1, h2, h3, h4 = st.columns([2.5, 1.2, 1.2, 0.9])
@@ -1295,12 +1296,15 @@ elif menu == "📝 Exam & Assessment Desk":
                             practical_inputs[sid] = st.number_input(f"P_{sid}", min_value=0, max_value=int(max_practical), value=0, step=1, label_visibility="collapsed", key=f"p_{sid}_{st.session_state['exam_form_version']}", format="%d")
                         with col_s4:
                             absent_flags[sid] = st.checkbox("Absent", key=f"ab_{sid}_{st.session_state['exam_form_version']}")
+                            skip_flags[sid] = st.checkbox("Skip (N/A)", key=f"sk_{sid}_{st.session_state['exam_form_version']}")
 
                     if st.form_submit_button("💾 Save & Publish Assessment Scores"):
                         date_str = str(ex_date)
                         saved_cnt = 0
                         for st_item in c_students:
                             sid = st_item['student_id']
+                            if skip_flags[sid]:
+                                continue
                             is_ab = absent_flags[sid]
 
                             if is_ab:
