@@ -2083,6 +2083,31 @@ elif menu == "🔐 Director Master Command Center":
                             st.rerun()
                             
         with col_ed2:
+            st.write("**📸 Update Student Photo**")
+            p_col = next((c for c in s_data.keys() if "photo" in c.lower()), "photo_base64")
+            curr_photo = s_data[p_col] if p_col in s_data.keys() else None
+            if curr_photo and len(str(curr_photo)) > 50:
+                st.markdown(f'<img src="data:image/jpeg;base64,{curr_photo}" style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid #ccc;">', unsafe_allow_html=True)
+            p_mode = st.radio("Photo Source", ["Direct Camera", "Gallery Upload"], horizontal=True, key=f"pmode_{target_sid}")
+            new_photo = st.camera_input("Click Live Photo", key=f"cam_{target_sid}") if p_mode == "Direct Camera" else st.file_uploader("Upload Photo", type=["jpg", "jpeg", "png"], key=f"up_{target_sid}")
+            if new_photo is not None:
+                if st.button("💾 Save New Photo", key=f"save_ph_{target_sid}"):
+                    try:
+                        from PIL import Image
+                        import io
+                        img = Image.open(new_photo).convert("RGB")
+                        img.thumbnail((300, 300))
+                        buf = io.BytesIO()
+                        img.save(buf, format="JPEG", quality=70)
+                        b64_img = base64.b64encode(buf.getvalue()).decode()
+                    except Exception:
+                        b64_img = base64.b64encode(new_photo.getvalue()).decode()
+                    conn.execute(f"UPDATE students SET {p_col} = ? WHERE student_id = ?", (b64_img, target_sid))
+                    conn.commit()
+                    sync_all_to_cloud(conn)
+                    st.success(f"Photo updated for {target_sid}!")
+                    st.rerun()
+            st.markdown("---")
             st.write("***Danger Zone: Remove Student***")
             confirm_del = st.checkbox(f"I confirm to permanently delete student {target_sid}", key=f"del_chk_{target_sid}")
             if confirm_del:
