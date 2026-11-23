@@ -2068,7 +2068,18 @@ elif menu == "🔐 Director Master Command Center":
     
     if adm_pass == admin_pin_val:
         st.success("Authorized Director Access Granted! Welcome Chiranjeeb Hazarika Sir.")
-        
+        # --- SECRET TEACHER ATTENDANCE SWITCH ---
+        today_str = str(datetime.date.today())
+        is_unlocked = st.session_state.get("teacher_unlock_date") == today_str
+        unlock_switch = st.toggle("🔓 Unlock Teacher Attendance for Today", value=is_unlocked)
+
+        if unlock_switch:
+            st.session_state["teacher_unlock_date"] = today_str
+            st.caption("🟢 Teacher attendance desk is currently ACTIVE for today.")
+        else:
+            st.session_state["teacher_unlock_date"] = None
+            st.caption("🔴 Teacher attendance desk is currently LOCKED.")
+        st.divider()       
         dir_t1, dir_t2, dir_t3, dir_t4, dir_t5, dir_t6, dir_t7, dir_t8 = st.tabs([
             "📋 Executive Briefing",
             "💬 Public Enquiries (Leads)",
@@ -2440,3 +2451,4 @@ st.markdown("""
 Soft-Tech Computers & ZTC Enterprise Management System © 2026 | SITED Center Code: 4159 | Kamarchuburi, Thelamara, Sonitpur - 784149
 </div>
 """, unsafe_allow_html=True)
+
