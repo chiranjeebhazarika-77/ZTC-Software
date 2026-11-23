@@ -1991,7 +1991,7 @@ elif menu == "👨‍🏫 Faculty Desk & Honorarium":
                 penalty_amt = round(min(late_by * per_min_rate, base_shift_honorarium), 2) if is_late else 0.0
                 net_shift_earning = round(max(0.0, base_shift_honorarium - penalty_amt), 2)
                 
-                col_tp1, col_tp2 = st.columns(2)
+                col_tp1, col_tp2, col_tp3 = st.columns(3)
                 with col_tp1:
                     if st.button("🟢 Teacher Punch IN (Session Start)", use_container_width=True):
                         if in_window:
@@ -2022,6 +2022,17 @@ elif menu == "👨‍🏫 Faculty Desk & Honorarium":
                         sync_all_to_cloud(conn)
                         st.success(f"✅ Punched OUT at {time_str}! Shift marked completed.")
                         st.rerun()
+                with col_tp3:
+                    if st.button("🟡 Mark Leave (₹0)", use_container_width=True):
+                        today_str = str(datetime.date.today())
+                        conn.execute('''
+                            INSERT INTO teacher_punches (teacher_name, date, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (t_name, today_str, t_shift, "LEAVE", "LEAVE", 0, 0.0, 0.0, "Leave"))
+                        conn.commit()
+                        sync_all_to_cloud(conn)
+                        st.info(f"Recorded: {t_name} marked on Official Leave (₹0 Payout).")
+                        st.rerun()                
             else:
                 st.warning("Please register faculty members first.")
                 
@@ -2472,5 +2483,6 @@ st.markdown("""
 Soft-Tech Computers & ZTC Enterprise Management System © 2026 | SITED Center Code: 4159 | Kamarchuburi, Thelamara, Sonitpur - 784149
 </div>
 """, unsafe_allow_html=True)
+
 
 
