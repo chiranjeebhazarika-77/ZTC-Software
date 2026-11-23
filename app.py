@@ -1931,6 +1931,22 @@ elif menu == "👨‍🏫 Faculty Desk & Honorarium":
     st.info(f"🕒 **Current IST Clock:** `{now_ist.strftime('%I:%M:%S %p (%d-%B-%Y)')}`")
     
     if verify_staff_access("Faculty Desk"):
+        # --- CHECK ADMIN SECRET LOCK FOR TODAY ---
+        today_str = str(datetime.date.today())
+        import os
+        is_unlocked = (st.session_state.get("teacher_unlock_date") == today_str)
+        if os.path.exists("attendance_lock.txt"):
+            try:
+                with open("attendance_lock.txt") as f:
+                    if f.read().strip() == today_str:
+                        is_unlocked = True
+            except:
+                pass
+
+        if not is_unlocked:
+            st.warning("🔒 Teacher attendance window is currently closed. It will open during institute session hours.")
+            st.info("ℹ️ For Student Attendance, Exam Desk, or Admission Desk, please use the sidebar navigation.")
+            st.stop()
         t_tab1, t_tab2, t_tab3 = st.tabs([
             "⏰ Teacher Shift Punch (Strict IST Window)",
             "➕ Register Faculty Member (Detailed)",
@@ -2070,16 +2086,21 @@ elif menu == "🔐 Director Master Command Center":
         st.success("Authorized Director Access Granted! Welcome Chiranjeeb Hazarika Sir.")
         # --- SECRET TEACHER ATTENDANCE SWITCH ---
         today_str = str(datetime.date.today())
+        import os
         is_unlocked = st.session_state.get("teacher_unlock_date") == today_str
         unlock_switch = st.toggle("🔓 Unlock Teacher Attendance for Today", value=is_unlocked)
 
         if unlock_switch:
             st.session_state["teacher_unlock_date"] = today_str
+            with open("attendance_lock.txt", "w") as f:
+                f.write(today_str)
             st.caption("🟢 Teacher attendance desk is currently ACTIVE for today.")
         else:
             st.session_state["teacher_unlock_date"] = None
+            if os.path.exists("attendance_lock.txt"):
+                os.remove("attendance_lock.txt")
             st.caption("🔴 Teacher attendance desk is currently LOCKED.")
-        st.divider()       
+        st.divider()      
         dir_t1, dir_t2, dir_t3, dir_t4, dir_t5, dir_t6, dir_t7, dir_t8 = st.tabs([
             "📋 Executive Briefing",
             "💬 Public Enquiries (Leads)",
@@ -2451,4 +2472,5 @@ st.markdown("""
 Soft-Tech Computers & ZTC Enterprise Management System © 2026 | SITED Center Code: 4159 | Kamarchuburi, Thelamara, Sonitpur - 784149
 </div>
 """, unsafe_allow_html=True)
+
 
