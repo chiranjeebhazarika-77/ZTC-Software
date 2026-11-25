@@ -2220,6 +2220,56 @@ elif menu == "🔐 Director Master Command Center":
                 st.dataframe(r_df[["date", "student_name", "teacher_name", "rating_teaching", "rating_understanding", "rating_character", "Avg Score (out of 5)", "review_comment"]], use_container_width=True)
             else:
                 st.info("No student feedback/ratings submitted yet.")
+            st.markdown("---")
+            st.subheader("💰 Faculty Honorarium & Payroll Settlement (Director Confidential)")
+
+            f_list_raw = conn.execute("SELECT DISTINCT name FROM teachers").fetchall()
+            faculty_names = [r["name"] for r in f_list_raw] if f_list_raw else []
+        if not faculty_names:
+            p_names = conn.execute("SELECT DISTINCT teacher_name FROM teacher_punches").fetchall()
+            faculty_names = [r["teacher_name"] for r in p_names if r["teacher_name"]]
+
+        if faculty_names:
+            f_col1, f_col2 = st.columns([2, 2])
+            with f_col1:
+                sel_fac = st.selectbox("Select Faculty Member:", faculty_names, key="dir_pay_fac")
+            with f_col2:
+                pay_filter = st.selectbox("Filter Period:", ["Current Month", "All Time Records"], key="dir_pay_period")
+
+            if pay_filter == "Current Month":
+                curr_month = str(datetime.date.today())[:7]
+                punches = conn.execute(
+                    "SELECT * FROM teacher_punches WHERE teacher_name = ? AND date LIKE ? ORDER BY date DESC, id DESC",
+                    (sel_fac, f"{curr_month}%")
+                ).fetchall()
+            else:
+                punches = conn.execute(
+                    "SELECT * FROM teacher_punches WHERE teacher_name = ? ORDER BY date DESC, id DESC",
+                    (sel_fac,)
+                ).fetchall()
+
+            if punches:
+                p_df = pd.DataFrame([dict(r) for r in punches])
+                
+                leave_mask = (p_df["status"].astype(str).str.lower() == "leave") | (p_df["time_in"] == "LEAVE")
+                total_shifts = len(p_df[~leave_mask])
+                total_leaves = len(p_df[leave_mask])
+                total_penalties = float(p_df["penalty_cut"].fillna(0).sum()) if "penalty_cut" in p_df.columns else 0.0
+                total_payable = float(p_df["net_batch_earning"].fillna(0).sum()) if "net_batch_earning" in p_df.columns else 0.0
+
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Verified Shifts", f"{total_shifts} Sessions")
+                m2.metric("Official Leaves", f"{total_leaves} Days")
+                m3.metric("Late Penalties", f"₹{total_penalties:,.2f}")
+                m4.metric("Total Payable Payout", f"₹{total_payable:,.2f}")
+
+                st.caption(f"Showing shift-by-shift verified ledger for **{sel_fac}** ({pay_filter}):")
+                disp_cols = [c for c in ["date", "shift", "time_in", "time_out", "late_mins", "penalty_cut", "net_batch_earning", "status"] if c in p_df.columns]
+                st.dataframe(p_df[disp_cols], use_container_width=True)
+            else:
+                st.info(f"No attendance or punch records found for {sel_fac} ({pay_filter}).")
+        else:
+            st.info("No registered faculty members found in database.")
 
         # TAB 4: EDIT STUDENTS
         with dir_t4:
