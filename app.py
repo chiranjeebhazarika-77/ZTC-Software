@@ -2008,10 +2008,39 @@ elif menu == "👨‍🏫 Faculty Desk & Honorarium":
                             conn.commit()
                             sync_all_to_cloud(conn)
                             if is_late:
-                                st.warning(f"🚨 Punched IN with {late_by} mins delay! Late Penalty: ₹{penalty_amt:.2f} | Net Session Honorarium: ₹{net_shift_earning:.2f}")
+                                st.markdown(f"""
+                                <style>
+                                @keyframes blinker {{
+                                    0% {{ opacity: 1.0; border-color: #d32f2f; box-shadow: 0 0 12px rgba(211,47,47,0.8); }}
+                                    50% {{ opacity: 0.25; border-color: #ffcdd2; box-shadow: none; }}
+                                    100% {{ opacity: 1.0; border-color: #d32f2f; box-shadow: 0 0 12px rgba(211,47,47,0.8); }}
+                                }}
+                                .blink-alert-box {{
+                                    background-color: #ffebee;
+                                    border: 3px solid #d32f2f;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    text-align: center;
+                                    animation: blinker 1s linear infinite;
+                                    margin-top: 10px;
+                                    margin-bottom: 15px;
+                                }}
+                                </style>
+                                <div class="blink-alert-box">
+                                    <h3 style="color: #b71c1c; margin: 0; font-size: 18px;">🚨 ATTENTION FACULTY: DELAYED PUNCH IN ({late_by} MINS LATE)</h3>
+                                    <p style="color: #212121; margin: 8px 0 0 0; font-size: 14px; font-weight: bold;">
+                                        ⚠️ Late arrival beyond permitted grace limit recorded.<br>
+                                        Automated session audit logged & honorarium penalty applied under institute service rules.
+                                    </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                import time
+                                time.sleep(4)
                             else:
-                                st.success(f"✅ On-Time Session Punch IN at {time_str}! Verified Payout: ₹{base_shift_honorarium:.2f}")
-                            st.rerun()
+                                st.success(f"✅ On-Time Session Punch IN at {time_str}! Shift successfully verified.")
+                                import time
+                                time.sleep(2)
+                            st.rerun()                            
                         else:
                             st.error(f"❌ Outside Approved Shift Window! Current time does not match {t_shift}.")
                             
