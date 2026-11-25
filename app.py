@@ -1217,7 +1217,7 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
                         key=f"bk_fee_{bk_date}_{s_item['student_id']}"
                     )
 
-            if st.form_submit_button("💾 Save Bulk Attendance & Process Receipts"):
+            if st.form_submit_button("💾 Save Bulk Attendance & Process Receipts", type="primary"):
                 date_str = str(bk_date)
                 now_str = datetime.datetime.now(IST).strftime("%I:%M %p")
                 fees_logged = 0
@@ -1236,7 +1236,10 @@ elif menu == "⚡ Bulk Session & Attendance Desk":
 
                 conn.commit()
                 sync_all_to_cloud(conn)
-                st.success(f"Bulk register saved! {len(filtered_list)} attendance records verified and {fees_logged} fee deposits logged.")
+                st.success(f"✅ Bulk register saved! {len(filtered_list)} attendance records verified and {fees_logged} fee deposits logged.")
+                st.toast("✅ Attendance & Fee Receipts Saved Successfully!", icon="🎉")
+                import time
+                time.sleep(1.5)
                 st.session_state["bulk_reset_cnt"] = st.session_state.get("bulk_reset_cnt", 0) + 1
                 st.rerun()
 # ----------------------------------------------------
