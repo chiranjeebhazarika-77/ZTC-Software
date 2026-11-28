@@ -1924,6 +1924,26 @@ elif menu == "📚 Daily Class Activity (Lab/Theory)":
         
         with tab_cl1:
             if students_list:
+                # --- DATE LOCK & DIRECTOR OVERRIDE ---
+                col_dt1, col_dt2 = st.columns([1.5, 1])
+                with col_dt1:
+                    req_backdate = st.checkbox("⚠️ Need Back-dated / Missed Date Entry?", help="Only Director can unlock past dates.")
+                
+                entry_date = datetime.date.today()
+                if not req_backdate:
+                    st.info(f"🔒 **Date Locked to Today:** `{entry_date.strftime('%d-%b-%Y')}` (Faculty Mode)")
+                else:
+                    with col_dt2:
+                        dir_pin = st.text_input("🔑 Director PIN:", type="password")
+                    if dir_pin == "zaan123":
+                        entry_date = st.date_input("Select Approved Past Date:", value=datetime.date.today(), max_value=datetime.date.today())
+                        st.success("✅ Director Approved: Date unlocked!")
+                    elif dir_pin:
+                        st.error("⛔ ACCESS DENIED: Faculty cannot back-date entries.")
+                        entry_date = datetime.date.today()
+                    else:
+                        st.warning("🔒 Director PIN required to unlock calendar.")
+                        entry_date = datetime.date.today()                
                 with st.form("daily_class_form", clear_on_submit=True):
                     col_c1, col_c2 = st.columns(2)
                     with col_c1:
