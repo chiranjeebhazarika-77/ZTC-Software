@@ -2007,17 +2007,48 @@ elif menu == "📚 Daily Class Activity (Lab/Theory)":
                 st.info("No students registered yet.")
                 
         with tab_cl2:
-            st.write("**Recent Classroom Practice Logs:**")
-            all_logs = conn.execute('''
-                SELECT d.date, d.student_id, s.name as student_name, d.teacher_name, d.topic, d.class_type, d.remarks
-                FROM daily_class_logs d
-                LEFT JOIN students s ON d.student_id = s.student_id
-                ORDER BY d.id DESC LIMIT 20
-            ''').fetchall()
-            if all_logs:
-                st.dataframe(pd.DataFrame([dict(r) for r in all_logs]), use_container_width=True)
-            else:
-                st.info("No class logs recorded yet.")
+            st.write("### 🔍 Filter & Review Class History")
+    
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+            # ছাত্ৰ বাছনি কৰাৰ ফিল্টাৰ
+            student_opts = ["-- All Students --"] + [f"{r['student_id']} - {r['name']}" for r in conn.execute("SELECT student_id, name FROM students ORDER BY name ASC").fetchall()]
+            sel_student_filter = st.selectbox("Filter by Student:", student_opts)
+    
+        with col_f2:
+            # ক'ৰ্ছ/মডিউল বাছনি কৰাৰ ফিল্টাৰ
+            module_filter_opts = ["-- All Modules --", "MS Word", "MS Excel", "MS PowerPoint", "Adobe PageMaker", "Adobe Photoshop", "TallyPrime", "Tally.ERP 9", "HTML", "Python", "Paint", "Notepad", "Typing Master"]
+            sel_module_filter = st.selectbox("Filter by Module:", module_filter_opts)
+
+        # কুৱেৰী প্ৰস্তুত কৰা
+        query = """
+            SELECT d.date as Date, d.student_id as [Student ID], s.name as [Student Name], 
+                   d.teacher_name as [Faculty], d.topic as [Topic / Software Covered], 
+                   d.class_type as [Mode], d.remarks as [Remarks]
+            FROM daily_class_logs d
+            LEFT JOIN students s ON d.student_id = s.student_id
+            WHERE 1=1
+        """
+        params = []
+
+        if sel_student_filter != "-- All Students --":
+            filter_sid = sel_student_filter.split(" - ")[0].strip()
+            query += " AND d.student_id = ?"
+            params.append(filter_sid)
+    
+        if sel_module_filter != "-- All Modules --":
+            query += " AND d.topic LIKE ?"
+            params.append(f"%{sel_module_filter}%")
+    
+        query += " ORDER BY d.id DESC LIMIT 50"
+    
+        filtered_logs = conn.execute(query, params).fetchall()
+        
+        if filtered_logs:
+            df_logs = pd.DataFrame([dict(r) for r in filtered_logs])
+            st.dataframe(df_logs, use_container_width=True)
+        else:
+            st.info("ℹ️ No class logs match your selected filter.")
 
 # -------------------------------------------------------------
 # 7. FACULTY DESK & STRICT HONORARIUM ENGINE (₹230 / 3 SHIFTS)
