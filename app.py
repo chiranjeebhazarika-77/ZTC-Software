@@ -270,6 +270,49 @@ try:
     chk_conn.close()
 except Exception:
     pass
+    # --- AUTO-RESTORE NOV BACKLOG ON SLEEP / RESTART ---
+    try:
+        res = c.execute("SELECT COUNT(*) as cnt FROM teacher_punches WHERE teacher_name = 'BIJOY KURMI' AND date BETWEEN '2026-11-01' AND '2026-11-27'").fetchone()
+        if res and res[0] == 0:
+            shifts_pool = ["Morning Slot: 07:00 AM - 08:30 AM", "Afternoon Slot: 03:00 PM - 05:00 PM", "Evening Slot: 05:30 PM - 07:00 PM"]
+            
+            # 39 verified present shifts (Nov 1 to Nov 24)
+            for i in range(39):
+                d_day = min(1 + (i // 3), 24)
+                d_str = f"2026-11-{d_day:02d}"
+                s_slot = shifts_pool[i % 3]
+                c.execute("""
+                    INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (d_str, "BIJOY KURMI", s_slot, "10:00 AM", "12:00 PM", 0, 0.0, 76.67, "Present"))
+                
+            # 6 initial leaves
+            for j in range(6):
+                d_day = 18 + (j // 3)
+                d_str = f"2026-11-{d_day:02d}"
+                s_slot = shifts_pool[j % 3]
+                c.execute("""
+                    INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (d_str, "BIJOY KURMI", s_slot, "LEAVE", "LEAVE", 0, 0.0, 0.0, "Leave"))
+            
+            # 25 Nov (3 leaves)
+            for s in shifts_pool:
+                c.execute("INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                          ('2026-11-25', 'BIJOY KURMI', s, 'LEAVE', 'LEAVE', 0, 0.0, 0.0, 'Leave'))
+
+            # 26 Nov (2 leaves)
+            for s in [shifts_pool[1], shifts_pool[2]]:
+                c.execute("INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                          ('2026-11-26', 'BIJOY KURMI', s, 'LEAVE', 'LEAVE', 0, 0.0, 0.0, 'Leave'))
+
+            # 27 Nov (3 leaves)
+            for s in shifts_pool:
+                c.execute("INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                          ('2026-11-27', 'BIJOY KURMI', s, 'LEAVE', 'LEAVE', 0, 0.0, 0.0, 'Leave'))
+            conn.commit()
+    except Exception as e:
+        pass    
 # Multi-Table Cloud Sync
 def sync_all_to_cloud(conn):
     try:
