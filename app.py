@@ -1956,7 +1956,38 @@ elif menu == "📚 Daily Class Activity (Lab/Theory)":
                             "SFPC (Sunday Free Practice)"
                         ], horizontal=True)
                     with col_c2:
-                        today_topic = st.text_input("Topic Covered (e.g. MS Word Resume, Tally GST Billing, Typing Speed Test)*")
+                        module_options = [
+                            # --- Office Productivity Suite ---
+                            "📄 MS Word (Docs, Formats & Official Drafting)",
+                            "📊 MS Excel (Formulas, Sheets & Data Analysis)",
+                            "📽️ MS PowerPoint (Slide Decks & Animations)",
+                            "🗄️ MS Access (Databases & Record Management)",
+                            
+                            # --- Creative DTP & Media Graphics ---
+                            "📰 Adobe PageMaker (Assamese DTP & Layout Design)",
+                            "🎨 Adobe Photoshop (Graphics, Photo Edit & ID Card)",
+                            
+                            # --- Financial Accounting & ERP ---
+                            "💼 TallyPrime (GST Invoicing, Inventory & Ledgers)",
+                            "📊 Tally.ERP 9 (Core Accounts & Vouchers)",
+                            
+                            # --- Web Development & Programming ---
+                            "🌐 HTML / DHTML (Web Structure & Coding)",
+                            "🐍 Python Programming (Logic, Apps & Scripting)",
+                            
+                            # --- IT Essentials & Computer Foundation ---
+                            "🎨 MS Paint (Basics & Mouse Controls)",
+                            "📝 Notepad (Text Editing & Coding Basics)",
+                            "📄 WordPad (Basic Rich Text Formatting)",
+                            "🌐 Internet Essentials (Email, Web Portals & Cyber)",
+                            "⌨️ Typing Master (Assamese & English Speed Lab)",
+                            
+                            # --- Special ---
+                            "🎯 Special Revision / Student Practical Project"
+                        ]
+                        selected_module = st.selectbox("Select Learning Track / Software:*", module_options)
+                        topic_detail = st.text_input("Core Chapter / Practical Task Done (e.g., Table tags, Salary Sheet, Visiting Card):*")
+                        today_topic = f"{selected_module} ➔ {topic_detail.strip()}" if topic_detail.strip() else selected_module
                         class_remarks = st.text_input("Teacher Feedback / Lab Performance*", value="Completed Practical Exercise Well")
                         
                     if st.form_submit_button("🟢 Save Today's Class Entry"):
@@ -1965,7 +1996,7 @@ elif menu == "📚 Daily Class Activity (Lab/Theory)":
                             conn.execute('''
                                 INSERT INTO daily_class_logs (date, student_id, teacher_name, topic, class_type, remarks)
                                 VALUES (?, ?, ?, ?, ?, ?)
-                            ''', (str(datetime.date.today()), sid_val, sel_tch, today_topic, class_mode, class_remarks))
+                            ''', (str(entry_date), sid_val, sel_tch, today_topic, class_mode, class_remarks))
                             conn.commit()
                             sync_all_to_cloud(conn)
                             st.success(f"✅ Recorded {class_mode} on '{today_topic}' for {sel_st}!")
