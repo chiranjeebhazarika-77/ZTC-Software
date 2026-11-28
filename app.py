@@ -2015,7 +2015,26 @@ elif menu == "📚 Daily Class Activity (Lab/Theory)":
             with col_f2:
                 module_filter_opts = ["-- All Modules --", "MS Word", "MS Excel", "MS PowerPoint", "Adobe PageMaker", "Adobe Photoshop", "TallyPrime", "Tally.ERP 9", "HTML", "Python", "Paint", "Notepad", "Typing Master"]
                 sel_module_filter = st.selectbox("Filter by Module:", module_filter_opts)
-            
+            # --- STUDENT PROGRESS CARD ---
+            if sel_student_filter != "-- All Students --":
+                filter_sid = sel_student_filter.split(" - ")[0].strip()
+                
+                total_classes = conn.execute("SELECT COUNT(*) FROM daily_class_logs WHERE student_id = ?", (filter_sid,)).fetchone()[0]
+                distinct_topics = conn.execute("SELECT COUNT(DISTINCT topic) FROM daily_class_logs WHERE student_id = ?", (filter_sid,)).fetchone()[0]
+                
+                target_sessions = 30
+                prog_ratio = min(total_classes / target_sessions, 1.0)
+                prog_pct = int(prog_ratio * 100)
+                
+                st.write("---")
+                st.markdown(f"#### 🎓 Academic Progress: **{sel_student_filter}**")
+                st.progress(prog_ratio)
+                
+                cp1, cp2, cp3 = st.columns(3)
+                cp1.metric("Course Progress", f"{prog_pct}%", f"{total_classes}/{target_sessions} Sessions")
+                cp2.metric("Unique Modules Done", f"{distinct_topics} Topics")
+                cp3.metric("Remaining Target", f"{max(0, target_sessions - total_classes)} Sessions")
+                st.write("---")                
             query = """
                 SELECT d.date as Date, d.student_id as [Student ID], s.name as [Student Name], 
                        d.teacher_name as [Faculty], d.topic as [Topic / Software Covered], 
