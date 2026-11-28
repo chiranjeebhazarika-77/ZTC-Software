@@ -128,7 +128,7 @@ def init_db():
     # System Settings
     c.execute('''CREATE TABLE IF NOT EXISTS system_settings (key TEXT PRIMARY KEY, value TEXT)''')
     if not c.execute("SELECT value FROM system_settings WHERE key = 'admin_pin'").fetchone():
-        c.execute("INSERT INTO system_settings (key, value) VALUES ('admin_pin', 'zaan123')")
+       c.execute("INSERT INTO system_settings (key, value) VALUES ('admin_pin', '1234')")
     if not c.execute("SELECT value FROM system_settings WHERE key = 'staff_pin'").fetchone():
         c.execute("INSERT INTO system_settings (key, value) VALUES ('staff_pin', 'ztc4159')")
 
@@ -2637,7 +2637,8 @@ Director Contact: 9101026718"""
                         else:
                             conn.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('admin_pin', ?)", (new_pwd.strip(),))
                             conn.commit()
-                            st.success("🎉 Director Password updated successfully!")
+                            sync_all_to_cloud(conn)
+                            st.success("Director Password updated successfully!")
                             st.rerun()
                             
             with col_sec2:
