@@ -2299,44 +2299,60 @@ elif menu == "🔐 Director Master Command Center":
                 st.info(f"No attendance or punch records found for {sel_fac} ({pay_filter}).")
         else:
             st.info("No registered faculty members found in database.")
-# --- ONE TIME NOVEMBER BACKFILL BUTTON ---
-        with st.expander("⚙️ November 1–24 Attendance Backfill (Director Only)"):
-            if st.button("📥 Insert Nov 1-24 Backlog Records (39 Present, 6 Leave)", type="secondary"):
-                chk = conn.execute("SELECT COUNT(*) as c FROM teacher_punches WHERE teacher_name = 'BIJOY KURMI' AND date BETWEEN '2026-11-01' AND '2026-11-24'").fetchone()
-                if chk["c"] > 0:
-                    st.warning("Nov 1-24 records already exist in database!")
-                else:
-                    shifts_pool = ["Morning Slot: 07:00 AM - 08:30 AM", "Afternoon Slot: 03:00 PM - 05:00 PM", "Evening Slot: 05:30 PM - 07:00 PM"]
-                    inserted_present = 0
-                    inserted_leave = 0
+# --- ONE TIME NOVEMBER BACKFILL BUTTON (UP TO NOV 27) ---
+        with st.expander("⚙️ November 1–27 Attendance Backfill (Director Only)"):
+            if st.button("📥 Insert Nov 1-27 Backlog Records (39 Present, 14 Leave)", type="secondary"):
+                # Clean existing backlog for Nov 1-27 if any to avoid duplicates
+                conn.execute("DELETE FROM teacher_punches WHERE teacher_name = 'BIJOY KURMI' AND date BETWEEN '2026-11-01' AND '2026-11-27'")
+                
+                shifts_pool = ["Morning Slot: 07:00 AM - 08:30 AM", "Afternoon Slot: 03:00 PM - 05:00 PM", "Evening Slot: 05:30 PM - 07:00 PM"]
+                inserted_present = 0
+                inserted_leave = 0
+                
+                # 39 verified present shifts (Nov 1 to Nov 24)
+                for i in range(39):
+                    d_day = min(1 + (i // 3), 24)
+                    d_str = f"2026-11-{d_day:02d}"
+                    s_slot = shifts_pool[i % 3]
+                    conn.execute("""
+                        INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (d_str, "BIJOY KURMI", s_slot, "10:00 AM", "12:00 PM", 0, 0.0, 76.67, "Present"))
+                    inserted_present += 1
                     
-                    # 39 verified present shifts
-                    for i in range(39):
-                        d_day = min(1 + (i // 3), 24)
-                        d_str = f"2026-11-{d_day:02d}"
-                        s_slot = shifts_pool[i % 3]
-                        conn.execute("""
-                            INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (d_str, "BIJOY KURMI", s_slot, "10:00 AM", "12:00 PM", 0, 0.0, 76.67, "Present"))
-                        inserted_present += 1
-                        
-                    # 6 verified leaves
-                    for j in range(6):
-                        d_day = 18 + (j // 3)
-                        d_str = f"2026-11-{d_day:02d}"
-                        s_slot = shifts_pool[j % 3]
-                        conn.execute("""
-                            INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                        """, (d_str, "BIJOY KURMI", s_slot, "LEAVE", "LEAVE", 0, 0.0, 0.0, "Leave"))
-                        inserted_leave += 1
-                        
-                    conn.commit()
-                    sync_all_to_cloud(conn)
-                    st.success(f"✅ Backfill Successful! Inserted {inserted_present} Present and {inserted_leave} Leave shifts.")
-                    st.rerun()            
+                # 6 verified earlier leaves (before Nov 25)
+                for j in range(6):
+                    d_day = 18 + (j // 3)
+                    d_str = f"2026-11-{d_day:02d}"
+                    s_slot = shifts_pool[j % 3]
+                    conn.execute("""
+                        INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (d_str, "BIJOY KURMI", s_slot, "LEAVE", "LEAVE", 0, 0.0, 0.0, "Leave"))
+                    inserted_leave += 1
+                
+                # Nov 25 (Wednesday - 3 shifts leave)
+                for s in shifts_pool:
+                    conn.execute("INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                 ('2026-11-25', 'BIJOY KURMI', s, 'LEAVE', 'LEAVE', 0, 0.0, 0.0, 'Leave'))
+                    inserted_leave += 1
 
+                # Nov 26 (Thursday - Afternoon & Evening 2 shifts leave)
+                for s in [shifts_pool[1], shifts_pool[2]]:
+                    conn.execute("INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                 ('2026-11-26', 'BIJOY KURMI', s, 'LEAVE', 'LEAVE', 0, 0.0, 0.0, 'Leave'))
+                    inserted_leave += 1
+
+                # Nov 27 (Friday - 3 shifts leave)
+                for s in shifts_pool:
+                    conn.execute("INSERT INTO teacher_punches (date, teacher_name, shift, time_in, time_out, late_mins, penalty_cut, net_batch_earning, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                                 ('2026-11-27', 'BIJOY KURMI', s, 'LEAVE', 'LEAVE', 0, 0.0, 0.0, 'Leave'))
+                    inserted_leave += 1
+                    
+                conn.commit()
+                sync_all_to_cloud(conn)
+                st.success(f"✅ Successfully restored! 39 Present & 14 Leave shifts added up to Nov 27.")
+                st.rerun()
         # TAB 4: EDIT STUDENTS
         with dir_t4:
             st.write("#### Update Student Profile & Sarva Head Office Reg No")
